@@ -1,0 +1,4 @@
+date,time_utc,lat,lon,satellite,confidence,frp_mw,daynight
+2000-11-06,1151,39.4605,-8.5570,Terra,40,4.9,D
+2000-11-08,1139,37.6988,-7.7845,Terra,85,26.2,D
+2000-11-08,1139,37.7087,-7.7873,Terra,64,6.2,D
