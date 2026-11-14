@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "regions": [
+    {
+      "id": "portugal",
+      "name": "Mainland Portugal",
+      "bbox": [
+        -10.0,
+        36.9,
+        -6.0,
+        42.2
+      ],
+      "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Oct)",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-11-28"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-27"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0
+    },
+    {
+      "id": "ghana",
+      "name": "Ghana",
+      "bbox": [
+        -3.5,
+        4.5,
+        1.5,
+        11.5
+      ],
+      "fire_type": "West African savanna burning (peak Nov–Feb)",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-19",
+          "last_date": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0
+    },
+    {
+      "id": "punjab",
+      "name": "NW India (Punjab, N Haryana; India side only)",
+      "bbox": [
+        73.75,
+        28.75,
+        77.5,
+        32.5
+      ],
+      "fire_type": "Crop-residue burning (peaks Apr–May and Oct–Nov)",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-22"
+        },
+        "aqua": {
+          "first_date": "2002-07-18",
+          "last_date": "2025-12-27"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-30"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0
+    }
+  ]
+}

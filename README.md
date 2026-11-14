@@ -1,21 +1,36 @@
 # spaceapps-primary
 
-**One Fire Record**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one record (mainland Portugal, 2001-2025). NASA Space Apps Challenge 2026.
+**One Fire Record**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one record (mainland Portugal, Ghana and NW India, 2001-2025; the model currently runs for Portugal). NASA Space Apps Challenge 2026.
 
 ## Run it
 
-Python precompute (from the repo root):
+Python precompute (from the repo root). Tested with Python 3.14.3, numpy 2.4.4, pandas 3.0.2, statsmodels 0.14.6, patsy 1.0.2 (Python 3.8+ and pandas 1.5+ required). Use `python` on Windows, `python3` on macOS.
+
+1. Create and activate a virtual environment.
+   - Windows (PowerShell): `python -m venv .venv` then `.venv\Scripts\Activate.ps1` (if blocked: `Set-ExecutionPolicy -Scope Process Bypass`)
+   - macOS: `python3 -m venv .venv` then `source .venv/bin/activate`
+2. `pip install numpy pandas statsmodels patsy`
 
 ```bash
-python3 build.py    # downloads FIRMS country archives into data/raw/, writes fire_grid_daily.csv
-python3 model.py    # fits the model, writes site/public/data/portugal/annual.json (plus web/data.js, annual_summary.csv)
+python build.py             # all regions in regions.json; the first run downloads ~1 GB for Ghana + NW India into data/raw/
+python build.py portugal    # one region; Portugal's raw files are committed, so this needs no network
+python model.py             # Portugal model (~6 min): site/public/data/portugal/annual.json, plus web/data.js and annual_summary.csv
 ```
+
+### Data outputs (written by `build.py`)
+
+- `regions.json` (hand-edited input): one entry per region: `id`, `name`, FIRMS `country` file name, `bbox` [west, south, east, north] (west/south edges inclusive, east/north exclusive; edge cells can stick out slightly when an edge isn't a multiple of 0.25°), `fire_type`. After editing a region's entry, rebuild that region (`python build.py <id>`) so its grid and the index match. The `punjab` box also covers part of Pakistani Punjab, but only India's FIRMS file is used, so that side is empty.
+- `data/grid/fire_grid_daily_<region>.csv`: detections per 0.25° cell (south-west corner) × UTC day × day/night, per satellite (Terra, Aqua, VIIRS S-NPP), with mean fire radiative power. Sparse: missing rows mean zero detections.
+- `data/grid/manifest.json`: per region, `archive_through` (latest date in the downloaded FIRMS files) and per sensor `first_date` / `last_date` / `detections`. `last_date` is the **last day a fire was detected**, not the end of the data.
+- `site/public/data/index.json`: the region list the website reads; `data_through` = `archive_through`.
+- Raw downloads go to `data/raw/` (only Portugal's are committed).
 
 Website (Node.js LTS, from the repo root):
 
 ```bash
 cd site && npm install && npm run dev     # http://localhost:3000
 cd site && npm run build                  # type check + production build
+cd site && npm test                       # unit tests for the series.json parser and calendar grid (Node >= 23.6)
 ```
 
 CSV download endpoints (read-only, served from `site/public/data/`):
@@ -27,6 +42,25 @@ CSV download endpoints (read-only, served from `site/public/data/`):
 
 The site only reads files under `site/public/data/`; it never runs the model. Hosting: Vercel, project Root Directory `site`.
 
+## Check before you open a PR
+
+CI (`.github/workflows/ci.yml`, jobs `pipeline` and `site`) runs these on every pull request to `main`. Run them locally from the repo root, in the virtual environment from "Run it" (CI uses Python 3.13 and Node.js 24):
+
+```bash
+pip install numpy pandas statsmodels patsy       # or: pip install -r requirements.txt, once it exists
+python -m unittest discover -s tests -v          # only if tests/ exists
+python scripts/check_outputs.py --snapshot       # before the pipeline: remembers your working tree
+python build.py portugal                         # no network: Portugal's raw files are committed
+python model.py
+python scripts/check_outputs.py
+```
+
+```bash
+cd site && npm ci && npm run lint && npm test && npm run build
+```
+
+Local runs compare against your working tree as it was before the pipeline ran (the `--snapshot` step), so uncommitted code edits are fine; without a snapshot the baseline is `HEAD`. `check_outputs.py` fails if rerunning the pipeline changed any committed output (beyond float rounding in JSON) or left a new untracked file: regenerate and commit the outputs together with your code change. Any untracked file that `.gitignore` doesn't cover (e.g. a `.DS_Store`) is reported as new, so delete it or ignore it.
+
 ## Use of AI
 
 Code, page text and documentation in this repository were written with help from Claude (Anthropic).
@@ -34,14 +68,19 @@ Code, page text and documentation in this repository were written with help from
 ## References
 
 Data
-- NASA FIRMS active fire data, MODIS Collection 6.1 (Terra, Aqua) and VIIRS 375 m (Suomi NPP) country archives. Input data for everything. https://firms.modaps.eosdis.nasa.gov/country/ . NASA open data, no restrictions. Citation guidance: https://www.earthdata.nasa.gov/data/tools/firms . Acknowledgment (shown on every page): "We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS)."
+- Region boxes in `regions.json` (Portugal, Ghana, NW India) were chosen by the team; no external source.
+- NASA Fire Information for Resource Management System (FIRMS), yearly country archive CSVs — source of every fire detection in this project — https://firms.modaps.eosdis.nasa.gov/download/ — NASA data, openly shared without restriction (EOSDIS data use guidance); provided "as is" (https://www.earthdata.nasa.gov/data/projects/lance/disclaimer). Acknowledgment (verbatim from https://www.earthdata.nasa.gov/data/tools/firms, checked 2026-11-14): "We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS)."
+- MODIS active fire locations, MCD14ML (Terra + Aqua, 1 km), standard processing via the FIRMS country archive — MODIS detections 2000–2025 — https://doi.org/10.5067/FIRMS/MODIS/MCD14ML — Giglio, L. (2000). MODIS Thermal Anomalies/Fire Products [Dataset]. NASA Land Atmosphere Near real-time Capability for EOS Fire Information for Resource Management System. https://doi.org/10.5067/FIRMS/MODIS/MCD14ML (citation from the DOI's DataCite record, checked 2026-11-14). The archive files' `version` field reads 6.2 (2000–2017), 6.03 (2018–2022) and 61.03 (2023–2025).
+- VIIRS Suomi NPP 375 m active fire locations, VNP14IMGML Collection 2, standard processing via the FIRMS country archive — VIIRS detections 2012–2025 — https://doi.org/10.5067/VIIRS/VNP14IMG.002 — No DOI is registered for the monthly location product VNP14IMGML (doi.org and DataCite checked 2026-11-14), so we cite the Level-2 swath product of the same algorithm and collection: Giglio, L. (2024). VIIRS/NPP Active Fires 6-Min L2 Swath 375m V002 [Dataset]. NASA Land Processes Distributed Active Archive Center. https://doi.org/10.5067/VIIRS/VNP14IMG.002. Archive files' `version` field: 2.
+- MODIS active fire algorithm — method behind the MODIS detections — https://doi.org/10.1016/j.rse.2016.02.054 — Giglio, L., Schroeder, W., & Justice, C. O. (2016). The collection 6 MODIS active fire detection algorithm and fire products. Remote Sensing of Environment, 178, 31–41.
+- VIIRS 375 m active fire algorithm — method behind the VIIRS detections — https://doi.org/10.1016/j.rse.2013.12.008 — Schroeder, W., Oliva, P., Giglio, L., & Csiszar, I. A. (2014). The New VIIRS 375 m active fire detection data product: Algorithm description and initial assessment. Remote Sensing of Environment, 143, 85–96.
 
 Python libraries (precompute)
 - numpy: arrays and bootstrap sampling. https://numpy.org . BSD-3-Clause
 - pandas (1.5 or later, for `to_csv(lineterminator=...)`): reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
 - statsmodels: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
 - patsy: model design matrices. https://github.com/pydata/patsy . BSD-2-Clause
-- Python standard library (`urllib.request`, `urllib.error`, `os`, `time`, `json`): downloads with timeout, retry and atomic rename; JSON export. https://docs.python.org/3/library/ . PSF License 2.0
+- Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`, `unittest`, `pathlib`, `datetime`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line; the `tests/test_site_data.py` data checks. https://docs.python.org/3/library/ . PSF License 2.0
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
 - Next.js 16: web framework. https://nextjs.org . MIT
@@ -58,8 +97,15 @@ Website (`site/`, versions pinned in `site/package-lock.json`)
 - ESLint, eslint-config-next, babel-plugin-react-compiler: linting and build tooling. https://eslint.org , https://react.dev/learn/react-compiler . MIT
 
 Code
+- `site/fixtures/series.portugal.sample.json`: test fixture built from this repo's Portugal grid (then `fire_grid_daily.csv`, now `data/grid/fire_grid_daily_portugal.csv`; NASA FIRMS data above); its harmonized values are placeholders, not model output.
 - The record chart in `site/components/RecordChart.tsx` is ported from this project's own proof-of-concept page (`web/index.html`, commit `051327a`).
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
+
+CI
+- GitHub Actions: runs the checks on every pull request. https://docs.github.com/actions . Free for public repositories (GitHub Terms of Service)
+- actions/checkout: checks out the repository in CI. https://github.com/actions/checkout . MIT
+- actions/setup-python: installs Python and caches pip downloads in CI. https://github.com/actions/setup-python . MIT
+- actions/setup-node: installs Node.js and caches npm downloads in CI. https://github.com/actions/setup-node . MIT
 
 AI
 - Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude

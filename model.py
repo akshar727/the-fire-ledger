@@ -1,13 +1,14 @@
 """Fit VIIRS ~ MODIS count model on 2012-2019, back-cast a VIIRS-equivalent record
 for 2001-2011, validate on held-out 2020-2025. Writes web/data.js and site/public/data/portugal/annual.json."""
-import json, os
+import gc, json, os
 import numpy as np, pandas as pd
 import statsmodels.api as sm, statsmodels.formula.api as smf
 
 TRAIN, HOLD, NBOOT = range(2012, 2020), range(2020, 2026), 200
 rng = np.random.default_rng(0)
 
-d = pd.read_csv("fire_grid_daily.csv", parse_dates=["date"])
+REGION = "portugal"   # per-region model outputs come with ML-004; for now only the Portugal grid is modelled
+d = pd.read_csv(f"data/grid/fire_grid_daily_{REGION}.csv", parse_dates=["date"])
 d["year"] = d.date.dt.year
 d["week"] = np.minimum((d.date.dt.day_of_year - 1) // 7, 51)
 for s in ("terra", "aqua"):
@@ -42,7 +43,9 @@ X = {f: np.asarray(dmatrix(f.split("~")[1], w)) for f in (F_FULL, F_TERRA)}   # 
 
 def fit(f, rows):
     """Poisson mean model: its score equations make predicted totals match observed totals in training."""
-    return sm.GLM(y[rows], X[f][rows], family=sm.families.Poisson()).fit().params
+    params = sm.GLM(y[rows], X[f][rows], family=sm.families.Poisson()).fit().params
+    gc.collect()   # statsmodels results sit in reference cycles; free their large arrays now, not at 10+ GB
+    return params
 
 def predict(rows):
     return np.where(pre, np.exp(X[F_TERRA] @ fit(F_TERRA, rows)), np.exp(X[F_FULL] @ fit(F_FULL, rows)))
