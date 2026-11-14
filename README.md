@@ -33,6 +33,13 @@ cd site && npm run build                  # type check + production build
 cd site && npm test                       # unit tests for the series.json parser and calendar grid (Node >= 23.6)
 ```
 
+CSV download endpoints (read-only, served from `site/public/data/`):
+
+```
+/api/hotspots?region=portugal&from=2017-08-01&to=2017-08-30[&bbox=-9,38,-8,39]
+/api/series?region=portugal&res=annual
+```
+
 The site only reads files under `site/public/data/`; it never runs the model. Hosting: Vercel, project Root Directory `site`.
 
 ## Check before you open a PR
