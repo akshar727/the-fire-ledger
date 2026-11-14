@@ -1,6 +1,6 @@
 # spaceapps-primary
 
-**One Fire Record**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one record (mainland Portugal, Ghana and NW India, 2001-2025; the model currently runs for Portugal). NASA Space Apps Challenge 2026.
+**One Fire Record**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one record (mainland Portugal, Ghana and NW India, 2001-2025; one model fit per region). NASA Space Apps Challenge 2026.
 
 ## Run it
 
@@ -14,7 +14,9 @@ Python precompute (from the repo root). Tested with Python 3.14.3, numpy 2.4.4, 
 ```bash
 python build.py             # all regions in regions.json; the first run downloads ~1 GB for Ghana + NW India into data/raw/
 python build.py portugal    # one region; Portugal's raw files are committed, so this needs no network
-python model.py             # Portugal model (~6 min): site/public/data/portugal/annual.json, plus web/data.js and annual_summary.csv
+python model.py             # every region in regions.json (~16 min, peak ~2.4 GB): site/public/data/<region>/annual.json + series.json
+python model.py portugal    # one region (~3 min); the inputs (data/grid/) are committed, so no build.py run is needed first
+python model.py portugal --nboot 20   # quick dev run with fewer bootstrap draws; never commit its output
 ```
 
 ### Data outputs (written by `build.py`)
@@ -37,7 +39,7 @@ The site only reads files under `site/public/data/`; it never runs the model. Ho
 
 ## Check before you open a PR
 
-CI (`.github/workflows/ci.yml`, jobs `pipeline` and `site`) runs these on every pull request to `main`. Run them locally from the repo root, in the virtual environment from "Run it" (CI uses Python 3.13 and Node.js 24):
+There is no CI: run these yourself before every pull request to `main`, from the repo root, in the virtual environment from "Run it" (Node.js 24 or newer for `npm test`):
 
 ```bash
 pip install numpy pandas statsmodels patsy       # or: pip install -r requirements.txt, once it exists
@@ -94,11 +96,6 @@ Code
 - The record chart in `site/components/RecordChart.tsx` is ported from this project's own proof-of-concept page (`web/index.html`, commit `051327a`).
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
 
-CI
-- GitHub Actions: runs the checks on every pull request. https://docs.github.com/actions . Free for public repositories (GitHub Terms of Service)
-- actions/checkout: checks out the repository in CI. https://github.com/actions/checkout . MIT
-- actions/setup-python: installs Python and caches pip downloads in CI. https://github.com/actions/setup-python . MIT
-- actions/setup-node: installs Node.js and caches npm downloads in CI. https://github.com/actions/setup-node . MIT
 
 AI
 - Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude
