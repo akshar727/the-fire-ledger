@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # a newer push to a PR replaces the older run; runs on main always finish
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    # model.py takes ~2 min on a fast laptop but much longer on a 2-CPU runner
+    timeout-minutes: 60
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"   # no __pycache__ files for the output check to trip on
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history, so a PR can be diffed against its base branch
+
+      - name: Decide whether the model must run
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Pushes to main and manual runs always fit the model. A PR fits it only if it
+          # touches the pipeline, its inputs or its outputs; other PRs skip the slow step.
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "model=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed=$(git diff --name-only "origin/$BASE_REF...HEAD")
+          echo "Files changed in this PR:"; echo "$changed"
+          if echo "$changed" | grep -qE '^(build\.py|model\.py|regions\.json|requirements\.txt|annual_summary\.csv|fire_grid_daily\.csv|web/data\.js|data/|site/public/data/|scripts/|\.github/workflows/)'; then
+            echo "model=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "model=false" >> "$GITHUB_OUTPUT"
+            echo "No pipeline files changed: skipping model.py"
+          fi
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          # pip cache needs a requirements file; enable it once requirements.txt exists
+          cache: ${{ hashFiles('requirements.txt') != '' && 'pip' || '' }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install numpy pandas statsmodels patsy
+          fi
+
+      - name: Print versions
+        run: |
+          python --version
+          python -c "import numpy, pandas, statsmodels, patsy; print('numpy', numpy.__version__, 'pandas', pandas.__version__, 'statsmodels', statsmodels.__version__, 'patsy', patsy.__version__)"
+
+      - name: Run tests (if any)
+        run: |
+          if [ -d tests ]; then
+            python -m unittest discover -s tests -v
+          else
+            echo "No tests/ directory yet; skipping."
+          fi
+
+      - name: Snapshot working tree
+        run: python scripts/check_outputs.py --snapshot
+
+      - name: Build fire grid
+        run: python build.py portugal
+
+      - name: Fit model
+        if: steps.changes.outputs.model == 'true'
+        run: time python model.py
+
+      - name: Check generated outputs match committed versions
+        run: python scripts/check_outputs.py
+
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24   # npm test runs .test.ts files directly, which needs Node >= 23.6
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

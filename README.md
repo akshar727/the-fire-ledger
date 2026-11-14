@@ -35,6 +35,25 @@ cd site && npm test                       # unit tests for the series.json parse
 
 The site only reads files under `site/public/data/`; it never runs the model. Hosting: Vercel, project Root Directory `site`.
 
+## Check before you open a PR
+
+CI (`.github/workflows/ci.yml`, jobs `pipeline` and `site`) runs these on every pull request to `main`. Run them locally from the repo root, in the virtual environment from "Run it" (CI uses Python 3.13 and Node.js 24):
+
+```bash
+pip install numpy pandas statsmodels patsy       # or: pip install -r requirements.txt, once it exists
+python -m unittest discover -s tests -v          # only if tests/ exists
+python scripts/check_outputs.py --snapshot       # before the pipeline: remembers your working tree
+python build.py portugal                         # no network: Portugal's raw files are committed
+python model.py
+python scripts/check_outputs.py
+```
+
+```bash
+cd site && npm ci && npm run lint && npm test && npm run build
+```
+
+Local runs compare against your working tree as it was before the pipeline ran (the `--snapshot` step), so uncommitted code edits are fine; without a snapshot the baseline is `HEAD`. `check_outputs.py` fails if rerunning the pipeline changed any committed output (beyond float rounding in JSON) or left a new untracked file: regenerate and commit the outputs together with your code change. Any untracked file that `.gitignore` doesn't cover (e.g. a `.DS_Store`) is reported as new, so delete it or ignore it.
+
 ## Use of AI
 
 Code, page text and documentation in this repository were written with help from Claude (Anthropic).
@@ -74,6 +93,12 @@ Code
 - `site/fixtures/series.portugal.sample.json`: test fixture built from this repo's Portugal grid (then `fire_grid_daily.csv`, now `data/grid/fire_grid_daily_portugal.csv`; NASA FIRMS data above); its harmonized values are placeholders, not model output.
 - The record chart in `site/components/RecordChart.tsx` is ported from this project's own proof-of-concept page (`web/index.html`, commit `051327a`).
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
+
+CI
+- GitHub Actions: runs the checks on every pull request. https://docs.github.com/actions . Free for public repositories (GitHub Terms of Service)
+- actions/checkout: checks out the repository in CI. https://github.com/actions/checkout . MIT
+- actions/setup-python: installs Python and caches pip downloads in CI. https://github.com/actions/setup-python . MIT
+- actions/setup-node: installs Node.js and caches npm downloads in CI. https://github.com/actions/setup-node . MIT
 
 AI
 - Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude
