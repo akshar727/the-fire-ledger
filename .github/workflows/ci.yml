@@ -12,16 +12,40 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # a newer push to a PR replaces the older run; runs on main always finish
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # model.py takes ~2 min on a fast laptop but much longer on a 2-CPU runner
+    timeout-minutes: 60
     env:
       PYTHONDONTWRITEBYTECODE: "1"   # no __pycache__ files for the output check to trip on
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history, so a PR can be diffed against its base branch
+
+      - name: Decide whether the model must run
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Pushes to main and manual runs always fit the model. A PR fits it only if it
+          # touches the pipeline, its inputs or its outputs; other PRs skip the slow step.
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "model=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed=$(git diff --name-only "origin/$BASE_REF...HEAD")
+          echo "Files changed in this PR:"; echo "$changed"
+          if echo "$changed" | grep -qE '^(build\.py|model\.py|regions\.json|requirements\.txt|annual_summary\.csv|fire_grid_daily\.csv|web/data\.js|data/|site/public/data/|scripts/|\.github/workflows/)'; then
+            echo "model=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "model=false" >> "$GITHUB_OUTPUT"
+            echo "No pipeline files changed: skipping model.py"
+          fi
 
       - uses: actions/setup-python@v6
         with:
@@ -58,7 +82,8 @@ jobs:
         run: python build.py portugal
 
       - name: Fit model
-        run: python model.py
+        if: steps.changes.outputs.model == 'true'
+        run: time python model.py
 
       - name: Check generated outputs match committed versions
         run: python scripts/check_outputs.py
