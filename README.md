@@ -73,7 +73,7 @@ Python libraries (precompute)
 - pandas (1.5 or later, for `to_csv(lineterminator=...)`): reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
 - statsmodels: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
 - patsy: model design matrices. https://github.com/pydata/patsy . BSD-2-Clause
-- Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line. https://docs.python.org/3/library/ . PSF License 2.0
+- Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`, `unittest`, `pathlib`, `datetime`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line; the `tests/test_site_data.py` data checks. https://docs.python.org/3/library/ . PSF License 2.0
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
 - Next.js 16: web framework. https://nextjs.org . MIT
