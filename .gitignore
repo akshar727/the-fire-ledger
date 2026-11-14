@@ -1,0 +1,5 @@
+data/raw/*
+!data/raw/*_Portugal.csv
+*.part
+.venv/
+__pycache__/
