@@ -16,6 +16,7 @@ Website (Node.js LTS, from the repo root):
 ```bash
 cd site && npm install && npm run dev     # http://localhost:3000
 cd site && npm run build                  # type check + production build
+cd site && npm test                       # unit tests for the series.json parser and calendar grid (Node >= 23.6)
 ```
 
 The site only reads files under `site/public/data/`; it never runs the model. Hosting: Vercel, project Root Directory `site`.
@@ -51,6 +52,7 @@ Website (`site/`, versions pinned in `site/package-lock.json`)
 - ESLint, eslint-config-next, babel-plugin-react-compiler: linting and build tooling. https://eslint.org , https://react.dev/learn/react-compiler . MIT
 
 Code
+- `site/fixtures/series.portugal.sample.json`: test fixture built from this repo's `fire_grid_daily.csv` (NASA FIRMS data above); its harmonized values are placeholders, not model output.
 - The record chart in `site/components/RecordChart.tsx` is ported from this project's own proof-of-concept page (`web/index.html`, commit `051327a`).
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
 
