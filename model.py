@@ -1,5 +1,5 @@
 """Fit VIIRS ~ MODIS count model on 2012-2019, back-cast a VIIRS-equivalent record
-for 2001-2011, validate on held-out 2020-2025. Writes web/data.js."""
+for 2001-2011, validate on held-out 2020-2025. Writes web/data.js and site/public/data/portugal/annual.json."""
 import json, os
 import numpy as np, pandas as pd
 import statsmodels.api as sm, statsmodels.formula.api as smf
@@ -82,4 +82,7 @@ out = {"years": ann.index.tolist(), "modis": ann.modis_n.tolist(),
        "viirs": [None if np.isnan(v) else v for v in ann.viirs_n],
        "pred": ann.mu.round(1).tolist(), "lo": ann.lo.tolist(), "hi": ann.hi.tolist(), "score": score}
 open("web/data.js", "w").write("const DATA = " + json.dumps(out) + ";\n")
+os.makedirs("site/public/data/portugal", exist_ok=True)
+with open("site/public/data/portugal/annual.json", "w", newline="\n") as f:   # same object, plain JSON for the Next.js site
+    f.write(json.dumps(out, allow_nan=False) + "\n")
 ann.round(1).to_csv("annual_summary.csv")
