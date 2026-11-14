@@ -18,6 +18,13 @@ cd site && npm install && npm run dev     # http://localhost:3000
 cd site && npm run build                  # type check + production build
 ```
 
+CSV download endpoints (read-only, served from `site/public/data/`):
+
+```
+/api/hotspots?region=portugal&from=2017-08-01&to=2017-08-30[&bbox=-9,38,-8,39]
+/api/series?region=portugal&res=annual
+```
+
 The site only reads files under `site/public/data/`; it never runs the model. Hosting: Vercel, project Root Directory `site`.
 
 ## Use of AI
