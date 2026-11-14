@@ -1,0 +1,23 @@
+[
+  {
+    "id": "portugal",
+    "name": "Mainland Portugal",
+    "country": "Portugal",
+    "bbox": [-10.0, 36.9, -6.0, 42.2],
+    "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Oct)"
+  },
+  {
+    "id": "ghana",
+    "name": "Ghana",
+    "country": "Ghana",
+    "bbox": [-3.5, 4.5, 1.5, 11.5],
+    "fire_type": "West African savanna burning (peak Nov–Feb)"
+  },
+  {
+    "id": "punjab",
+    "name": "NW India (Punjab, N Haryana; India side only)",
+    "country": "India",
+    "bbox": [73.75, 28.75, 77.5, 32.5],
+    "fire_type": "Crop-residue burning (peaks Apr–May and Oct–Nov)"
+  }
+]

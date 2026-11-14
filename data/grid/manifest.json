@@ -1,0 +1,65 @@
+{
+  "ghana": {
+    "archive_through": "2025-12-31",
+    "sensors": {
+      "terra": {
+        "first_date": "2000-11-02",
+        "last_date": "2025-12-31",
+        "detections": 352696
+      },
+      "aqua": {
+        "first_date": "2002-07-19",
+        "last_date": "2025-12-31",
+        "detections": 858576
+      },
+      "viirs": {
+        "first_date": "2012-01-20",
+        "last_date": "2025-12-31",
+        "detections": 2877348
+      }
+    },
+    "grid_rows": 575310
+  },
+  "portugal": {
+    "archive_through": "2025-12-31",
+    "sensors": {
+      "terra": {
+        "first_date": "2000-11-06",
+        "last_date": "2025-11-28",
+        "detections": 36967
+      },
+      "aqua": {
+        "first_date": "2002-07-04",
+        "last_date": "2025-11-27",
+        "detections": 38884
+      },
+      "viirs": {
+        "first_date": "2012-01-20",
+        "last_date": "2025-12-31",
+        "detections": 103300
+      }
+    },
+    "grid_rows": 35297
+  },
+  "punjab": {
+    "archive_through": "2025-12-31",
+    "sensors": {
+      "terra": {
+        "first_date": "2000-11-01",
+        "last_date": "2025-12-22",
+        "detections": 103537
+      },
+      "aqua": {
+        "first_date": "2002-07-18",
+        "last_date": "2025-12-27",
+        "detections": 357700
+      },
+      "viirs": {
+        "first_date": "2012-01-20",
+        "last_date": "2025-12-30",
+        "detections": 1302376
+      }
+    },
+    "grid_rows": 208467
+  }
+}

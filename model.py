@@ -7,7 +7,8 @@ import statsmodels.api as sm, statsmodels.formula.api as smf
 TRAIN, HOLD, NBOOT = range(2012, 2020), range(2020, 2026), 200
 rng = np.random.default_rng(0)
 
-d = pd.read_csv("fire_grid_daily.csv", parse_dates=["date"])
+REGION = "portugal"   # per-region model outputs come with ML-004; for now only the Portugal grid is modelled
+d = pd.read_csv(f"data/grid/fire_grid_daily_{REGION}.csv", parse_dates=["date"])
 d["year"] = d.date.dt.year
 d["week"] = np.minimum((d.date.dt.day_of_year - 1) // 7, 51)
 for s in ("terra", "aqua"):
