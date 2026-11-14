@@ -40,7 +40,7 @@ jobs:
           fi
           changed=$(git diff --name-only "origin/$BASE_REF...HEAD")
           echo "Files changed in this PR:"; echo "$changed"
-          if echo "$changed" | grep -qE '^(build\.py|model\.py|regions\.json|requirements\.txt|annual_summary\.csv|fire_grid_daily\.csv|web/data\.js|data/|site/public/data/|scripts/|\.github/workflows/)'; then
+          if echo "$changed" | grep -qE '^(build\.py|model\.py|calendar_stats\.py|regions\.json|requirements\.txt|annual_summary\.csv|fire_grid_daily\.csv|web/data\.js|data/|site/public/data/|scripts/|\.github/workflows/)'; then
             echo "model=true" >> "$GITHUB_OUTPUT"
           else
             echo "model=false" >> "$GITHUB_OUTPUT"
