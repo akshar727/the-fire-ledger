@@ -22,7 +22,8 @@ python model.py             # Portugal model (~6 min): site/public/data/portugal
 - `regions.json` (hand-edited input): one entry per region: `id`, `name`, FIRMS `country` file name, `bbox` [west, south, east, north] (west/south edges inclusive, east/north exclusive; edge cells can stick out slightly when an edge isn't a multiple of 0.25°), `fire_type`. After editing a region's entry, rebuild that region (`python build.py <id>`) so its grid and the index match. The `punjab` box also covers part of Pakistani Punjab, but only India's FIRMS file is used, so that side is empty.
 - `data/grid/fire_grid_daily_<region>.csv`: detections per 0.25° cell (south-west corner) × UTC day × day/night, per satellite (Terra, Aqua, VIIRS S-NPP), with mean fire radiative power. Sparse: missing rows mean zero detections.
 - `data/grid/manifest.json`: per region, `archive_through` (latest date in the downloaded FIRMS files) and per sensor `first_date` / `last_date` / `detections`. `last_date` is the **last day a fire was detected**, not the end of the data.
-- `site/public/data/index.json`: the region list the website reads; `data_through` = `archive_through`.
+- `site/public/data/index.json`: the region list the website reads; `data_through` = `archive_through`; `point_years` / `point_rows` list the years and total rows of the point files.
+- `site/public/data/<region>/points/<year>.csv`: the individual detections (same filter as the grid), header `date,time_utc,lat,lon,satellite,confidence,frp_mw,daynight`, sorted by date and time; `satellite` is `Terra`, `Aqua` or `SNPP`, `time_utc` is HHMM, `confidence` is as in FIRMS (MODIS 0–100, VIIRS `l`/`n`/`h`). Only years with at least one detection get a file.
 - Raw downloads go to `data/raw/` (only Portugal's are committed).
 
 Website (Node.js LTS, from the repo root):
