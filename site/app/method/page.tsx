@@ -109,17 +109,15 @@ export default function MethodPage() {
               should contain about 90% of them.
             </li>
             <li>
-              <span className="font-medium text-foreground">2001-2002 use a Terra-only model.</span> Aqua data starts
-              in July 2002, so raw MODIS counts for 2001 and early 2002 are lower partly for that reason, and the
-              back-cast for both years uses a separate model fitted on Terra alone.
+              <span className="font-medium text-foreground">Before July 2002 the model sees Terra only.</span> Aqua
+              data starts in July 2002, so raw MODIS counts for 2001 and early 2002 are lower partly for that reason.
+              Until 8 July 2002 the back-cast uses a separate model fitted on Terra alone; from 9 July 2002 (the first
+              full week with Aqua) it uses Terra and Aqua.
             </li>
             <li>
-              <span className="font-medium text-foreground">2025 is incomplete for MODIS.</span> The MODIS archive we
-              use ends on 28 November 2025, while VIIRS runs to 31 December.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">One region so far.</span> The model is fitted for
-              mainland Portugal only. Other regions need their own fit.
+              <span className="font-medium text-foreground">One fit per region.</span> Each region gets its own model
+              and its own hold-out score, because fire types and the Terra/Aqua mix differ. This page shows mainland
+              Portugal.
             </li>
           </ul>
         </section>
