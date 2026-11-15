@@ -848,12 +848,12 @@ function NotPublished() {
         <h2 className="text-xl font-semibold tracking-tight">The monthly data isn&apos;t published yet</h2>
         <p className="leading-relaxed text-muted-foreground">
           The calendar reads the harmonized monthly series from the next model export. Until it lands, the yearly
-          record is on the Record page.
+          record is on the Ledger page.
         </p>
       </div>
       <Button asChild>
-        <Link href="/record">
-          View the record
+        <Link href="/ledger">
+          View the ledger
           <ArrowRightIcon aria-hidden />
         </Link>
       </Button>

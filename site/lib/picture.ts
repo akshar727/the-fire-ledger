@@ -129,7 +129,7 @@ export function composePicture(spec: PictureSpec): { svg: string; width: number;
     parts.push(`<text x="${pad}" y="${y}" font-family="${esc(SANS)}" font-size="11" fill="${esc(t.mutedFg)}">${esc(line)}</text>`);
   }
   y += 18;
-  parts.push(`<text x="${pad}" y="${y}" font-family="${esc(SANS)}" font-size="11" font-weight="600" fill="${esc(t.fg)}">One Fire Record · one-fire-record.vercel.app</text>`);
+  parts.push(`<text x="${pad}" y="${y}" font-family="${esc(SANS)}" font-size="11" font-weight="600" fill="${esc(t.fg)}">Fire Ledger · the-fire-ledger.vercel.app</text>`);
   const H = Math.ceil(y + pad);
 
   const svg =

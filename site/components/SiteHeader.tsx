@@ -12,7 +12,7 @@ export function SiteHeader() {
           className="flex items-center gap-2 border-r px-3 font-mono text-[10px] font-semibold tracking-[0.06em] whitespace-nowrap uppercase sm:gap-2.5 sm:px-4 sm:text-[11px] sm:tracking-[0.14em]"
         >
           <FlameIcon weight="fill" className="size-4 text-primary drop-shadow-[0_0_6px_var(--primary)]" aria-hidden />
-          One Fire Record
+          Fire Ledger
         </Link>
         <Suspense fallback={<NavLinks />}>
           <SiteNav />

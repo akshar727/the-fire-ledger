@@ -1,5 +1,5 @@
 // DP-018: build-time reads of per-region files for server components (/, /method, the site-wide copy in the layout and
-// /record's header). A synchronous fs read while those static pages are prerendered, as lib/story-data.ts does, so no
+// /ledger's header). A synchronous fs read while those static pages are prerendered, as lib/story-data.ts does, so no
 // page bundles every region's record and the browser downloads none of them. These pages MUST stay static: on a
 // dynamic route the read would run in a serverless function, where public/ is not traced. A missing file fails the
 // build on purpose (index.json lists only regions with a record).

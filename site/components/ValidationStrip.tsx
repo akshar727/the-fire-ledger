@@ -1,7 +1,7 @@
 "use client";
 
 // FE-020: the proof up front. Hold-out error, band coverage and the burned-area check for the selected region, right under
-// the hero number on /record. Numbers come from annual.json `score` and referee.json; wording from lib/proof.ts.
+// the hero number on /ledger. Numbers come from annual.json `score` and referee.json; wording from lib/proof.ts.
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { estimateOf, holdoutYears, isSparse } from "@/lib/annual";

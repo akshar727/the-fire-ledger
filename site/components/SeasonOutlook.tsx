@@ -1,6 +1,6 @@
 "use client";
 
-// FE-022: season outlook on /record, under the annual chart. This fire season's running total against every past
+// FE-022: season outlook on /ledger, under the annual chart. This fire season's running total against every past
 // season since the record starts, with the forecast range to season end and how that forecast did on past seasons.
 // Every number comes from `outlook()` (lib/outlook.ts, FE-021) on the weekly harmonized record in series.json; the
 // sentences and the week-by-week range are in lib/outlook-view.ts. The date range above does not change it: it is

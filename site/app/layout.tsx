@@ -23,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 const span = recordSpan();
 
 export const metadata: Metadata = {
-  title: { default: "One Fire Record", template: "%s | One Fire Record" },
+  title: { default: "Fire Ledger", template: "%s | Fire Ledger" },
   description: `MODIS and VIIRS active-fire detections from NASA FIRMS, harmonized into one record for ${span.regions}, ${span.first} to ${dayLabel(span.through)}.`,
 };
 
