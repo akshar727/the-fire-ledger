@@ -88,7 +88,10 @@ def load_region(region):
             raise SystemExit(f"{path} is missing columns {missing}; delete that file and re-run.")
         return name, path
 
-    _, probe = fetch("modis", 2012)  # fail early (bad country name, no network) before the full loop
+    first = next(((s, y) for s, ys in SRC.items() for y in ys), None)   # the loop's first file, by construction
+    if first is None:
+        raise SystemExit("SRC lists no years")
+    _, probe = fetch(*first)  # fetch and print the first file up front: a quick availability check (bad country, no network)
     print(f"probe {probe}: {os.path.getsize(probe)} bytes")
     frames, archive_through = [], None
     for sensor, years in SRC.items():
