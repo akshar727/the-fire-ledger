@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { PlayCalendar } from "@/components/PlayCalendar";
-import { fetchSeries, regionInfo, type RegionId, type SeriesResult } from "@/lib/data";
+import { fetchSeries, fetchWeather, regionInfo, type RegionId, type SeriesResult } from "@/lib/data";
+import { SEASON_DRIVER, summarySentence, weatherSentence, weatherSummary, type Weather, type WeatherSummary } from "@/lib/weather";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
 import { REGIONS } from "@/lib/regions";
@@ -93,6 +94,15 @@ export function BurnCalendar({
     return () => ac.abort();
   }, [region, key]);
 
+  // FE-012: fire weather is an optional extra, loaded on its own; the calendar never waits for it
+  const [wx, setWx] = useState<{ region: RegionId; weather: Weather | null } | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchWeather(region, ac.signal).then((weather) => setWx({ region, weather }), () => {});
+    return () => ac.abort();
+  }, [region]);
+  const weather = wx?.region === region ? wx.weather : null;
+
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
   const result = loaded?.key === key ? loaded.result : null;
@@ -114,6 +124,9 @@ export function BurnCalendar({
       snppEnd={regionInfo(region).data_through}
       raw={rawValues(bundle, week ? "week" : "month")}
       stats={bundle.calendar}
+      weather={weather}
+      // whole record, not the selected dates: the summary counts every complete month
+      summary={weather && bundle.calendar ? weatherSummary(weather, bundle.calendar, bundle.monthly.start_year, !!monthGrid.latest?.partial) : null}
       label={{ region, from, to }}
       onView={bundle.weekly ? onView : undefined}
     />
@@ -129,6 +142,8 @@ function CalendarView({
   snppEnd,
   raw,
   stats: monthStats,
+  weather,
+  summary,
   label,
   onView,
 }: {
@@ -138,6 +153,8 @@ function CalendarView({
   snppEnd: string; // last Suomi NPP day (index.json data_through); forward-link days follow it
   raw: (number | null)[];
   stats?: CalendarStats;
+  weather: Weather | null;
+  summary: WeatherSummary | null;
   label: Label;
   onView?: (view: View) => void;
 }) {
@@ -228,9 +245,9 @@ function CalendarView({
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
         {latestMonth &&
           (mtd && latestMonth.partial ? (
-            <MonthToDateCard cell={latestMonth} mtd={mtd} snppEnd={snppEnd} />
+            <MonthToDateCard cell={latestMonth} mtd={mtd} snppEnd={snppEnd} weather={weather} />
           ) : (
-            <LatestCard cell={latestMonth} stats={monthStats} />
+            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} />
           ))}
         <Legend
           max={grid.max}
@@ -275,7 +292,7 @@ function CalendarView({
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats, snppEnd) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
+          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -433,7 +450,79 @@ function CalendarView({
           />
         </div>
       </section>
+      {!week && summary && <WeatherSummaryBlock summary={summary} region={label.region} />}
     </div>
+  );
+}
+
+/** FE-012: one line of weather words under a card, or nothing when there is no weather for that month. */
+function WeatherLine({ weather, year, month, flag }: { weather: Weather | null; year: number; month: number; flag: -1 | 0 | 1 }) {
+  const s = weather ? weatherSentence(weather, year, month, flag) : null;
+  return s ? <p className="border-t pt-3 text-sm leading-relaxed">{s}</p> : null;
+}
+
+/**
+ * FE-012: "Was it the weather?" Every complete month counted by fire (unusually high / normal / unusually low) and
+ * weather (fire-prone = top quarter for that calendar month, NASA POWER), with the headline sentence and, where the
+ * season itself is not weather-driven, a note on what drives it.
+ */
+function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; region: RegionId }) {
+  const rows = [
+    { name: "Unusually high fire", c: s.high },
+    { name: "Normal", c: s.normal },
+    { name: "Unusually low fire", c: s.low },
+  ];
+  const pct = (a: number, b: number) => (b > 0 ? ` (${Math.round((100 * a) / b)}%)` : "");
+  return (
+    <section aria-labelledby="weather-heading" className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:p-6">
+      <div className="flex max-w-[65ch] flex-col gap-2">
+        <h3 id="weather-heading" className="text-lg font-semibold tracking-tight">
+          Was it the weather?
+        </h3>
+        <p className="leading-relaxed">{summarySentence(s)}</p>
+        {SEASON_DRIVER[region] && <p className="text-sm leading-relaxed text-muted-foreground">{SEASON_DRIVER[region]}</p>}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full max-w-xl text-sm">
+          <caption className="sr-only">
+            Months {s.years[0]}-{s.years[1]} by fire and by weather
+          </caption>
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th scope="col" className="py-2 pr-4 font-normal">
+                Months, {s.years[0]}-{s.years[1]}
+              </th>
+              <th scope="col" className="py-2 pr-4 font-normal">
+                Fire-prone weather
+              </th>
+              <th scope="col" className="py-2 font-normal">
+                Other weather
+              </th>
+            </tr>
+          </thead>
+          <tbody className="font-mono tabular-nums">
+            {rows.map(({ name, c }) => (
+              <tr key={name} className="border-b last:border-0">
+                <th scope="row" className="py-2 pr-4 text-left font-sans font-normal">
+                  {name}
+                </th>
+                <td className="py-2 pr-4">
+                  {c.prone}
+                  <span className="text-muted-foreground">{pct(c.prone, c.prone + c.other)}</span>
+                </td>
+                <td className="py-2">{c.other}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
+        NASA POWER daily weather (hot, dry air times wind, damped by the last 30 days of rain), averaged over the region
+        where its fires are. Chance alone would put about {Math.round(100 * s.baseShare)}% of months in that column.
+        Weather is shown next to the record, never used to make it.
+      </p>
+    </section>
   );
 }
 
@@ -466,7 +555,7 @@ function sourceText(cell: CalendarCell, snppEnd: string): string {
     : `VIIRS observed to ${dayMonth(snppEnd)}, S-NPP equivalent from NOAA-20/21 after`;
 }
 
-function describe(cell: CalendarCell, stats: CalendarStats | undefined, snppEnd: string): string {
+function describe(cell: CalendarCell, stats: CalendarStats | undefined, snppEnd: string, weather: Weather | null = null): string {
   const long = cell.week != null && cell.length > 7 ? ` (${cell.length} days)` : "";
   const when = `${periodLabel(cell)}${long}${cell.inRange ? "" : " (outside the selected dates)"}`;
   if (cell.value == null) return `${when}: no data in the record yet.`;
@@ -476,12 +565,15 @@ function describe(cell: CalendarCell, stats: CalendarStats | undefined, snppEnd:
     s += ` ${times(cell.anomaly)} the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
     s += cell.flag === 1 ? ", marked unusually high." : cell.flag === -1 ? ", marked unusually low." : ".";
   }
+  // FE-012: weather is per month, so the week view leaves it out
+  const w = weather && cell.week == null ? weatherSentence(weather, cell.year, cell.month, cell.flag) : null;
+  if (w) s += ` ${w}`;
   return s;
 }
 
 const monthName = (cell: CalendarCell) => `${MONTHS_LONG[cell.month - 1]} ${cell.year}`;
 
-function LatestCard({ cell, stats }: { cell: CalendarCell; stats?: CalendarStats }) {
+function LatestCard({ cell, stats, weather }: { cell: CalendarCell; stats?: CalendarStats; weather: Weather | null }) {
   const name = MONTHS_LONG[cell.month - 1];
   const median = stats?.month_median[cell.month - 1];
   // Monthly arrays end at the last fully covered month, so the newest the record can be is last month. Once present-day
@@ -515,6 +607,7 @@ function LatestCard({ cell, stats }: { cell: CalendarCell; stats?: CalendarStats
           )}
         </div>
       )}
+      <WeatherLine weather={weather} year={cell.year} month={cell.month} flag={cell.flag} />
       {!isRecent && (
         <p className="text-xs leading-relaxed text-muted-foreground">
           Present-day detections are not in the record yet, so this card compares the latest complete month, not this
@@ -529,7 +622,7 @@ function LatestCard({ cell, stats }: { cell: CalendarCell; stats?: CalendarStats
  * Latest-month card for a month still running (FE-009): detections on days 1..N against the same days of past years
  * (median, middle half, the last three years). Never against a whole month, and never marked unusual.
  */
-function MonthToDateCard({ cell, mtd, snppEnd }: { cell: CalendarCell; mtd: MonthToDate; snppEnd: string }) {
+function MonthToDateCard({ cell, mtd, snppEnd, weather }: { cell: CalendarCell; mtd: MonthToDate; snppEnd: string; weather: Weather | null }) {
   const name = MONTHS_LONG[mtd.month - 1];
   const days = mtd.days === 1 ? `1 ${name}` : `1-${mtd.days} ${name}`;
   // read the clock once per mount, as LatestCard does (render stays pure; the card renders after the client fetch)
@@ -558,6 +651,7 @@ function MonthToDateCard({ cell, mtd, snppEnd }: { cell: CalendarCell; mtd: Mont
           </p>
         )}
       </div>
+      <WeatherLine weather={weather} year={mtd.year} month={mtd.month} flag={0} />
       <p className="text-xs leading-relaxed text-muted-foreground">
         The month isn&apos;t over, so it is compared only with the same days of other years and not marked unusual.
         {cell.source === "forward" && ` ${forwardSentence(snppEnd)}`}
