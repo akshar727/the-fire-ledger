@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { JumpStat, RecordExplorer, RecordSkeleton } from "@/components/RecordExplorer";
+import { ValidationStrip } from "@/components/ValidationStrip";
 import { recordSpan } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Record" };
@@ -26,6 +27,11 @@ export default function RecordPage() {
           <JumpStat />
         </Suspense>
       </section>
+
+      {/* FE-020: the hold-out and burned-area proof, before the chart */}
+      <Suspense fallback={<div className="h-28" />}>
+        <ValidationStrip />
+      </Suspense>
 
       <Suspense fallback={<RecordSkeleton />}>
         <RecordExplorer />
