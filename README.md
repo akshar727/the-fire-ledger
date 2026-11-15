@@ -26,6 +26,15 @@ $env:FIRMS_MAP_KEY = Read-Host "FIRMS key"   # key from https://firms.modaps.eos
 python fetch_recent.py                        # all regions (~10 min); checks a 2025 week against the archive first
 ```
 
+Independent check against MODIS burned area (`referee.py`, method page "An independent check"). The extract is committed in `data/referee/burned_area.csv`, so normally only the second line is needed (after `model.py`, numpy/pandas only):
+
+```bash
+python referee.py extract <folder>   # once: reads MCD64CMQ .hdf files (needs `pip install pyhdf`, Python <= 3.14) -> data/referee/burned_area.csv
+python referee.py                    # -> site/public/data/referee.json (detections per 1,000 km2 burned, before vs after 2012)
+```
+
+The `.hdf` files come from the University of Maryland SFTP server in the MCD64 user guide, section 4.1 (server, public login and folder `data/MODIS/C6/MCD64CMQ` are given there; https://lpdaac.usgs.gov/documents/1006/MCD64_User_Guide_V61.pdf). About 65 MB; not committed.
+
 ### Data outputs (written by `build.py`)
 
 - `regions.json` (hand-edited input): one entry per region: `id`, `name`, FIRMS `country` file name, `bbox` [west, south, east, north] (west/south edges inclusive, east/north exclusive; edge cells can stick out slightly when an edge isn't a multiple of 0.25°), `fire_type`. After editing a region's entry, rebuild that region (`python build.py <id>`) so its grid and the index match. The `punjab` box also covers part of Pakistani Punjab, but only India's FIRMS file is used for 2000–2025, so that side is empty. 2026 comes from the area API (whole box), so `build.py` keeps a 2026 detection only if its 0.05° sub-cell (~5.5 km) had a detection in the 2000–2025 archive. With whole 0.25° cells, about 6% of 2026 detections fell on ground with no detection in 2000–2024 (the neighbour's side of border cells, plus untyped NRT static sources); the 0.05° filter drops at most ~0.3% of genuine detections.
@@ -87,6 +96,8 @@ Data
 - MODIS near real-time active fire locations, MCD14DL version 6.1NRT ("MODIS/Aqua Terra Thermal Anomalies/Fire locations 1km FIRMS NRT (Vector data)") — MODIS detections 2026-09-01 to 2026-11-02 — https://doi.org/10.5067/FIRMS/MODIS/MCD14DL.NRT.0061 — NASA MODIS Science Data Support Team, NASA LANCE MODIS at the MODAPS (title taken from the catalog record; the citation text on that page names a VIIRS product by mistake, checked 2026-11-15).
 - VIIRS Suomi NPP near real-time active fire locations, VNP14IMGTDL_NRT version 2 — VIIRS detections 2026-08-01 to 2026-11-02 — https://doi.org/10.5067/FIRMS/VIIRS/VNP14IMGT_NRT.002 — NASA VIIRS Land Science Team. (2020). VIIRS (S-NPP) I Band 375 m Active Fire Product NRT (Vector data) [Data set]. NASA LANCE MODIS at the MODAPS (checked 2026-11-15).
 - MODIS active fire algorithm — method behind the MODIS detections — https://doi.org/10.1016/j.rse.2016.02.054 — Giglio, L., Schroeder, W., & Justice, C. O. (2016). The collection 6 MODIS active fire detection algorithm and fire products. Remote Sensing of Environment, 178, 31–41.
+- MODIS burned area, MCD64CMQ Collection 6 (0.25° monthly climate-modelling-grid summary of MCD64A1) — burned area per region-month 2000-11 to 2022-12 for the independent check (`referee.py`) — https://doi.org/10.5067/MODIS/MCD64A1.006 — Giglio, L., Justice, C., Boschetti, L., & Roy, D. (2015). MCD64A1 MODIS/Terra+Aqua Burned Area Monthly L3 Global 500m SIN Grid V006 [Dataset]. NASA Land Processes Distributed Active Archive Center. MCD64CMQ has no DOI of its own; files from the University of Maryland SFTP server (MCD64 user guide §4.1, https://lpdaac.usgs.gov/documents/1006/MCD64_User_Guide_V61.pdf, checked 2026-11-15). No restrictions on use.
+- MODIS burned area algorithm — method behind MCD64 — https://doi.org/10.1016/j.rse.2018.08.005 — Giglio, L., Boschetti, L., Roy, D. P., Humber, M. L., & Justice, C. O. (2018). The Collection 6 MODIS burned area mapping algorithm and product. Remote Sensing of Environment, 217, 72–85.
 - VIIRS 375 m active fire algorithm — method behind the VIIRS detections — https://doi.org/10.1016/j.rse.2013.12.008 — Schroeder, W., Oliva, P., Giglio, L., & Csiszar, I. A. (2014). The New VIIRS 375 m active fire detection data product: Algorithm description and initial assessment. Remote Sensing of Environment, 143, 85–96.
 
 Python libraries (precompute; exact versions in `requirements.txt`)
@@ -94,6 +105,7 @@ Python libraries (precompute; exact versions in `requirements.txt`)
 - pandas 3.0.2: reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
 - statsmodels 0.14.6: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
 - patsy 1.0.2: model design matrices. https://github.com/pydata/patsy . BSD-2-Clause
+- pyhdf 0.11.7: reads the HDF4 burned-area files in `referee.py extract` only (one-off; not in `requirements.txt` because it has no build for Python 3.15). https://github.com/fhs/pyhdf . MIT
 - scipy 1.18.1: numerical routines used by statsmodels, and `scipy.stats.theilslopes` / `kendalltau` for the trend block (`trend_stats.py`). https://scipy.org . BSD-3-Clause
 - Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`, `unittest`, `pathlib`, `datetime`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line; the `tests/test_site_data.py` data checks. https://docs.python.org/3/library/ . PSF License 2.0
 
