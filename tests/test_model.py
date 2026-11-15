@@ -213,7 +213,9 @@ class ModelRunTests(unittest.TestCase):
         self.assertEqual(list(s), ["schema", "region", "monthly", "weekly", "calendar"])
         self.assertEqual((s["schema"], s["region"]), (1, RID))
         self.assertEqual(list(s["monthly"]), ["start_year", "bucketing", "modis", "viirs", "pred", "lo", "hi"])
-        self.assertEqual(list(s["weekly"]), ["start_year", "weeks_per_year", "modis", "viirs", "pred", "lo", "hi"])
+        self.assertEqual(list(s["weekly"]), ["start_year", "weeks_per_year", "modis", "viirs", "pred", "lo", "hi",
+                                             "last_week_days"])
+        self.assertEqual(s["weekly"]["last_week_days"], 8)   # whole year: week 51 of 2025 is 24-31 Dec
         for k in ("modis", "viirs", "pred", "lo", "hi"):
             self.assertEqual(len(s["monthly"][k]), 300, k)
             self.assertEqual(len(s["weekly"][k]), 1300, k)
@@ -242,6 +244,44 @@ class ModelRunTests(unittest.TestCase):
         self.assertEqual(r["draws"].shape, (5, 1300))
         np.testing.assert_allclose(np.round(r["pred"], 1), self.series["weekly"]["pred"], atol=1e-9)
         self.assertEqual(r["score"], self.annual["score"])
+
+
+class PartialYearRunTests(unittest.TestCase):
+    """ML-010: archive ends mid-week (Sun 2 Nov 2025, inside week 43 = 29 Oct-4 Nov). The partial week is kept,
+    monthly reaches October, data_through is the archive end, and the partial year is not scored."""
+    THROUGH = "2025-11-02"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp(prefix="test_model_partial_")
+        grid_dir, cls.out_dir = os.path.join(cls.tmp, "grid"), os.path.join(cls.tmp, "out")
+        os.makedirs(grid_dir)
+        g = synthetic_grid()
+        g[g.date <= cls.THROUGH].to_csv(os.path.join(grid_dir, f"fire_grid_daily_{RID}.csv"), index=False)
+        with open(os.path.join(grid_dir, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump({RID: {"archive_through": cls.THROUGH}}, f)
+        with contextlib.redirect_stdout(io.StringIO()):
+            cls.res = model.run(RID, nboot=5, grid_dir=grid_dir, out_dir=cls.out_dir)
+        cls.annual = load_strict(os.path.join(cls.out_dir, RID, "annual.json"))
+        cls.series = load_strict(os.path.join(cls.out_dir, RID, "series.json"))
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def test_annual_partial_year(self):
+        a = self.annual
+        self.assertEqual(a["data_through"], self.THROUGH)
+        self.assertEqual(a["partial"], [0] * 24 + [1])
+        self.assertEqual(a["score"]["n_hold"], 5)   # 2020-2024; partial 2025 is not scored
+
+    def test_series_reaches_last_whole_month(self):
+        m, w = self.series["monthly"], self.series["weekly"]
+        self.assertEqual(len(m["modis"]), 24 * 12 + 10)   # through October 2025
+        self.assertEqual(len(w["modis"]), 24 * 52 + 44)   # weeks 0-43 of 2025, the last one partial
+        self.assertEqual(w["last_week_days"], 5)
+        self.assertEqual(len(self.series["calendar"]["flag"]), 24 * 12 + 10)
+        self.assertEqual(self.series["calendar"]["baseline_years"], [2001, 2025])
 
 
 if __name__ == "__main__":

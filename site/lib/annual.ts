@@ -27,7 +27,7 @@ export type Annual = {
   hi: number[];
   score: Score;
   partial: number[]; // 1 = fewer than 52 kept weeks (the year still running, e.g. 2026)
-  data_through: string; // YYYY-MM-DD, last day of the last kept week
+  data_through: string; // YYYY-MM-DD, last day with data (the archive end; ML-010)
   // ML-009: published record = observed VIIRS weeks + model for weeks before VIIRS started (2012 weeks 0-2)
   harmonized: number[];
   viirs_partial: number[]; // 1 = blended year: observed VIIRS for part of it, model for the rest

@@ -17,8 +17,10 @@ import model  # noqa: E402  (nothing runs at import)
 from calendar_stats import calendar_block  # noqa: E402
 
 
-def days_per_week(weeks):
-    return np.array([(model.week_end(y, w) - model.week_start(y, w)).days + 1 for y, w in weeks], dtype=float)
+def days_per_week(weeks, through=None):
+    """Days with data per week (a partial last week counts only the days up to `through`)."""
+    end = (lambda y, w: model.week_end(y, w)) if through is None else (lambda y, w: model.covered_end(y, w, through))
+    return np.array([(end(y, w) - model.week_start(y, w)).days + 1 for y, w in weeks], dtype=float)
 
 
 class WeekTests(unittest.TestCase):
@@ -30,16 +32,56 @@ class WeekTests(unittest.TestCase):
         full = model.kept_weeks("2025-12-31")
         self.assertEqual(len(full), 25 * 52)
         self.assertEqual((full[0], full[-1]), ((2001, 0), (2025, 51)))
-        self.assertEqual(model.kept_weeks("2024-12-30")[-1], (2024, 50))   # week 51 not complete
-        self.assertEqual(model.kept_weeks("2025-06-17")[-1], (2025, 23))   # week 23 = 11-17 June
+        # ML-010: a week that has started is kept, even if it is not over yet (the last one is partial)
+        self.assertEqual(model.kept_weeks("2024-12-30")[-1], (2024, 51))   # week 51 (23-31 Dec), 8 of 9 days
+        self.assertEqual(model.kept_weeks("2025-06-17")[-1], (2025, 23))   # week 23 = 11-17 June, complete
+        self.assertEqual(model.kept_weeks("2026-11-02")[-1], (2026, 43))   # week 43 = 29 Oct-4 Nov, 5 days
+        self.assertEqual(model.covered_end(2026, 43, "2026-11-02"), pd.Timestamp(2026, 11, 2))
+        self.assertEqual(model.covered_end(2026, 42, "2026-11-02"), pd.Timestamp(2026, 10, 28))
 
 
 class SeriesBundleTests(unittest.TestCase):
     def bundle(self, through):
         weeks = model.kept_weeks(through)
-        days = days_per_week(weeks)   # one detection per day, so each month should get its number of days
+        days = days_per_week(weeks, through)   # one detection per day with data: each month gets its number of days
         wk = {"modis": days, "viirs": days, "pred": days}
-        return weeks, model.series_bundle("test", weeks, wk, np.tile(days, (3, 1)))
+        return weeks, model.series_bundle("test", weeks, wk, np.tile(days, (3, 1)), through)
+
+    def test_through_mid_week_keeps_last_full_month(self):
+        # ML-010: data to Mon 2 Nov 2026; the week 29 Oct-4 Nov is partial. October is whole, so monthly must reach
+        # October 2026 (310 months) and get all 31 of its days, including 29-31 Oct from the partial week.
+        weeks, b = self.bundle("2026-11-02")
+        m, w = b["monthly"], b["weekly"]
+        self.assertEqual(len(m["modis"]), 25 * 12 + 10)
+        self.assertEqual(m["modis"][-1], 31.0)
+        self.assertEqual(m["modis"][-2], 30.0)   # September untouched
+        self.assertEqual(len(w["modis"]), 25 * 52 + 44)
+        self.assertEqual(w["last_week_days"], 5)
+        self.assertEqual(w["modis"][-1], 5.0)
+        self.assertEqual(len(b["calendar"]["flag"]), 310)
+        self.assertEqual(b["calendar"]["baseline_years"], [2001, 2025])
+
+    def test_through_month_end_mid_week(self):
+        # Sat 31 May 2025 falls inside week 21 (28 May-3 Jun): May is complete and is the last month
+        _, b = self.bundle("2025-05-31")
+        self.assertEqual(len(b["monthly"]["modis"]), 24 * 12 + 5)
+        self.assertEqual(b["monthly"]["modis"][-1], 31.0)
+        self.assertEqual(b["weekly"]["last_week_days"], 4)
+
+    def test_through_dec_31_is_unchanged(self):
+        # a whole year: nothing partial, last week is the 8-day week 51 (2025 is not a leap year)
+        weeks, b = self.bundle("2025-12-31")
+        self.assertEqual(weeks[-1], (2025, 51))
+        self.assertEqual(len(b["monthly"]["modis"]), 300)
+        self.assertEqual(len(b["weekly"]["modis"]), 25 * 52)
+        self.assertEqual(b["weekly"]["last_week_days"], 8)
+
+    def test_through_early_january(self):
+        # 3 Jan 2026: a 3-day week 0 of 2026 is kept, but no month of 2026 is complete
+        _, b = self.bundle("2026-01-03")
+        self.assertEqual(len(b["monthly"]["modis"]), 300)
+        self.assertEqual(len(b["weekly"]["modis"]), 25 * 52 + 1)
+        self.assertEqual(b["weekly"]["last_week_days"], 3)
 
     def test_day_share_gives_days_per_month(self):
         _, b = self.bundle("2025-12-31")
