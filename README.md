@@ -178,6 +178,7 @@ Code
 
 Images
 - `site/public/scene/f000.webp` to `f359.webp` (360 frames, 1600 x 900): rendered by this project with Blender from `scripts/landing_scene/scene.py` (SRTM elevation and FIRMS detections cited above). No third-party image, model or texture.
+- `site/app/icon.svg` (the site icon, "Pixel Flame"): drawn for this project as plain SVG squares; coarse cells on the left and fine cells on the right stand for the MODIS 1 km and VIIRS 375 m pixel sizes cited above. Colours are the site's own theme colours. Served by Next.js's `icon` file convention (https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons). No third-party image, icon set or font.
 
 AI
 - Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude
