@@ -129,11 +129,26 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     mu_t = mu[tr]
     a_full = max(float(np.sum((y[tr] - mu_t) ** 2 - y[tr]) / np.sum(mu_t ** 2)), 1e-3)   # NB dispersion (Cameron-Trivedi)
 
-    # intervals: year-block bootstrap of the fit + negative-binomial sampling noise; keep only per-week sums
+    # year-level error (ML-002): refit without each training year, compare that year's predicted and observed totals.
+    # The bootstrap below misses this: its per-row noise averages out over a year, so annual bands came out ~2x too
+    # narrow (hold-out coverage 1-4 of 6). sigma_year = RMS of log(observed / predicted) over the 8 left-out years.
+    # Slightly conservative (it also holds parameter and count noise the bootstrap adds again). Thin: 8 years, F_FULL
+    # only, applied to every year; the 2001-2011 back-cast extrapolates, so its true year error may be larger.
     rows_by_year = {yr: np.flatnonzero(istrain & (yrs == yr)) for yr in TRAIN}
+    loyo = []
+    for yr in TRAIN:
+        p = fit(F_FULL, np.flatnonzero(istrain & (yrs != yr)))
+        r = rows_by_year[yr]
+        loyo.append(np.log(y[r].sum() / np.exp(X[F_FULL][r] @ p).sum()))
+    sigma_year = float(np.sqrt(np.mean(np.square(loyo))))
+    yidx = yrs - 2001                                                   # row -> year index, for one factor per year
+
+    # intervals: year-block bootstrap of the fit, a shared lognormal factor per year (mean 1, sd sigma_year in log
+    # terms), then negative-binomial sampling noise; keep only per-week sums
     draws = np.empty((nboot, nw))
     for b in range(nboot):
         mub = predict(np.concatenate([rows_by_year[yr] for yr in rng.choice(list(TRAIN), len(TRAIN))]))
+        mub *= np.exp(sigma_year * rng.standard_normal(yidx.max() + 1) - sigma_year ** 2 / 2)[yidx]
         draws[b] = np.bincount(widx, weights=rng.poisson(mub * rng.gamma(1 / a_full, a_full, len(mub))), minlength=nw)
 
     wk_modis = np.bincount(widx, weights=w.modis_n.values, minlength=nw)
@@ -160,7 +175,7 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         "mape_ratio": float((abs(h.modis_n * ratio - h.viirs_n) / h.viirs_n).mean() * 100),
         "coverage": int(((h.viirs_n >= h.lo) & (h.viirs_n <= h.hi)).sum()), "n_hold": len(h),
         "ratio": float(ratio), "alpha": a_full,
-        "weekly_r": float(np.corrcoef(wk_pred[hm], wk_viirs[hm])[0, 1]),
+        "weekly_r": float(np.corrcoef(wk_pred[hm], wk_viirs[hm])[0, 1]), "sigma_year": sigma_year,
     }
     out = {"years": [int(v) for v in ann.index], "modis": [float(v) for v in ann.modis_n],
            "viirs": [None if np.isnan(v) else float(v) for v in ann.viirs_n],

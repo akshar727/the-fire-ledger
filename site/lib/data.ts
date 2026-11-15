@@ -18,6 +18,7 @@ export type Score = {
   ratio: number;
   alpha: number;
   weekly_r: number;
+  sigma_year: number; // year-level error (RMS of log obs/pred, leave-one-year-out on 2012-2019); sizes the band
 };
 
 /** Annual series, one entry per year. `viirs` is null before 2012. */

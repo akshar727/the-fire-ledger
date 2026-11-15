@@ -79,8 +79,11 @@ export default function MethodPage() {
           </p>
           <p>
             The band shows the 5th to 95th percentile of 200 simulated yearly totals. Each simulation refits the model
-            on training years drawn with replacement, then adds count noise from a negative binomial distribution, so
-            the band covers both model uncertainty and year-to-year randomness.
+            on training years drawn with replacement, scales each year up or down by one shared random factor, then
+            adds count noise from a negative binomial distribution. The yearly factor is sized from how far off the
+            model was for each training year when that year was left out of the fit (about{" "}
+            {(score.sigma_year * 100).toFixed(0)}% here), so the band covers model uncertainty, whole-year departures
+            and count noise.
           </p>
         </section>
 

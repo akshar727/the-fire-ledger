@@ -170,11 +170,12 @@ class SiteDataTests(unittest.TestCase):
                 self.assertTrue("score" in a, f"{p}: missing key score")
                 sc = a["score"]
                 self.assertIsInstance(sc, dict, f"{p}: score")
-                for k in ("mape_model", "mape_ratio", "coverage", "n_hold", "ratio", "alpha", "weekly_r"):
+                for k in ("mape_model", "mape_ratio", "coverage", "n_hold", "ratio", "alpha", "weekly_r", "sigma_year"):
                     self.assertTrue(k in sc, f"{p}: score.{k} missing")
                     self.assertTrue(is_num(sc[k]), f"{p}: score.{k}={sc[k]!r} not a number")
                 self.assertTrue(is_int(sc["coverage"]) and is_int(sc["n_hold"]), f"{p}: coverage/n_hold ints")
                 self.assertTrue(0 <= sc["coverage"] <= sc["n_hold"], f"{p}: coverage out of range")
+                self.assertTrue(0 < sc["sigma_year"] < 1, f"{p}: sigma_year={sc['sigma_year']} outside (0, 1)")
                 if "partial" in a:
                     self.assertEqual(len(a["partial"]), n, f"{p}: partial length")
                     self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["partial"]), f"{p}: partial values")
