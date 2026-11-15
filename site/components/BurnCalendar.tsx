@@ -14,6 +14,7 @@ import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, GlobeHem
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Disclosure } from "@/components/Disclosure";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { PlayCalendar } from "@/components/PlayCalendar";
 import { SpaceView } from "@/components/SpaceView";
@@ -21,7 +22,7 @@ import { fetchSeries, fetchWeather, regionInfo, type RegionId, type SeriesResult
 import { SEASON_DRIVER, summarySentence, weatherSentence, weatherSummary, type Weather, type WeatherSummary } from "@/lib/weather";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
-import { REGIONS } from "@/lib/regions";
+import { isCountry, REGIONS } from "@/lib/regions";
 import { rawValues } from "@/lib/sonify";
 import type { CalendarView as View } from "@/lib/selection";
 import {
@@ -152,6 +153,8 @@ function CalendarView({
 }) {
   const mode = useColorMode();
   const week = grid.view === "week";
+  // DP-009: a whole country has no peaks.json, so it gets no "see it from space" (the button would open nothing)
+  const noSpace = week || isCountry(label.region);
   const stats = week ? undefined : monthStats; // medians and flags are per month
   const unit = week ? "week" : "month";
   const [active, setActive] = useState<CalendarCell | null>(null);
@@ -163,7 +166,7 @@ function CalendarView({
   const [space, setSpace] = useState<{ year: number; month: number; opened: number } | null>(null);
   const spaceTrigger = useRef<HTMLElement | null>(null);
   const openSpace = (cell: CalendarCell) => {
-    if (week || cell.value == null) return;
+    if (noSpace || cell.value == null) return;
     spaceTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setSpace((s) => ({ year: cell.year, month: cell.month, opened: (s?.opened ?? 0) + 1 }));
   };
@@ -230,7 +233,7 @@ function CalendarView({
 
   const onKey = (e: KeyboardEvent<HTMLTableElement>) => {
     const [r, c] = focus;
-    if (e.key === "Enter" && !week && (e.target as HTMLElement).closest("[data-cell]")) {
+    if (e.key === "Enter" && !noSpace && (e.target as HTMLElement).closest("[data-cell]")) {
       e.preventDefault();
       openSpace(grid.rows[r][c]);
       return;
@@ -254,7 +257,10 @@ function CalendarView({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
+      {/* FE-025: on a wide screen the card and legend are a column beside the calendar, so the headline number and the
+          calendar's first rows share the first screen; narrower, they stack above it as before */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)] xl:items-start">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end xl:flex xl:flex-col xl:items-stretch">
         {latestMonth &&
           (mtd && latestMonth.partial ? (
             <MonthToDateCard
@@ -262,10 +268,10 @@ function CalendarView({
               mtd={mtd}
               snppEnd={snppEnd}
               weather={weather}
-              onSpace={week ? undefined : () => openSpace(latestMonth)}
+              onSpace={noSpace ? undefined : () => openSpace(latestMonth)}
             />
           ) : (
-            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={week ? undefined : () => openSpace(latestMonth)} />
+            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={noSpace ? undefined : () => openSpace(latestMonth)} />
           ))}
         <Legend
           max={grid.max}
@@ -306,11 +312,11 @@ function CalendarView({
             </ToggleGroup>
           )}
         </div>
-        <div className="mb-3">
+        <div className="mb-2">
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.${week ? "" : " Click a month or press Enter to see it from space."}`}
+          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read it${noSpace ? "." : "; click or press Enter to see it from space."}`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -326,7 +332,7 @@ function CalendarView({
               Harmonized {week ? "weekly" : "monthly"} fire detections. Values are VIIRS observations from{" "}
               {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and model back-casts before.
               {shownForward && ` ${forwardSentence(snppEnd)}`}
-              {!week && " Press Enter on a month to see it from space."}
+              {!noSpace && " Press Enter on a month to see it from space."}
             </caption>
             {week && (
               // fixed layout + one <col> per week keeps all 52 columns the same width (the month headers span several)
@@ -407,7 +413,7 @@ function CalendarView({
                           setAnnounce(describe(cell, stats, snppEnd));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className={`relative ${week ? "h-5" : "h-8 cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
+                        className={`relative ${week ? "h-5" : "h-8"} ${noSpace ? "" : "cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                       >
                         {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
                         {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
@@ -453,8 +459,8 @@ function CalendarView({
         </div>
         {week ? (
           <p className="mt-4 text-sm text-muted-foreground">
-            Week w of a year is days 7w+1 to 7w+7, so weeks start on the same date every year and the last week runs to
-            31 December (8 or 9 days). Monthly medians and unusual-month marks are in the month view.
+            Week w is days 7w+1 to 7w+7 of the year (the last runs to 31 December); medians and unusual-month marks are in
+            the month view.
           </p>
         ) : (
           !stats && (
@@ -471,7 +477,8 @@ function CalendarView({
           />
         </div>
       </section>
-      {!week && space && (
+      </div>
+      {!noSpace && space && (
         <SpaceView region={label.region} year={space.year} month={space.month} opened={space.opened} onClose={closeSpace} />
       )}
       {!week && summary && <WeatherSummaryBlock summary={summary} region={label.region} />}
@@ -541,11 +548,16 @@ function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; 
         </table>
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
-        NASA POWER daily weather (hot, dry air times wind, damped by the last 30 days of rain), averaged over the region
-        where its fires are. Chance alone would put about {Math.round(100 * s.baseShare)}% of months in that column.
-        Weather is shown next to the record, never used to make it.
+        Chance alone would put about {Math.round(100 * s.baseShare)}% of months in the fire-prone (top-quarter weather) column.
       </p>
+      {/* FE-025: the method note, on request */}
+      <Disclosure summary="How fire-prone weather is measured">
+        <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
+          Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
+          NASA POWER daily weather (hot, dry air times wind, damped by the last 30 days of rain), averaged over the region
+          where its fires are. Weather is shown next to the record, never used to make it.
+        </p>
+      </Disclosure>
     </section>
   );
 }
@@ -803,10 +815,10 @@ function Legend({
 
 export function CalendarSkeleton() {
   return (
-    <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading the calendar">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)] xl:items-start" aria-busy="true" aria-label="Loading the calendar">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:flex xl:flex-col">
         <div className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
-        <div className="h-16 animate-pulse self-end rounded-md bg-muted motion-reduce:animate-none" />
+        <div className="h-16 animate-pulse self-end rounded-md bg-muted motion-reduce:animate-none xl:self-stretch" />
       </div>
       <div className="grid grid-cols-[5rem_repeat(12,minmax(0,1fr))] gap-[3px] panel p-4 sm:p-6">
         {Array.from({ length: 13 * 10 }, (_, i) => (

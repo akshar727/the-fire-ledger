@@ -157,8 +157,9 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
   const year = tour?.switchYear ?? grid.firstObserved?.year ?? 2012;
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:p-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    // FE-025: button and its one-sentence caption on one line where they fit, no box, so the calendar starts higher
+    <div className="flex flex-col gap-x-4 gap-y-1.5 sm:flex-row sm:items-center">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
         <Button
           size="sm"
           onClick={() => (playing ? stop() : play())}
@@ -173,13 +174,12 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
           {now}
         </p>
       </div>
-      <p id={captionId} className="max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
+      <p id={captionId} className="max-w-[70ch] text-xs leading-relaxed text-muted-foreground">
         {tour ? (
           <>
-            Plays {tour.years[0]} to {tour.years[1]} as notes, twice: <strong className="font-medium text-foreground">higher note = more fire</strong>.
-            First the raw record, where the notes step up in {year}: VIIRS, the newer satellite sensor, sees more fires
-            than MODIS did. Then the harmonized record, where the step is gone or nearly gone: it was the satellite
-            changing, not the fire.
+            Plays {tour.years[0]} to {tour.years[1]} twice, <strong className="font-medium text-foreground">higher note = more fire</strong>:
+            the raw record steps up in {year} when VIIRS takes over, the harmonized one barely does, because it was the
+            satellite changing, not the fire.
           </>
         ) : (
           `Choose dates that include ${year} and at least one year before it to hear the satellite jump.`

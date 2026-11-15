@@ -4,9 +4,10 @@
 // season since the record starts, with the forecast range to season end and how that forecast did on past seasons.
 // Every number comes from `outlook()` (lib/outlook.ts, FE-021) on the weekly harmonized record in series.json; the
 // sentences and the week-by-week range are in lib/outlook-view.ts. The date range above does not change it: it is
-// always the latest season.
+// always the latest season. FE-017: the season timing section (SeasonTiming) follows, drawn from the same outlook.
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { DownloadPicture } from "@/components/DownloadPicture";
+import { SeasonTiming } from "@/components/SeasonTiming";
 import { dayLabel, forwardFrom, lastCompleteYear, type Annual } from "@/lib/annual";
 import { fetchSeries, REGION_LIST, type RegionId } from "@/lib/data";
 import { cumAt, outlook, quantile, type Outlook, type Season } from "@/lib/outlook";
@@ -65,26 +66,30 @@ export function SeasonOutlook({ data, regionId, region }: { data: Annual; region
   const cur = loaded?.region === regionId ? loaded : null;
 
   return (
-    <section aria-labelledby="outlook-heading" className="flex flex-col gap-6 panel p-4 sm:p-6">
-      <div className="flex max-w-[70ch] flex-col gap-2">
-        <h2 id="outlook-heading" className="text-2xl font-semibold tracking-tight">
-          This fire season so far
-        </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Each line is one fire season&apos;s running total in {region} (harmonized record, starting in the quietest week, so
-          a season across New Year stays whole); always the latest season, whatever the dates above.
-        </p>
-      </div>
-      {cur == null ? (
-        <div className="aspect-[800/360] w-full animate-pulse rounded-lg bg-muted motion-reduce:animate-none" role="status" aria-label="Loading the season outlook" />
-      ) : cur.status === "failed" || !cur.o ? (
-        <p className="text-sm text-muted-foreground" role="status">
-          Season outlook not available: {cur.status === "failed" ? cur.message : "no complete past season to compare with."}
-        </p>
-      ) : (
-        <OutlookChart o={cur.o} weekly={cur.weekly} data={data} regionId={regionId} region={region} />
-      )}
-    </section>
+    <>
+      <section aria-labelledby="outlook-heading" className="flex flex-col gap-6 panel p-4 sm:p-6">
+        <div className="flex max-w-[70ch] flex-col gap-2">
+          <h2 id="outlook-heading" className="text-2xl font-semibold tracking-tight">
+            This fire season so far
+          </h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Each line is one fire season&apos;s running total in {region} (harmonized record, starting in the quietest week, so
+            a season across New Year stays whole); always the latest season, whatever the dates above.
+          </p>
+        </div>
+        {cur == null ? (
+          <div className="aspect-[800/360] w-full animate-pulse rounded-lg bg-muted motion-reduce:animate-none" role="status" aria-label="Loading the season outlook" />
+        ) : cur.status === "failed" || !cur.o ? (
+          <p className="text-sm text-muted-foreground" role="status">
+            Season outlook not available: {cur.status === "failed" ? cur.message : "no complete past season to compare with."}
+          </p>
+        ) : (
+          <OutlookChart o={cur.o} weekly={cur.weekly} data={data} regionId={regionId} region={region} />
+        )}
+      </section>
+      {/* FE-017: 10% / 50% / 90% dates of every whole season, on the same seasons */}
+      {cur?.status === "ready" && cur.o && <SeasonTiming o={cur.o} regionId={regionId} region={region} />}
+    </>
   );
 }
 

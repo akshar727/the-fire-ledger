@@ -17,7 +17,8 @@ export const STORY_REGION: RegionId = "ghana";
 const file = (...p: string[]) => path.join(process.cwd(), "public", "data", ...p);
 
 export function loadStory() {
-  const counts = REGION_LIST.map((r) => {
+  // DP-009: detection counts come from the point files, which whole countries do not have
+  const counts = REGION_LIST.filter((r) => r.tier === "region").map((r) => {
     const sensors = regionIndex.regions.find((x) => x.id === r.id)!.sensors;
     return { id: r.id, name: REGIONS[r.id], rows: r.point_rows, since: sensors.terra.first_date, through: r.data_through };
   });

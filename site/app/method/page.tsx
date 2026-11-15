@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { dayLabel, HOLD_FROM, holdoutYears, isPartial, VIIRS_FROM, type Annual, type ForwardScore } from "@/lib/annual";
 import { loadAnnual, loadReferee, recordSpan, REGION_LIST, REGIONS } from "@/lib/data";
 import { backcastOffset, nearLevel, stepLabel, stepRange } from "@/lib/referee";
+import { SAT } from "@/components/story/FireFootprints";
+import { PIXEL_M, SCENE_BBOX, STORY_FIRE, utc } from "@/lib/story";
+import { loadStory } from "@/lib/story-data";
 
 export const metadata: Metadata = { title: "Method" };
 
 const SECTIONS = [
+  { id: "scene", title: "The opening scene" },
   { id: "problem", title: "The problem" },
   { id: "harmonization", title: "How the conversion works" },
   { id: "holdout", title: "What the hold-out shows" },
@@ -17,13 +22,21 @@ const SECTIONS = [
 const ARCHIVE_URL = "https://firms.modaps.eosdis.nasa.gov/country/";
 const AREA_API_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/";
 
-// Every region, in index.json order, with its annual record (scores, years) and display name.
-const RECORDS = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id) }));
+// Every region, in index.json order, with its annual record (scores, years) and display name. DP-009: the cell regions
+// make up the main text and table; whole countries get their own table under the hold-out.
+const ALL = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id), through: r.data_through, tier: r.tier }));
+const RECORDS = ALL.filter((r) => r.tier === "region");
+const COUNTRY_RECORDS = ALL.filter((r) => r.tier === "country");
 const SPAN = recordSpan();
 const REF = loadReferee();
 // End of the downloaded record (index.json archive_through, the same for every region), e.g. 2026-11-02.
-const THROUGH = REGION_LIST.map((r) => r.data_through).sort().at(-1)!;
+const THROUGH = RECORDS.map((r) => r.through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
+
+// FE-019: the landing page's scroll scene, described from the same files it is drawn from
+const STORY = loadStory();
+const deg = (v: number, pos: string, neg: string) => `${Math.abs(v)}° ${v >= 0 ? pos : neg}`;
+const SCENE_AREA = `${deg(SCENE_BBOX.s, "N", "S")} to ${deg(SCENE_BBOX.n, "N", "S")}, ${deg(SCENE_BBOX.w, "E", "W")} to ${deg(SCENE_BBOX.e, "E", "W")}`;
 
 const pct = (v: number) => `${v.toFixed(1)}%`;
 // FE-009: regions whose annual.json carries the NOAA-20/21 forward link (ML-017), with its hold-out score
@@ -63,6 +76,10 @@ const DATA_SOURCES = [
       ]
     : []),
   {
+    name: `NASA SRTM GL3 elevation (about 90 m), ${SCENE_AREA}, for the landing-page scene`,
+    url: "https://doi.org/10.5067/MEASURES/SRTM/SRTMGL3.003",
+  },
+  {
     name: `MODIS burned area, ${REF.product_short}, 0.25° monthly (University of Maryland), for the independent check`,
     url: "https://doi.org/10.5067/MODIS/MCD64A1.006",
   },
@@ -74,6 +91,7 @@ const SOFTWARE = [
   ["Next.js, React", "This website"],
   ["Tailwind CSS, shadcn/ui, Radix UI", "Styling and interface components"],
   ["Phosphor Icons, Work Sans, IBM Plex Mono", "Icons and typefaces"],
+  ["Blender", "Rendering the landing-page scene"],
 ] as const;
 
 export default function MethodPage() {
@@ -110,6 +128,48 @@ export default function MethodPage() {
             How we turn two satellite fire records into one, and how far the result can be trusted.
           </p>
         </header>
+
+        <section id="scene">
+          <h2>The opening scene</h2>
+          <p>
+            On a wide screen, the{" "}
+            <Link className="underline underline-offset-2 hover:text-foreground" href="/">
+              landing page
+            </Link>{" "}
+            scrolls over a 3D scene: hills at sunset, a fire on the ridge ahead, two satellites passing overhead, then
+            thousands of small squares that fall into a calendar. It is not a made-up landscape. It is a real place on
+            a real day, built from the same NASA data as the rest of this site.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">The fire is the Pedrógão Grande fire</span> in central
+            Portugal, which started on 17 June {STORY.scene.year}. The scene opens at the end of that afternoon, looking
+            at the hills where it burned. On {dayLabel(STORY_FIRE.date)}, {SAT[STORY.fire.modis.satellite] ?? STORY.fire.modis.satellite}{" "}
+            passed over at {utc(STORY.fire.modis.time)} and recorded {STORY.fire.modis.points.length} hot pixels there;{" "}
+            {STORY.fire.gapMinutes} minutes later {SAT[STORY.fire.viirs.satellite] ?? STORY.fire.viirs.satellite}{" "}
+            recorded {STORY.fire.viirs.points.length}. Those are the two passes the scene shows, each square appearing
+            under the scan line of the satellite that made it.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">The ground is real.</span> The terrain is NASA Shuttle Radar
+            Topography Mission elevation (SRTM, about 90 m) for {SCENE_AREA}, the area around the fire. Heights are
+            stretched 2.5 times so the hills read from far above.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Every square is a real detection.</span> As you scroll, all{" "}
+            {STORY.scene.detections.toLocaleString("en-US")} FIRMS fire detections in that area in {STORY.scene.year}{" "}
+            switch on in date order at the place they were seen, each drawn at its sensor&apos;s pixel size (MODIS{" "}
+            {PIXEL_M.modis / 1000} km, VIIRS {PIXEL_M.viirs} m). They then stack into one column per day of the year,
+            and finally settle into a 26-year by 12-month grid in proportion to Portugal&apos;s harmonized monthly
+            record, the one described below.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">What is decoration.</span> The trees, grass, smoke, embers,
+            clouds, sky, sun and the satellite models are simple shapes drawn by our script to make the place readable;
+            they carry no data. The frames are rendered in Blender from this project&apos;s own files, with no
+            imported models, textures or AI-generated images. On small screens, or with reduced motion turned on, the
+            scene is left out and the page tells the same story with plain charts.
+          </p>
+        </section>
 
         <section id="problem">
           <h2>The problem</h2>
@@ -153,75 +213,7 @@ export default function MethodPage() {
             MODIS alone, and we compare that with what VIIRS actually saw. The baseline is the simplest possible
             conversion: one constant VIIRS-to-MODIS factor per region, taken from the same training years.
           </p>
-          <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[34rem] text-sm">
-              <caption className="sr-only">Hold-out scores per region, {h0}-{h1}</caption>
-              <thead className="bg-muted/50 text-left">
-                <tr>
-                  <th scope="col" className="px-3 py-2 font-medium">
-                    {h0}-{h1}
-                  </th>
-                  {RECORDS.map((r) => (
-                    <th key={r.id} scope="col" className="px-3 py-2 font-medium">
-                      {r.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y text-muted-foreground tabular-nums">
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Model, mean annual error
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {pct(r.D.score.mape_model)}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Constant factor, mean annual error
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {pct(r.D.score.mape_ratio)} (×{r.D.score.ratio.toFixed(2)})
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Smaller error
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 font-medium whitespace-nowrap text-foreground">
-                      {r.D.score.mape_model < r.D.score.mape_ratio ? "Model" : "Constant factor"}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Years inside the 5-95% band
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {coverageText(r.D)}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Weekly correlation r
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {r.D.score.weekly_r.toFixed(3)}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ScoreTable records={RECORDS} caption="Hold-out scores per region" />
           {losers.length > 0 && (
             <p>
               {losers.map((r, i) => (
@@ -234,6 +226,19 @@ export default function MethodPage() {
                 </span>
               ))}
             </p>
+          )}
+          {COUNTRY_RECORDS.length > 0 && (
+            <>
+              <h3 id="countries" className="text-base font-semibold text-foreground">
+                Whole countries: whole-country runs of the same model
+              </h3>
+              <p>
+                The same model and the same test, run on every fire in a whole country instead of a box. Country records
+                end with the FIRMS yearly archive ({dayLabel(COUNTRY_RECORDS[0].through)}), so they have no forward link,
+                no per-detection download, no weather and no burned-area check.
+              </p>
+              <ScoreTable records={COUNTRY_RECORDS} caption="Hold-out scores per whole country" />
+            </>
           )}
           {FORWARD.length > 0 && (
             <p id="forward-link">
@@ -446,5 +451,85 @@ export default function MethodPage() {
         </section>
       </article>
     </main>
+  );
+}
+
+type Rec = { id: string; name: string; D: Annual; through: string };
+
+/** Hold-out scores, one column per record (FE-007 table; DP-009 also draws it for whole countries). */
+function ScoreTable({ records, caption }: { records: Rec[]; caption: string }) {
+  const [h0, h1] = holdoutYears(records[0].D);
+  return (
+    <div className="overflow-x-auto rounded-xl border">
+      <table className="w-full min-w-[34rem] text-sm">
+        <caption className="sr-only">
+          {caption}, {h0}-{h1}
+        </caption>
+        <thead className="bg-muted/50 text-left">
+          <tr>
+            <th scope="col" className="px-3 py-2 font-medium">
+              {h0}-{h1}
+            </th>
+            {records.map((r) => (
+              <th key={r.id} scope="col" className="px-3 py-2 font-medium">
+                {r.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y text-muted-foreground tabular-nums">
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Model, mean annual error
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {pct(r.D.score.mape_model)}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Constant factor, mean annual error
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {pct(r.D.score.mape_ratio)} (×{r.D.score.ratio.toFixed(2)})
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Smaller error
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 font-medium whitespace-nowrap text-foreground">
+                {r.D.score.mape_model < r.D.score.mape_ratio ? "Model" : "Constant factor"}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Years inside the 5-95% band
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {coverageText(r.D)}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Weekly correlation r
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {r.D.score.weekly_r.toFixed(3)}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -6,13 +6,15 @@
 // "Download analytics" links to /api/series. The FIRMS acknowledgment sits next to the buttons (nothing is added
 // inside the CSV). FE-020: an optional latitude/longitude box (?bbox=, BoxFilter) narrows the "Download CSV" link; the
 // whole-year files and the analytics stay whole-region. A box in the URL that misses the region is ignored, and said so.
-import { DownloadSimpleIcon } from "@phosphor-icons/react";
+// DP-009: a whole country has no point files, so "Download CSV" becomes a link to the FIRMS country archive and the box
+// filter is not offered; analytics work as for any region.
+import { ArrowSquareOutIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { BoxFilter } from "@/components/BoxFilter";
 import { Disclosure } from "@/components/Disclosure";
 import { FirmsAcknowledgment } from "@/components/FirmsAcknowledgment";
 import { Button } from "@/components/ui/button";
 import { regionInfo } from "@/lib/data";
-import { REGIONS } from "@/lib/regions";
+import { isCountry, REGIONS } from "@/lib/regions";
 import {
   boxesOverlap,
   boxLabel,
@@ -28,6 +30,7 @@ import {
 import { useBox, useSelection } from "@/lib/use-selection";
 
 const fmt = (v: number) => v.toLocaleString("en-US");
+const FIRMS_COUNTRY_ARCHIVE = "https://firms.modaps.eosdis.nasa.gov/country/";
 
 export function DownloadCsv() {
   const { sel, bounds } = useSelection();
@@ -38,7 +41,8 @@ export function DownloadCsv() {
   const earlier = yearsBefore(bounds, regionInfo(sel.region).point_years);
   const [urlBox, setBox] = useBox();
   const rbox = regionBox(regionInfo(sel.region).bbox);
-  const box = urlBox && boxesOverlap(urlBox, rbox) ? urlBox : null;
+  const country = isCountry(sel.region);
+  const box = !country && urlBox && boxesOverlap(urlBox, rbox) ? urlBox : null;
 
   return (
     <section aria-labelledby="download-heading" className="grid gap-8 panel p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
@@ -48,7 +52,7 @@ export function DownloadCsv() {
             Download the detections
           </h2>
           <p className="max-w-[60ch] leading-relaxed text-muted-foreground">
-            Every FIRMS hotspot in {REGIONS[sel.region]}
+            {country ? "Monthly fire counts for" : "Every FIRMS hotspot in"} {REGIONS[sel.region]}
             {box && (
               <>
                 {" "}
@@ -57,12 +61,20 @@ export function DownloadCsv() {
             )}{" "}
             from{" "}
             <span className="font-mono text-foreground tabular-nums">{sel.from}</span> to{" "}
-            <span className="font-mono text-foreground tabular-nums">{sel.to}</span> ({fmt(days)} days), raw detections,
-            not harmonized; analytics are the monthly counts with their 5-95% band.
+            <span className="font-mono text-foreground tabular-nums">{sel.to}</span> ({fmt(days)} days)
+            {country
+              ? ": MODIS, VIIRS and harmonized, with the 5-95% band."
+              : ", raw detections, not harmonized; analytics are the monthly counts with their 5-95% band."}
           </p>
         </div>
 
-        {urlBox && !box && (
+        {country && (
+          <p className="max-w-[60ch] text-sm leading-relaxed">
+            Per-detection files are not available for a whole country here; the FIRMS country archive has them, one file per
+            year and sensor.
+          </p>
+        )}
+        {!country && urlBox && !box && (
           <p className="max-w-[60ch] text-sm leading-relaxed">
             The box in this link ({boxLabel(urlBox)}) is outside {REGIONS[sel.region]}, so the CSV covers the whole
             region.
@@ -75,7 +87,15 @@ export function DownloadCsv() {
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
-          {fits ? (
+          {country ? (
+            <Button asChild size="lg" className="px-4">
+              <a href={FIRMS_COUNTRY_ARCHIVE} target="_blank" rel="noreferrer">
+                <ArrowSquareOutIcon aria-hidden />
+                FIRMS country archive
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            </Button>
+          ) : fits ? (
             <Button asChild size="lg" className="px-4">
               <a href={hotspotsUrl(sel, box)} download>
                 <DownloadSimpleIcon aria-hidden />
@@ -94,7 +114,7 @@ export function DownloadCsv() {
             </a>
           </Button>
         </div>
-        {!fits && (
+        {!country && !fits && (
           <p id="download-limit" className="max-w-[60ch] text-sm leading-relaxed">
             One download covers up to {MAX_SPAN_DAYS} days. Narrow the dates or pick one year above, or use the yearly
             files just below.
@@ -104,15 +124,17 @@ export function DownloadCsv() {
         {/* FE-025: everything past the two buttons on request; open when a box came in the link */}
         <Disclosure summary="Whole-year files and more download options" defaultOpen={!!urlBox}>
           <div className="flex flex-col gap-5">
-            <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-              Each CSV row: date, time (UTC), latitude, longitude, satellite, confidence, fire radiative power and day or
-              night.
-            </p>
-            <BoxFilter box={box} region={rbox} regionName={REGIONS[sel.region]} onApply={setBox} />
+            {!country && (
+              <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+                Each CSV row: date, time (UTC), latitude, longitude, satellite, confidence, fire radiative power and day
+                or night.
+              </p>
+            )}
+            {!country && <BoxFilter box={box} region={rbox} regionName={REGIONS[sel.region]} onApply={setBox} />}
             <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
               Analytics: monthly MODIS, VIIRS and harmonized counts with the 5-95% band for the same months, and where each
-              value comes from (back-cast, observed, or forward link from NOAA-20/21), with the last month marked if it is
-              still running (also as{" "}
+              value comes from ({country ? "back-cast or observed" : "back-cast, observed, or forward link from NOAA-20/21"}),
+              with the last month marked if it is still running (also as{" "}
               <a className="underline underline-offset-2 hover:text-foreground" href={`/data/${sel.region}/series.json`}>
                 JSON
               </a>

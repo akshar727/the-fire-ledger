@@ -138,6 +138,13 @@ class SiteDataTests(unittest.TestCase):
                 self.assertTrue(is_int(pr) and pr >= 0, f"{p}:{rid}: point_rows")
                 if not py:
                     self.assertEqual(pr, 0, f"{p}:{rid}: point_rows must be 0 with no point_years")
+                # DP-009: tier (site_bundle.py adds whole countries, which never have point files)
+                tier = r.get("tier", "region")
+                self.assertIn(tier, ("region", "country"), f"{p}:{rid}: tier")
+                if tier == "country":
+                    self.assertEqual(py, [], f"{p}:{rid}: a whole country has no point files")
+                for k in ("short_name", "season", "caveat"):
+                    self.assertTrue(k not in r or (isinstance(r[k], str) and r[k]), f"{p}:{rid}: {k}")
 
     def test_folders_match_regions(self):
         ids = set(self.region_ids())
