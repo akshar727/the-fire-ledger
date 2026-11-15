@@ -72,6 +72,11 @@ def new_mesh(name, co, faces, smooth_shading=True):
     return me
 
 
+def show(ob, visible):
+    """Shows or hides an object in renders and in the viewport alike, so scrubbing an open Blender matches the frames."""
+    ob.hide_render = ob.hide_viewport = not visible
+
+
 def add_object(name, data, material=None):
     ob = bpy.data.objects.new(name, data)
     bpy.context.scene.collection.objects.link(ob)
@@ -827,6 +832,27 @@ def build_scan(name, color, width):
     return line, fan, width
 
 
+FLY_ON = 8.0  # story frames before and after its pass a satellite may still be flying through the picture
+
+
+def in_view(scene, camera, sat, scan, scale):
+    """Whether any of the satellite (its body and wings), its fan or its ground line is inside the camera's frame."""
+    from bpy_extras.object_utils import world_to_camera_view
+    c = Vector(sat.location)
+    pts = [c + Vector((dx, dy, dz)) * scale for dx in (-3.5, 3.5) for dy in (-1, 1) for dz in (-1, 1)]
+    co = np.zeros(len(scan[0].data.vertices) * 3, dtype=np.float32)
+    scan[0].data.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    pts += [Vector(v) for v in co[:: 12]]  # the ground line, every 3 km
+    foot = Vector(co[len(co) // 4])  # the middle of the line's near edge, under the satellite
+    pts += [c.lerp(foot, k / 10) for k in range(1, 10)]  # down the fan
+    for p in pts:
+        x, y, z = world_to_camera_view(scene, camera, p)
+        if z > 0 and -0.02 <= x <= 1.02 and -0.02 <= y <= 1.02:
+            return True
+    return False
+
+
 def place_scan(S, scan, s, c_sat, apex):
     """Puts the ground line at `s` km along the track (centred under the satellite, `c_sat` km across) and the fan
     between it and the instrument at `apex`."""
@@ -960,7 +986,7 @@ def ember_state(E, t):
 
 def update_embers(E, t, eye, right, up, lens, gain):
     ob = E["object"]
-    ob.hide_render = gain <= 0
+    show(ob, gain > 0)
     if ob.hide_render:
         return
     pos, size, glow = ember_state(E, t)
@@ -1119,8 +1145,7 @@ def apply(S, frame):
     c = L.camera(dem, t)
     eye, target = Vector(c["eye"]), Vector(c["target"])
     fwd = (target - eye).normalized()
-    w = smooth((t - 30.0) / 24.0)  # up is the sky near the ground, north once we look straight down
-    hint = (Vector((0, 0, 1)) * (1 - w) + Vector((0, 1, 0)) * w).normalized()
+    hint = Vector(c["up"])  # the sky near the ground, north looking straight down, the far side while orbiting
     right = fwd.cross(hint).normalized()
     up = right.cross(fwd)
     S["camera"].matrix_world = Matrix(((right.x, up.x, -fwd.x, eye.x), (right.y, up.y, -fwd.y, eye.y),
@@ -1138,7 +1163,7 @@ def apply(S, frame):
     S["sun"].rotation_euler = (-sun).to_track_quat("-Z", "Y").to_euler()
     S["sun"].data.energy = ramp(t, [(0, 4.2), (12, 3.4), (20, 1.8), (25, 0.5), (27, 0.0)])
     S["sun"].data.color = [ramp(t, [(0, a), (14, b), (24, c)]) for a, b, c in zip((1.0, 0.88, 0.72), (1.0, 0.68, 0.42), (1.0, 0.46, 0.22))]
-    S["sun"].hide_render = t >= 27
+    show(S["sun"], t < 27)
     world = S["world"]
     world.node_tree.nodes["to_sun"].inputs[1].default_value = sun
     world.node_tree.nodes["sun_colour"].inputs["Color1"].default_value = (
@@ -1166,10 +1191,10 @@ def apply(S, frame):
     air = S["air"].data.materials[0]
     value(air, "smoke").default_value = ramp(t, [(0, 0.6), (24, 1.0), (40, 1.0), (56, 0.45), (90, 0.25), (120, 0.0)])
     value(air, "haze").default_value = ramp(t, [(0, 0.12), (20, 0.25), (34, 1.0), (40, 1.0), (60, 0.25), (110, 0.0)])  # thin in daylight
-    S["air"].hide_render = t >= 120
-    S["forest"].hide_render = t > 60
-    S["grass"].hide_render = t > 28
-    S["far_forest"].hide_render = t > 64
+    show(S["air"], t < 120)
+    show(S["forest"], t <= 60)
+    show(S["grass"], t <= 28)
+    show(S["far_forest"], t <= 64)
     if not S["far_forest"].hide_render:  # fire light on the ground, copied onto the pines standing in it
         me = S["far_forest"].data
         float_attr(me, "glow", glow.ravel()[S["far_cells"]])
@@ -1190,36 +1215,45 @@ def apply(S, frame):
             cx, cy = (pos[hot][sel, 0] * weight[sel]).sum() / wsum, (pos[hot][sel, 1] * weight[sel]).sum() / wsum
             ob.location = (cx, cy, float(L.height_km(dem, cx, cy)) + 0.5)
             ob.data.energy = power * min(total[order[k]], 60.0)
-            ob.hide_render = False
+            show(ob, True)
         else:
-            ob.hide_render = True
+            show(ob, False)
 
     # satellites: each flies straight above the line it is scanning, and its fan of light reaches down to that line,
-    # so line and satellite move together; it sits a little to one side of the fire so it does not hide it
-    line = L.scan_line(t)
+    # so line and satellite move together; it sits a little to one side of the fire so it does not hide it. Height
+    # and size follow the camera's distance from the fire, not its height, so they stay put while it orbits (layout.ORBIT)
+    # Each one keeps flying before and after its pass (layout.flight) for as long as it, its fan or its line is still
+    # in the picture, so it enters and leaves out of view, and is hidden everywhere else.
+    reach = (eye - target).length
     fire_c = L.FIRE[0] * L.CROSS[0] + L.FIRE[1] * L.CROSS[1]
-    for key in S["sats"]:
+    scene = bpy.context.scene
+    for ps in L.PASSES:
+        key = ps["satellite"]
         sat, scan = S["sats"][key], S["scans"][key]
-        active = line is not None and line[0]["satellite"] == key
-        for ob in (scan[0], scan[1], sat, *sat.children):
-            ob.hide_render = not active
-        if not active:
+        parts = (scan[0], scan[1], sat, *sat.children)
+        f0, f1 = ps["frames"]
+        if not f0 - FLY_ON <= t <= f1 + FLY_ON:
+            for ob in parts:
+                show(ob, False)
             continue
-        s = line[1]
+        s = L.flight(ps, t)
         side = -1.0 if key == "Aqua" else 1.0
-        z = eye.z * 0.42
+        z = reach * (0.42 - 0.12 * L.orbit_weight(t))  # lower while the camera orbits, so it stays in the picture
         c_sat = fire_c + side * 0.3 * z
-        scale = eye.z * 0.012
+        scale = reach * 0.012
         sat.location = (L.TRACK[0] * s + L.CROSS[0] * c_sat, L.TRACK[1] * s + L.CROSS[1] * c_sat, z)
         sat.rotation_euler = (0, 0, math.radians(-L.TRACK_AZ))
         sat.scale = (scale,) * 3
         place_scan(S, scan, s, c_sat, Vector(sat.location) - Vector((0, 0, 0.75 * scale)))
+        visible = f0 <= t <= f1 or in_view(scene, S["camera"], sat, scan, scale)
+        for ob in parts:
+            show(ob, visible)
 
     # embers: none under the clear opening sky, only once the camera rises over the fire and its smoke, gone once the camera is far above the smoke
     update_embers(S["embers"], t, eye, right, up, cam.lens, ramp(t, [(0, 0.0), (22, 0.0), (28, 10.0), (34, 14.0), (44, 14.0), (52, 0.0)]))
 
     S["axis_emission"].inputs["Strength"].default_value = ramp(t, [(112, 0.0), (130, 1.6), (150, 1.6), (166, 0.0)])
-    S["axis"].hide_render = not 112 < t < 166
+    show(S["axis"], 112 < t < 166)
 
 
 def render(S, frames, out, quality=72):
