@@ -40,7 +40,7 @@ function Panel({ pass, frame, pixel, color, id }: { pass: Pass; frame: Bbox; pix
           </text>
         </g>
       </svg>
-      <figcaption id={`${id}-cap`} className="flex items-baseline justify-between gap-3 text-sm">
+      <figcaption id={`${id}-cap`} className="flex items-baseline justify-between gap-3 font-mono text-xs tracking-[0.04em]">
         <span>
           <span className="font-medium">{SAT[pass.satellite] ?? pass.satellite}</span>
           <span className="text-muted-foreground">, {utc(pass.time)}, {pixel >= 1000 ? "1 km" : `${pixel} m`} pixels</span>

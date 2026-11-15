@@ -73,7 +73,7 @@ const SOFTWARE = [
   ["pyhdf", "Reading the burned-area files (Python, one-off extract)"],
   ["Next.js, React", "This website"],
   ["Tailwind CSS, shadcn/ui, Radix UI", "Styling and interface components"],
-  ["Phosphor Icons, Geist", "Icons and typeface"],
+  ["Phosphor Icons, Work Sans, IBM Plex Mono", "Icons and typefaces"],
 ] as const;
 
 export default function MethodPage() {
@@ -105,7 +105,7 @@ export default function MethodPage() {
 
       <article className="flex max-w-[68ch] min-w-0 flex-col gap-12 leading-relaxed [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_p]:text-muted-foreground [&_section]:flex [&_section]:scroll-mt-24 [&_section]:flex-col [&_section]:gap-4">
         <header className="flex flex-col gap-4">
-          <h1 className="text-4xl leading-[1.05] font-semibold tracking-tighter md:text-5xl">Method</h1>
+          <h1 className="text-4xl leading-[1.05] font-bold tracking-tight md:text-5xl">Method</h1>
           <p className="text-lg">
             How we turn two satellite fire records into one, and how far the result can be trusted.
           </p>

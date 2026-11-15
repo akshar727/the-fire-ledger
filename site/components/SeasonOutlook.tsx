@@ -65,7 +65,7 @@ export function SeasonOutlook({ data, regionId, region }: { data: Annual; region
   const cur = loaded?.region === regionId ? loaded : null;
 
   return (
-    <section aria-labelledby="outlook-heading" className="flex flex-col gap-6 rounded-xl border bg-card p-4 sm:p-6">
+    <section aria-labelledby="outlook-heading" className="flex flex-col gap-6 panel p-4 sm:p-6">
       <div className="flex max-w-[70ch] flex-col gap-2">
         <h2 id="outlook-heading" className="text-2xl font-semibold tracking-tight">
           This fire season so far
@@ -452,7 +452,7 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-l-2 border-primary pl-4">
-      <dt className="text-xs font-medium tracking-[0.12em] text-primary uppercase">{label}</dt>
+      <dt className="font-mono text-[11px] font-medium tracking-[0.14em] text-primary uppercase">{label}</dt>
       <dd className="flex flex-col gap-0.5">{children}</dd>
     </div>
   );

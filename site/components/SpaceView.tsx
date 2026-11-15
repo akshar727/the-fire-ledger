@@ -200,7 +200,7 @@ export function SpaceView({
             }.`;
 
   return (
-    <section ref={section} aria-labelledby="space-heading" className="flex scroll-mt-20 flex-col gap-4 rounded-xl border bg-card p-4 sm:p-6">
+    <section ref={section} aria-labelledby="space-heading" className="flex scroll-mt-20 flex-col gap-4 panel p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 id="space-heading" ref={heading} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">
