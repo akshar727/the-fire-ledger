@@ -212,6 +212,22 @@ class SiteDataTests(unittest.TestCase):
                 for y, v, r in zip(a["years"], a["viirs"], a["obs_over_pred"]):
                     self.assertEqual(r is None, v is None, f"{p}: obs_over_pred null where viirs is ({y})")
                     self.assertTrue(r is None or r > 0, f"{p}: obs_over_pred {y}")
+                # ML-020: trend block (complete years only)
+                tr = a.get("trend")
+                self.assertIsInstance(tr, dict, f"{p}: trend")
+                full = [y for y, pa in zip(a["years"], a["partial"]) if not pa]
+                self.assertEqual((tr["years"], tr["n_years"]), ([full[0], full[-1]], len(full)), f"{p}: trend years")
+                stat = ("slope_pct", "lo_pct", "hi_pct", "p")
+                for rec in ("stitched", "harmonized"):
+                    s = tr[rec]
+                    self.assertTrue(all(is_num(s[k]) for k in stat), f"{p}: trend.{rec}")
+                    self.assertTrue(s["lo_pct"] <= s["slope_pct"] <= s["hi_pct"], f"{p}: trend.{rec} interval")
+                    self.assertTrue(0 <= s["p"] <= 1, f"{p}: trend.{rec}.p")
+                    mo = tr["monthly"][rec]
+                    self.assertEqual(sorted(mo), sorted(stat), f"{p}: trend.monthly.{rec} keys")
+                    self.assertTrue(all(len(v) == 12 for v in mo.values()), f"{p}: trend.monthly.{rec} lengths")
+                h = tr["harmonized"]
+                self.assertTrue(h["boot_lo_pct"] <= h["boot_hi_pct"], f"{p}: trend boot range")
         if not ran:
             self.skipTest("no region has data yet")
 

@@ -136,7 +136,7 @@ class ModelRunTests(unittest.TestCase):
     def test_annual_keys_and_lengths(self):
         a = self.annual
         self.assertEqual(list(a), ["years", "modis", "viirs", "pred", "lo", "hi", "score", "partial", "data_through",
-                                   "harmonized", "viirs_partial", "overpass", "obs_over_pred", "drifted"])
+                                   "harmonized", "viirs_partial", "overpass", "obs_over_pred", "drifted", "trend"])
         self.assertEqual(a["years"], YEARS)
         for k in ("modis", "viirs", "pred", "lo", "hi", "partial", "harmonized", "viirs_partial", "obs_over_pred",
                   "drifted"):
@@ -150,6 +150,20 @@ class ModelRunTests(unittest.TestCase):
         self.assertTrue(all(np.isfinite(v) for v in a["score"].values()))
         self.assertEqual(a["partial"], [0] * 25)
         self.assertEqual(a["data_through"], THROUGH)
+
+    def test_trend(self):
+        # ML-020: the synthetic record has no trend, but VIIRS is ~2.5x MODIS, so the stitched record jumps in 2012
+        t = self.annual["trend"]
+        self.assertEqual((t["years"], t["n_years"]), ([2001, 2025], 25))
+        self.assertGreater(t["stitched"]["slope_pct"], 3)
+        self.assertLess(t["stitched"]["p"], 0.01)
+        h = t["harmonized"]
+        self.assertLess(abs(h["slope_pct"]), abs(t["stitched"]["slope_pct"]) / 2)
+        self.assertLessEqual(h["lo_pct"], h["slope_pct"])
+        self.assertLessEqual(h["slope_pct"], h["hi_pct"])
+        self.assertLessEqual(h["boot_lo_pct"], h["boot_hi_pct"])
+        for rec in ("stitched", "harmonized"):
+            self.assertTrue(all(len(v) == 12 for v in t["monthly"][rec].values()), rec)
 
     def test_viirs_null_only_before_2012(self):
         a = self.annual
@@ -274,6 +288,7 @@ class PartialYearRunTests(unittest.TestCase):
         self.assertEqual(a["data_through"], self.THROUGH)
         self.assertEqual(a["partial"], [0] * 24 + [1])
         self.assertEqual(a["score"]["n_hold"], 5)   # 2020-2024; partial 2025 is not scored
+        self.assertEqual((a["trend"]["years"], a["trend"]["n_years"]), ([2001, 2024], 24))   # ML-020: nor trended
 
     def test_series_reaches_last_whole_month(self):
         m, w = self.series["monthly"], self.series["weekly"]

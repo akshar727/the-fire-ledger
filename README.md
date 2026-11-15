@@ -94,7 +94,7 @@ Python libraries (precompute; exact versions in `requirements.txt`)
 - pandas 3.0.2: reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
 - statsmodels 0.14.6: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
 - patsy 1.0.2: model design matrices. https://github.com/pydata/patsy . BSD-2-Clause
-- scipy 1.18.1: numerical routines used by statsmodels (installed with it, pinned for reproducibility). https://scipy.org . BSD-3-Clause
+- scipy 1.18.1: numerical routines used by statsmodels, and `scipy.stats.theilslopes` / `kendalltau` for the trend block (`trend_stats.py`). https://scipy.org . BSD-3-Clause
 - Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`, `unittest`, `pathlib`, `datetime`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line; the `tests/test_site_data.py` data checks. https://docs.python.org/3/library/ . PSF License 2.0
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
@@ -117,6 +117,7 @@ Code
 - The record chart in `site/components/RecordChart.tsx` is ported from this project's own proof-of-concept page (`web/index.html`, commit `051327a`).
 - Region switcher, date range and downloads (`site/components/RegionSwitcher.tsx`, `DateRange.tsx`, `DownloadCsv.tsx`, `site/lib/selection.ts`): the region list and dates come from this project's own `site/public/data/index.json`; "Download CSV" and "Download analytics" call this project's own `/api/hotspots` and `/api/series` route handlers; the whole-year links point to this project's own `site/public/data/<region>/points/<year>.csv` files (all NASA FIRMS data above, with the FIRMS acknowledgment shown next to the buttons). Uses the browser's built-in date and select inputs; no new library, data source or asset.
 - Partial-year handling in the record chart (`site/lib/annual.ts`, `site/components/RecordChart.tsx`): reads the `partial` and `data_through` fields of this project's own `site/public/data/<region>/annual.json` (written by `model.py`; NASA FIRMS data above, including the 2026 area-API rows). The model years (VIIRS from 2012, hold-out from 2020) mirror `model.py`. No new library, data source or asset.
+- Trend block in `annual.json` (`trend_stats.py`, called by `model.py`): Theil-Sen slope with a 90% interval and the Mann-Kendall trend test, on the naive stitched record and the harmonized record of this project's own model output (NASA FIRMS data above). Methods: Sen, P. K. (1968), "Estimates of the regression coefficient based on Kendall's tau", JASA 63(324), 1379–1389; Mann, H. B. (1945), "Nonparametric tests against trend", Econometrica 13(3), 245–259; implemented with scipy (above). No new library or data source.
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
 
 
