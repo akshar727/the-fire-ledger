@@ -13,11 +13,11 @@ export const HOTSPOT_HEADER =
 const DAY_MS = 86_400_000;
 
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
+  // explicit field, not a `public status` parameter property: Node's type stripping (npm test) can't handle those
+  status: number;
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
   }
 }
 
