@@ -9,7 +9,7 @@ import regionIndex from "@/public/data/index.json";
 import { eraMeans, holdoutYears, lastCompleteYear } from "@/lib/annual";
 import { loadAnnual, REGION_LIST, REGIONS, type RegionId } from "@/lib/data";
 import { buildGrid, parseSeries } from "@/lib/series";
-import { closestPair, extent, parsePoints, STORY_FIRE, storyLines } from "@/lib/story";
+import { closestPair, extent, inBox, parsePoints, SCENE_BBOX, STORY_FIRE, storyLines } from "@/lib/story";
 
 /** The region chapters 4-6 follow: Ghana has the clearest 2012 jump (the demo path's step 2 uses it too). */
 export const STORY_REGION: RegionId = "ghana";
@@ -39,6 +39,8 @@ export function loadStory() {
     score: annual.score,
     holdout: holdoutYears(annual),
     grid,
+    // FE-019: what the scroll scene behind the page is made of (scripts/landing_scene draws the same points)
+    scene: { year: Number(STORY_FIRE.date.slice(0, 4)), detections: points.filter((d) => inBox(d, SCENE_BBOX)).length },
   };
 }
 

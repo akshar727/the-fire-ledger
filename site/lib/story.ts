@@ -80,6 +80,14 @@ export const STORY_FIRE = {
 } as const;
 
 /**
+ * The ground the scroll scene shows (FE-019): the four 1 x 1 degree SRTM tiles around the story's fire. The scene is
+ * rendered from every detection of the story's year inside this box (scripts/landing_scene/srtm.py has the same edges).
+ */
+export const SCENE_BBOX = { w: -9, s: 39, e: -7, n: 41 } satisfies Bbox;
+
+export const inBox = (d: { lat: number; lon: number }, b: Bbox) => d.lat >= b.s && d.lat <= b.n && d.lon >= b.w && d.lon <= b.e;
+
+/**
  * "Same fire, two answers": on `date`, inside `bbox`, the daytime MODIS and VIIRS overpasses closest together in time
  * (each with at least `minPoints` detections), so both satellites saw the fire at nearly the same moment.
  */
