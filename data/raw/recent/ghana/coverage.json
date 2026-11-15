@@ -1,6 +1,24 @@
 {
  "start": "2026-01-01",
  "through": "2026-11-02",
+ "sensors": {
+  "MODIS": {
+   "start": "2026-01-01",
+   "through": "2026-11-02"
+  },
+  "VIIRS_SNPP": {
+   "start": "2026-01-01",
+   "through": "2026-11-02"
+  },
+  "VIIRS_NOAA20": {
+   "start": "2026-01-01",
+   "through": "2026-11-14"
+  },
+  "VIIRS_NOAA21": {
+   "start": "2024-01-01",
+   "through": "2026-11-14"
+  }
+ },
  "chunks": [
   {
    "source": "MODIS_SP",
@@ -869,6 +887,1938 @@
    "last": "2026-11-02",
    "rows": 1222,
    "file": "VIIRS_SNPP_NRT_2026-10-30_2026-11-02.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-01",
+   "last": "2026-01-05",
+   "rows": 10770,
+   "file": "VIIRS_NOAA20_SP_2026-01-01_2026-01-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-06",
+   "last": "2026-01-10",
+   "rows": 16123,
+   "file": "VIIRS_NOAA20_SP_2026-01-06_2026-01-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-11",
+   "last": "2026-01-15",
+   "rows": 16559,
+   "file": "VIIRS_NOAA20_SP_2026-01-11_2026-01-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-16",
+   "last": "2026-01-20",
+   "rows": 15162,
+   "file": "VIIRS_NOAA20_SP_2026-01-16_2026-01-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-21",
+   "last": "2026-01-25",
+   "rows": 23641,
+   "file": "VIIRS_NOAA20_SP_2026-01-21_2026-01-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-26",
+   "last": "2026-01-30",
+   "rows": 20511,
+   "file": "VIIRS_NOAA20_SP_2026-01-26_2026-01-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-01-31",
+   "last": "2026-02-04",
+   "rows": 5436,
+   "file": "VIIRS_NOAA20_SP_2026-01-31_2026-02-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-02-05",
+   "last": "2026-02-09",
+   "rows": 5445,
+   "file": "VIIRS_NOAA20_SP_2026-02-05_2026-02-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-02-10",
+   "last": "2026-02-14",
+   "rows": 1990,
+   "file": "VIIRS_NOAA20_SP_2026-02-10_2026-02-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-02-15",
+   "last": "2026-02-19",
+   "rows": 4934,
+   "file": "VIIRS_NOAA20_SP_2026-02-15_2026-02-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-02-20",
+   "last": "2026-02-24",
+   "rows": 5032,
+   "file": "VIIRS_NOAA20_SP_2026-02-20_2026-02-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-02-25",
+   "last": "2026-03-01",
+   "rows": 2248,
+   "file": "VIIRS_NOAA20_SP_2026-02-25_2026-03-01.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-03-02",
+   "last": "2026-03-06",
+   "rows": 1446,
+   "file": "VIIRS_NOAA20_SP_2026-03-02_2026-03-06.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-03-07",
+   "last": "2026-03-11",
+   "rows": 940,
+   "file": "VIIRS_NOAA20_SP_2026-03-07_2026-03-11.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-03-12",
+   "last": "2026-03-16",
+   "rows": 1424,
+   "file": "VIIRS_NOAA20_SP_2026-03-12_2026-03-16.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-03-17",
+   "last": "2026-03-21",
+   "rows": 2589,
+   "file": "VIIRS_NOAA20_SP_2026-03-17_2026-03-21.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-03-22",
+   "last": "2026-03-26",
+   "rows": 716,
+   "file": "VIIRS_NOAA20_SP_2026-03-22_2026-03-26.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-03-27",
+   "last": "2026-03-31",
+   "rows": 740,
+   "file": "VIIRS_NOAA20_SP_2026-03-27_2026-03-31.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-04-01",
+   "last": "2026-04-05",
+   "rows": 1458,
+   "file": "VIIRS_NOAA20_SP_2026-04-01_2026-04-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-04-06",
+   "last": "2026-04-10",
+   "rows": 454,
+   "file": "VIIRS_NOAA20_SP_2026-04-06_2026-04-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-04-11",
+   "last": "2026-04-15",
+   "rows": 826,
+   "file": "VIIRS_NOAA20_SP_2026-04-11_2026-04-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-04-16",
+   "last": "2026-04-20",
+   "rows": 609,
+   "file": "VIIRS_NOAA20_SP_2026-04-16_2026-04-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-04-21",
+   "last": "2026-04-25",
+   "rows": 219,
+   "file": "VIIRS_NOAA20_SP_2026-04-21_2026-04-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-04-26",
+   "last": "2026-04-30",
+   "rows": 262,
+   "file": "VIIRS_NOAA20_SP_2026-04-26_2026-04-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-01",
+   "last": "2026-05-05",
+   "rows": 946,
+   "file": "VIIRS_NOAA20_SP_2026-05-01_2026-05-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-06",
+   "last": "2026-05-10",
+   "rows": 235,
+   "file": "VIIRS_NOAA20_SP_2026-05-06_2026-05-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-11",
+   "last": "2026-05-15",
+   "rows": 419,
+   "file": "VIIRS_NOAA20_SP_2026-05-11_2026-05-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-16",
+   "last": "2026-05-20",
+   "rows": 100,
+   "file": "VIIRS_NOAA20_SP_2026-05-16_2026-05-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-21",
+   "last": "2026-05-25",
+   "rows": 17,
+   "file": "VIIRS_NOAA20_SP_2026-05-21_2026-05-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-26",
+   "last": "2026-05-30",
+   "rows": 37,
+   "file": "VIIRS_NOAA20_SP_2026-05-26_2026-05-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-05-31",
+   "last": "2026-06-04",
+   "rows": 49,
+   "file": "VIIRS_NOAA20_SP_2026-05-31_2026-06-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-06-05",
+   "last": "2026-06-09",
+   "rows": 12,
+   "file": "VIIRS_NOAA20_SP_2026-06-05_2026-06-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-06-10",
+   "last": "2026-06-14",
+   "rows": 9,
+   "file": "VIIRS_NOAA20_SP_2026-06-10_2026-06-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-06-15",
+   "last": "2026-06-19",
+   "rows": 6,
+   "file": "VIIRS_NOAA20_SP_2026-06-15_2026-06-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-06-20",
+   "last": "2026-06-24",
+   "rows": 15,
+   "file": "VIIRS_NOAA20_SP_2026-06-20_2026-06-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-06-25",
+   "last": "2026-06-29",
+   "rows": 17,
+   "file": "VIIRS_NOAA20_SP_2026-06-25_2026-06-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-06-30",
+   "last": "2026-07-04",
+   "rows": 7,
+   "file": "VIIRS_NOAA20_SP_2026-06-30_2026-07-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-07-05",
+   "last": "2026-07-09",
+   "rows": 11,
+   "file": "VIIRS_NOAA20_SP_2026-07-05_2026-07-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-07-10",
+   "last": "2026-07-14",
+   "rows": 11,
+   "file": "VIIRS_NOAA20_SP_2026-07-10_2026-07-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-07-15",
+   "last": "2026-07-19",
+   "rows": 12,
+   "file": "VIIRS_NOAA20_SP_2026-07-15_2026-07-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-07-20",
+   "last": "2026-07-24",
+   "rows": 11,
+   "file": "VIIRS_NOAA20_SP_2026-07-20_2026-07-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-07-25",
+   "last": "2026-07-29",
+   "rows": 9,
+   "file": "VIIRS_NOAA20_SP_2026-07-25_2026-07-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_SP",
+   "first": "2026-07-30",
+   "last": "2026-07-31",
+   "rows": 8,
+   "file": "VIIRS_NOAA20_SP_2026-07-30_2026-07-31.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-01",
+   "last": "2026-08-05",
+   "rows": 87,
+   "file": "VIIRS_NOAA20_NRT_2026-08-01_2026-08-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-06",
+   "last": "2026-08-10",
+   "rows": 17,
+   "file": "VIIRS_NOAA20_NRT_2026-08-06_2026-08-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-11",
+   "last": "2026-08-15",
+   "rows": 35,
+   "file": "VIIRS_NOAA20_NRT_2026-08-11_2026-08-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-16",
+   "last": "2026-08-20",
+   "rows": 39,
+   "file": "VIIRS_NOAA20_NRT_2026-08-16_2026-08-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-21",
+   "last": "2026-08-25",
+   "rows": 42,
+   "file": "VIIRS_NOAA20_NRT_2026-08-21_2026-08-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-26",
+   "last": "2026-08-30",
+   "rows": 44,
+   "file": "VIIRS_NOAA20_NRT_2026-08-26_2026-08-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-08-31",
+   "last": "2026-09-04",
+   "rows": 60,
+   "file": "VIIRS_NOAA20_NRT_2026-08-31_2026-09-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-09-05",
+   "last": "2026-09-09",
+   "rows": 59,
+   "file": "VIIRS_NOAA20_NRT_2026-09-05_2026-09-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-09-10",
+   "last": "2026-09-14",
+   "rows": 28,
+   "file": "VIIRS_NOAA20_NRT_2026-09-10_2026-09-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-09-15",
+   "last": "2026-09-19",
+   "rows": 35,
+   "file": "VIIRS_NOAA20_NRT_2026-09-15_2026-09-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-09-20",
+   "last": "2026-09-24",
+   "rows": 32,
+   "file": "VIIRS_NOAA20_NRT_2026-09-20_2026-09-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-09-25",
+   "last": "2026-09-29",
+   "rows": 37,
+   "file": "VIIRS_NOAA20_NRT_2026-09-25_2026-09-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-09-30",
+   "last": "2026-10-04",
+   "rows": 322,
+   "file": "VIIRS_NOAA20_NRT_2026-09-30_2026-10-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-10-05",
+   "last": "2026-10-09",
+   "rows": 56,
+   "file": "VIIRS_NOAA20_NRT_2026-10-05_2026-10-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-10-10",
+   "last": "2026-10-14",
+   "rows": 55,
+   "file": "VIIRS_NOAA20_NRT_2026-10-10_2026-10-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-10-15",
+   "last": "2026-10-19",
+   "rows": 203,
+   "file": "VIIRS_NOAA20_NRT_2026-10-15_2026-10-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-10-20",
+   "last": "2026-10-24",
+   "rows": 435,
+   "file": "VIIRS_NOAA20_NRT_2026-10-20_2026-10-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-10-25",
+   "last": "2026-10-29",
+   "rows": 694,
+   "file": "VIIRS_NOAA20_NRT_2026-10-25_2026-10-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-10-30",
+   "last": "2026-11-03",
+   "rows": 1482,
+   "file": "VIIRS_NOAA20_NRT_2026-10-30_2026-11-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-11-04",
+   "last": "2026-11-08",
+   "rows": 1636,
+   "file": "VIIRS_NOAA20_NRT_2026-11-04_2026-11-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-11-09",
+   "last": "2026-11-13",
+   "rows": 2021,
+   "file": "VIIRS_NOAA20_NRT_2026-11-09_2026-11-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA20_NRT",
+   "first": "2026-11-14",
+   "last": "2026-11-14",
+   "rows": 1194,
+   "file": "VIIRS_NOAA20_NRT_2026-11-14_2026-11-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-01",
+   "last": "2024-01-05",
+   "rows": 11605,
+   "file": "VIIRS_NOAA21_SP_2024-01-01_2024-01-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-06",
+   "last": "2024-01-10",
+   "rows": 12936,
+   "file": "VIIRS_NOAA21_SP_2024-01-06_2024-01-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-11",
+   "last": "2024-01-15",
+   "rows": 19335,
+   "file": "VIIRS_NOAA21_SP_2024-01-11_2024-01-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-16",
+   "last": "2024-01-20",
+   "rows": 17554,
+   "file": "VIIRS_NOAA21_SP_2024-01-16_2024-01-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-21",
+   "last": "2024-01-25",
+   "rows": 14286,
+   "file": "VIIRS_NOAA21_SP_2024-01-21_2024-01-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-26",
+   "last": "2024-01-30",
+   "rows": 18782,
+   "file": "VIIRS_NOAA21_SP_2024-01-26_2024-01-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-01-31",
+   "last": "2024-02-04",
+   "rows": 12991,
+   "file": "VIIRS_NOAA21_SP_2024-01-31_2024-02-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-02-05",
+   "last": "2024-02-09",
+   "rows": 11544,
+   "file": "VIIRS_NOAA21_SP_2024-02-05_2024-02-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-02-10",
+   "last": "2024-02-14",
+   "rows": 6845,
+   "file": "VIIRS_NOAA21_SP_2024-02-10_2024-02-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-02-15",
+   "last": "2024-02-19",
+   "rows": 5083,
+   "file": "VIIRS_NOAA21_SP_2024-02-15_2024-02-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-02-20",
+   "last": "2024-02-24",
+   "rows": 6639,
+   "file": "VIIRS_NOAA21_SP_2024-02-20_2024-02-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-02-25",
+   "last": "2024-02-29",
+   "rows": 1174,
+   "file": "VIIRS_NOAA21_SP_2024-02-25_2024-02-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-01",
+   "last": "2024-03-05",
+   "rows": 1479,
+   "file": "VIIRS_NOAA21_SP_2024-03-01_2024-03-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-06",
+   "last": "2024-03-10",
+   "rows": 2202,
+   "file": "VIIRS_NOAA21_SP_2024-03-06_2024-03-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-11",
+   "last": "2024-03-15",
+   "rows": 2219,
+   "file": "VIIRS_NOAA21_SP_2024-03-11_2024-03-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-16",
+   "last": "2024-03-20",
+   "rows": 1877,
+   "file": "VIIRS_NOAA21_SP_2024-03-16_2024-03-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-21",
+   "last": "2024-03-25",
+   "rows": 2014,
+   "file": "VIIRS_NOAA21_SP_2024-03-21_2024-03-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-26",
+   "last": "2024-03-30",
+   "rows": 1278,
+   "file": "VIIRS_NOAA21_SP_2024-03-26_2024-03-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-03-31",
+   "last": "2024-04-04",
+   "rows": 1480,
+   "file": "VIIRS_NOAA21_SP_2024-03-31_2024-04-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-04-05",
+   "last": "2024-04-09",
+   "rows": 1533,
+   "file": "VIIRS_NOAA21_SP_2024-04-05_2024-04-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-04-10",
+   "last": "2024-04-14",
+   "rows": 1277,
+   "file": "VIIRS_NOAA21_SP_2024-04-10_2024-04-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-04-15",
+   "last": "2024-04-19",
+   "rows": 1515,
+   "file": "VIIRS_NOAA21_SP_2024-04-15_2024-04-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-04-20",
+   "last": "2024-04-24",
+   "rows": 1541,
+   "file": "VIIRS_NOAA21_SP_2024-04-20_2024-04-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-04-25",
+   "last": "2024-04-29",
+   "rows": 844,
+   "file": "VIIRS_NOAA21_SP_2024-04-25_2024-04-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-04-30",
+   "last": "2024-05-04",
+   "rows": 561,
+   "file": "VIIRS_NOAA21_SP_2024-04-30_2024-05-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-05-05",
+   "last": "2024-05-09",
+   "rows": 479,
+   "file": "VIIRS_NOAA21_SP_2024-05-05_2024-05-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-05-10",
+   "last": "2024-05-14",
+   "rows": 178,
+   "file": "VIIRS_NOAA21_SP_2024-05-10_2024-05-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-05-15",
+   "last": "2024-05-19",
+   "rows": 71,
+   "file": "VIIRS_NOAA21_SP_2024-05-15_2024-05-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-05-20",
+   "last": "2024-05-24",
+   "rows": 210,
+   "file": "VIIRS_NOAA21_SP_2024-05-20_2024-05-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-05-25",
+   "last": "2024-05-29",
+   "rows": 133,
+   "file": "VIIRS_NOAA21_SP_2024-05-25_2024-05-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-05-30",
+   "last": "2024-06-03",
+   "rows": 83,
+   "file": "VIIRS_NOAA21_SP_2024-05-30_2024-06-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-06-04",
+   "last": "2024-06-08",
+   "rows": 61,
+   "file": "VIIRS_NOAA21_SP_2024-06-04_2024-06-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-06-09",
+   "last": "2024-06-13",
+   "rows": 51,
+   "file": "VIIRS_NOAA21_SP_2024-06-09_2024-06-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-06-14",
+   "last": "2024-06-18",
+   "rows": 16,
+   "file": "VIIRS_NOAA21_SP_2024-06-14_2024-06-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-06-19",
+   "last": "2024-06-23",
+   "rows": 32,
+   "file": "VIIRS_NOAA21_SP_2024-06-19_2024-06-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-06-24",
+   "last": "2024-06-28",
+   "rows": 36,
+   "file": "VIIRS_NOAA21_SP_2024-06-24_2024-06-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-06-29",
+   "last": "2024-07-03",
+   "rows": 19,
+   "file": "VIIRS_NOAA21_SP_2024-06-29_2024-07-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-07-04",
+   "last": "2024-07-08",
+   "rows": 30,
+   "file": "VIIRS_NOAA21_SP_2024-07-04_2024-07-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-07-09",
+   "last": "2024-07-13",
+   "rows": 8,
+   "file": "VIIRS_NOAA21_SP_2024-07-09_2024-07-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-07-14",
+   "last": "2024-07-18",
+   "rows": 21,
+   "file": "VIIRS_NOAA21_SP_2024-07-14_2024-07-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-07-19",
+   "last": "2024-07-23",
+   "rows": 20,
+   "file": "VIIRS_NOAA21_SP_2024-07-19_2024-07-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-07-24",
+   "last": "2024-07-28",
+   "rows": 58,
+   "file": "VIIRS_NOAA21_SP_2024-07-24_2024-07-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-07-29",
+   "last": "2024-08-02",
+   "rows": 35,
+   "file": "VIIRS_NOAA21_SP_2024-07-29_2024-08-02.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-08-03",
+   "last": "2024-08-07",
+   "rows": 105,
+   "file": "VIIRS_NOAA21_SP_2024-08-03_2024-08-07.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-08-08",
+   "last": "2024-08-12",
+   "rows": 85,
+   "file": "VIIRS_NOAA21_SP_2024-08-08_2024-08-12.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-08-13",
+   "last": "2024-08-17",
+   "rows": 65,
+   "file": "VIIRS_NOAA21_SP_2024-08-13_2024-08-17.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-08-18",
+   "last": "2024-08-22",
+   "rows": 158,
+   "file": "VIIRS_NOAA21_SP_2024-08-18_2024-08-22.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-08-23",
+   "last": "2024-08-27",
+   "rows": 29,
+   "file": "VIIRS_NOAA21_SP_2024-08-23_2024-08-27.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-08-28",
+   "last": "2024-09-01",
+   "rows": 41,
+   "file": "VIIRS_NOAA21_SP_2024-08-28_2024-09-01.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-09-02",
+   "last": "2024-09-06",
+   "rows": 540,
+   "file": "VIIRS_NOAA21_SP_2024-09-02_2024-09-06.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-09-07",
+   "last": "2024-09-11",
+   "rows": 173,
+   "file": "VIIRS_NOAA21_SP_2024-09-07_2024-09-11.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-09-12",
+   "last": "2024-09-16",
+   "rows": 51,
+   "file": "VIIRS_NOAA21_SP_2024-09-12_2024-09-16.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-09-17",
+   "last": "2024-09-21",
+   "rows": 131,
+   "file": "VIIRS_NOAA21_SP_2024-09-17_2024-09-21.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-09-22",
+   "last": "2024-09-26",
+   "rows": 119,
+   "file": "VIIRS_NOAA21_SP_2024-09-22_2024-09-26.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-09-27",
+   "last": "2024-10-01",
+   "rows": 47,
+   "file": "VIIRS_NOAA21_SP_2024-09-27_2024-10-01.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-10-02",
+   "last": "2024-10-06",
+   "rows": 28,
+   "file": "VIIRS_NOAA21_SP_2024-10-02_2024-10-06.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-10-07",
+   "last": "2024-10-11",
+   "rows": 51,
+   "file": "VIIRS_NOAA21_SP_2024-10-07_2024-10-11.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-10-12",
+   "last": "2024-10-16",
+   "rows": 46,
+   "file": "VIIRS_NOAA21_SP_2024-10-12_2024-10-16.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-10-17",
+   "last": "2024-10-21",
+   "rows": 68,
+   "file": "VIIRS_NOAA21_SP_2024-10-17_2024-10-21.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-10-22",
+   "last": "2024-10-26",
+   "rows": 96,
+   "file": "VIIRS_NOAA21_SP_2024-10-22_2024-10-26.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-10-27",
+   "last": "2024-10-31",
+   "rows": 433,
+   "file": "VIIRS_NOAA21_SP_2024-10-27_2024-10-31.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-11-01",
+   "last": "2024-11-05",
+   "rows": 1247,
+   "file": "VIIRS_NOAA21_SP_2024-11-01_2024-11-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-11-06",
+   "last": "2024-11-10",
+   "rows": 1712,
+   "file": "VIIRS_NOAA21_SP_2024-11-06_2024-11-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-11-11",
+   "last": "2024-11-15",
+   "rows": 2745,
+   "file": "VIIRS_NOAA21_SP_2024-11-11_2024-11-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-11-16",
+   "last": "2024-11-20",
+   "rows": 5294,
+   "file": "VIIRS_NOAA21_SP_2024-11-16_2024-11-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-11-21",
+   "last": "2024-11-25",
+   "rows": 7706,
+   "file": "VIIRS_NOAA21_SP_2024-11-21_2024-11-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-11-26",
+   "last": "2024-11-30",
+   "rows": 7275,
+   "file": "VIIRS_NOAA21_SP_2024-11-26_2024-11-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-01",
+   "last": "2024-12-05",
+   "rows": 11379,
+   "file": "VIIRS_NOAA21_SP_2024-12-01_2024-12-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-06",
+   "last": "2024-12-10",
+   "rows": 10327,
+   "file": "VIIRS_NOAA21_SP_2024-12-06_2024-12-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-11",
+   "last": "2024-12-15",
+   "rows": 17195,
+   "file": "VIIRS_NOAA21_SP_2024-12-11_2024-12-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-16",
+   "last": "2024-12-20",
+   "rows": 21670,
+   "file": "VIIRS_NOAA21_SP_2024-12-16_2024-12-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-21",
+   "last": "2024-12-25",
+   "rows": 17124,
+   "file": "VIIRS_NOAA21_SP_2024-12-21_2024-12-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-26",
+   "last": "2024-12-30",
+   "rows": 17524,
+   "file": "VIIRS_NOAA21_SP_2024-12-26_2024-12-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2024-12-31",
+   "last": "2025-01-04",
+   "rows": 13043,
+   "file": "VIIRS_NOAA21_SP_2024-12-31_2025-01-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-01-05",
+   "last": "2025-01-09",
+   "rows": 16858,
+   "file": "VIIRS_NOAA21_SP_2025-01-05_2025-01-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-01-10",
+   "last": "2025-01-14",
+   "rows": 17842,
+   "file": "VIIRS_NOAA21_SP_2025-01-10_2025-01-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-01-15",
+   "last": "2025-01-19",
+   "rows": 13513,
+   "file": "VIIRS_NOAA21_SP_2025-01-15_2025-01-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-01-20",
+   "last": "2025-01-24",
+   "rows": 11891,
+   "file": "VIIRS_NOAA21_SP_2025-01-20_2025-01-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-01-25",
+   "last": "2025-01-29",
+   "rows": 10057,
+   "file": "VIIRS_NOAA21_SP_2025-01-25_2025-01-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-01-30",
+   "last": "2025-02-03",
+   "rows": 5576,
+   "file": "VIIRS_NOAA21_SP_2025-01-30_2025-02-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-02-04",
+   "last": "2025-02-08",
+   "rows": 12534,
+   "file": "VIIRS_NOAA21_SP_2025-02-04_2025-02-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-02-09",
+   "last": "2025-02-13",
+   "rows": 4315,
+   "file": "VIIRS_NOAA21_SP_2025-02-09_2025-02-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-02-14",
+   "last": "2025-02-18",
+   "rows": 5035,
+   "file": "VIIRS_NOAA21_SP_2025-02-14_2025-02-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-02-19",
+   "last": "2025-02-23",
+   "rows": 2358,
+   "file": "VIIRS_NOAA21_SP_2025-02-19_2025-02-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-02-24",
+   "last": "2025-02-28",
+   "rows": 4997,
+   "file": "VIIRS_NOAA21_SP_2025-02-24_2025-02-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-01",
+   "last": "2025-03-05",
+   "rows": 1934,
+   "file": "VIIRS_NOAA21_SP_2025-03-01_2025-03-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-06",
+   "last": "2025-03-10",
+   "rows": 1328,
+   "file": "VIIRS_NOAA21_SP_2025-03-06_2025-03-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-11",
+   "last": "2025-03-15",
+   "rows": 898,
+   "file": "VIIRS_NOAA21_SP_2025-03-11_2025-03-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-16",
+   "last": "2025-03-20",
+   "rows": 1729,
+   "file": "VIIRS_NOAA21_SP_2025-03-16_2025-03-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-21",
+   "last": "2025-03-25",
+   "rows": 640,
+   "file": "VIIRS_NOAA21_SP_2025-03-21_2025-03-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-26",
+   "last": "2025-03-30",
+   "rows": 1732,
+   "file": "VIIRS_NOAA21_SP_2025-03-26_2025-03-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-03-31",
+   "last": "2025-04-04",
+   "rows": 985,
+   "file": "VIIRS_NOAA21_SP_2025-03-31_2025-04-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-04-05",
+   "last": "2025-04-09",
+   "rows": 1897,
+   "file": "VIIRS_NOAA21_SP_2025-04-05_2025-04-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-04-10",
+   "last": "2025-04-14",
+   "rows": 1095,
+   "file": "VIIRS_NOAA21_SP_2025-04-10_2025-04-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-04-15",
+   "last": "2025-04-19",
+   "rows": 750,
+   "file": "VIIRS_NOAA21_SP_2025-04-15_2025-04-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-04-20",
+   "last": "2025-04-24",
+   "rows": 647,
+   "file": "VIIRS_NOAA21_SP_2025-04-20_2025-04-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-04-25",
+   "last": "2025-04-29",
+   "rows": 355,
+   "file": "VIIRS_NOAA21_SP_2025-04-25_2025-04-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-04-30",
+   "last": "2025-05-04",
+   "rows": 90,
+   "file": "VIIRS_NOAA21_SP_2025-04-30_2025-05-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-05-05",
+   "last": "2025-05-09",
+   "rows": 879,
+   "file": "VIIRS_NOAA21_SP_2025-05-05_2025-05-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-05-10",
+   "last": "2025-05-14",
+   "rows": 481,
+   "file": "VIIRS_NOAA21_SP_2025-05-10_2025-05-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-05-15",
+   "last": "2025-05-19",
+   "rows": 223,
+   "file": "VIIRS_NOAA21_SP_2025-05-15_2025-05-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-05-20",
+   "last": "2025-05-24",
+   "rows": 92,
+   "file": "VIIRS_NOAA21_SP_2025-05-20_2025-05-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-05-25",
+   "last": "2025-05-29",
+   "rows": 174,
+   "file": "VIIRS_NOAA21_SP_2025-05-25_2025-05-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-05-30",
+   "last": "2025-06-03",
+   "rows": 85,
+   "file": "VIIRS_NOAA21_SP_2025-05-30_2025-06-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-06-04",
+   "last": "2025-06-08",
+   "rows": 94,
+   "file": "VIIRS_NOAA21_SP_2025-06-04_2025-06-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-06-09",
+   "last": "2025-06-13",
+   "rows": 40,
+   "file": "VIIRS_NOAA21_SP_2025-06-09_2025-06-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-06-14",
+   "last": "2025-06-18",
+   "rows": 13,
+   "file": "VIIRS_NOAA21_SP_2025-06-14_2025-06-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-06-19",
+   "last": "2025-06-23",
+   "rows": 37,
+   "file": "VIIRS_NOAA21_SP_2025-06-19_2025-06-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-06-24",
+   "last": "2025-06-28",
+   "rows": 33,
+   "file": "VIIRS_NOAA21_SP_2025-06-24_2025-06-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-06-29",
+   "last": "2025-07-03",
+   "rows": 36,
+   "file": "VIIRS_NOAA21_SP_2025-06-29_2025-07-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-07-04",
+   "last": "2025-07-08",
+   "rows": 10,
+   "file": "VIIRS_NOAA21_SP_2025-07-04_2025-07-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-07-09",
+   "last": "2025-07-13",
+   "rows": 13,
+   "file": "VIIRS_NOAA21_SP_2025-07-09_2025-07-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-07-14",
+   "last": "2025-07-18",
+   "rows": 73,
+   "file": "VIIRS_NOAA21_SP_2025-07-14_2025-07-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-07-19",
+   "last": "2025-07-23",
+   "rows": 36,
+   "file": "VIIRS_NOAA21_SP_2025-07-19_2025-07-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-07-24",
+   "last": "2025-07-28",
+   "rows": 26,
+   "file": "VIIRS_NOAA21_SP_2025-07-24_2025-07-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-07-29",
+   "last": "2025-08-02",
+   "rows": 24,
+   "file": "VIIRS_NOAA21_SP_2025-07-29_2025-08-02.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-08-03",
+   "last": "2025-08-07",
+   "rows": 10,
+   "file": "VIIRS_NOAA21_SP_2025-08-03_2025-08-07.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-08-08",
+   "last": "2025-08-12",
+   "rows": 18,
+   "file": "VIIRS_NOAA21_SP_2025-08-08_2025-08-12.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-08-13",
+   "last": "2025-08-17",
+   "rows": 30,
+   "file": "VIIRS_NOAA21_SP_2025-08-13_2025-08-17.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-08-18",
+   "last": "2025-08-22",
+   "rows": 41,
+   "file": "VIIRS_NOAA21_SP_2025-08-18_2025-08-22.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-08-23",
+   "last": "2025-08-27",
+   "rows": 51,
+   "file": "VIIRS_NOAA21_SP_2025-08-23_2025-08-27.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-08-28",
+   "last": "2025-09-01",
+   "rows": 48,
+   "file": "VIIRS_NOAA21_SP_2025-08-28_2025-09-01.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-09-02",
+   "last": "2025-09-06",
+   "rows": 265,
+   "file": "VIIRS_NOAA21_SP_2025-09-02_2025-09-06.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-09-07",
+   "last": "2025-09-11",
+   "rows": 49,
+   "file": "VIIRS_NOAA21_SP_2025-09-07_2025-09-11.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-09-12",
+   "last": "2025-09-16",
+   "rows": 42,
+   "file": "VIIRS_NOAA21_SP_2025-09-12_2025-09-16.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-09-17",
+   "last": "2025-09-21",
+   "rows": 10,
+   "file": "VIIRS_NOAA21_SP_2025-09-17_2025-09-21.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-09-22",
+   "last": "2025-09-26",
+   "rows": 15,
+   "file": "VIIRS_NOAA21_SP_2025-09-22_2025-09-26.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-09-27",
+   "last": "2025-10-01",
+   "rows": 10,
+   "file": "VIIRS_NOAA21_SP_2025-09-27_2025-10-01.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-10-02",
+   "last": "2025-10-06",
+   "rows": 30,
+   "file": "VIIRS_NOAA21_SP_2025-10-02_2025-10-06.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-10-07",
+   "last": "2025-10-11",
+   "rows": 17,
+   "file": "VIIRS_NOAA21_SP_2025-10-07_2025-10-11.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-10-12",
+   "last": "2025-10-16",
+   "rows": 24,
+   "file": "VIIRS_NOAA21_SP_2025-10-12_2025-10-16.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-10-17",
+   "last": "2025-10-21",
+   "rows": 150,
+   "file": "VIIRS_NOAA21_SP_2025-10-17_2025-10-21.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-10-22",
+   "last": "2025-10-26",
+   "rows": 350,
+   "file": "VIIRS_NOAA21_SP_2025-10-22_2025-10-26.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-10-27",
+   "last": "2025-10-31",
+   "rows": 561,
+   "file": "VIIRS_NOAA21_SP_2025-10-27_2025-10-31.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-11-01",
+   "last": "2025-11-05",
+   "rows": 1136,
+   "file": "VIIRS_NOAA21_SP_2025-11-01_2025-11-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-11-06",
+   "last": "2025-11-10",
+   "rows": 1179,
+   "file": "VIIRS_NOAA21_SP_2025-11-06_2025-11-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-11-11",
+   "last": "2025-11-15",
+   "rows": 2286,
+   "file": "VIIRS_NOAA21_SP_2025-11-11_2025-11-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-11-16",
+   "last": "2025-11-20",
+   "rows": 3564,
+   "file": "VIIRS_NOAA21_SP_2025-11-16_2025-11-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-11-21",
+   "last": "2025-11-25",
+   "rows": 5458,
+   "file": "VIIRS_NOAA21_SP_2025-11-21_2025-11-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-11-26",
+   "last": "2025-11-30",
+   "rows": 2944,
+   "file": "VIIRS_NOAA21_SP_2025-11-26_2025-11-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-01",
+   "last": "2025-12-05",
+   "rows": 4898,
+   "file": "VIIRS_NOAA21_SP_2025-12-01_2025-12-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-06",
+   "last": "2025-12-10",
+   "rows": 7545,
+   "file": "VIIRS_NOAA21_SP_2025-12-06_2025-12-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-11",
+   "last": "2025-12-15",
+   "rows": 2556,
+   "file": "VIIRS_NOAA21_SP_2025-12-11_2025-12-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-16",
+   "last": "2025-12-20",
+   "rows": 7110,
+   "file": "VIIRS_NOAA21_SP_2025-12-16_2025-12-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-21",
+   "last": "2025-12-25",
+   "rows": 10181,
+   "file": "VIIRS_NOAA21_SP_2025-12-21_2025-12-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-26",
+   "last": "2025-12-30",
+   "rows": 9461,
+   "file": "VIIRS_NOAA21_SP_2025-12-26_2025-12-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2025-12-31",
+   "last": "2026-01-04",
+   "rows": 10273,
+   "file": "VIIRS_NOAA21_SP_2025-12-31_2026-01-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-01-05",
+   "last": "2026-01-09",
+   "rows": 14233,
+   "file": "VIIRS_NOAA21_SP_2026-01-05_2026-01-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-01-10",
+   "last": "2026-01-14",
+   "rows": 16587,
+   "file": "VIIRS_NOAA21_SP_2026-01-10_2026-01-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-01-15",
+   "last": "2026-01-19",
+   "rows": 13766,
+   "file": "VIIRS_NOAA21_SP_2026-01-15_2026-01-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-01-20",
+   "last": "2026-01-24",
+   "rows": 19030,
+   "file": "VIIRS_NOAA21_SP_2026-01-20_2026-01-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-01-25",
+   "last": "2026-01-29",
+   "rows": 25309,
+   "file": "VIIRS_NOAA21_SP_2026-01-25_2026-01-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-01-30",
+   "last": "2026-02-03",
+   "rows": 6437,
+   "file": "VIIRS_NOAA21_SP_2026-01-30_2026-02-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-02-04",
+   "last": "2026-02-08",
+   "rows": 4639,
+   "file": "VIIRS_NOAA21_SP_2026-02-04_2026-02-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-02-09",
+   "last": "2026-02-13",
+   "rows": 2824,
+   "file": "VIIRS_NOAA21_SP_2026-02-09_2026-02-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-02-14",
+   "last": "2026-02-18",
+   "rows": 3880,
+   "file": "VIIRS_NOAA21_SP_2026-02-14_2026-02-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-02-19",
+   "last": "2026-02-23",
+   "rows": 5742,
+   "file": "VIIRS_NOAA21_SP_2026-02-19_2026-02-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-02-24",
+   "last": "2026-02-28",
+   "rows": 2361,
+   "file": "VIIRS_NOAA21_SP_2026-02-24_2026-02-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-01",
+   "last": "2026-03-05",
+   "rows": 1653,
+   "file": "VIIRS_NOAA21_SP_2026-03-01_2026-03-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-06",
+   "last": "2026-03-10",
+   "rows": 883,
+   "file": "VIIRS_NOAA21_SP_2026-03-06_2026-03-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-11",
+   "last": "2026-03-15",
+   "rows": 1118,
+   "file": "VIIRS_NOAA21_SP_2026-03-11_2026-03-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-16",
+   "last": "2026-03-20",
+   "rows": 1940,
+   "file": "VIIRS_NOAA21_SP_2026-03-16_2026-03-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-21",
+   "last": "2026-03-25",
+   "rows": 1074,
+   "file": "VIIRS_NOAA21_SP_2026-03-21_2026-03-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-26",
+   "last": "2026-03-30",
+   "rows": 1208,
+   "file": "VIIRS_NOAA21_SP_2026-03-26_2026-03-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-03-31",
+   "last": "2026-04-04",
+   "rows": 923,
+   "file": "VIIRS_NOAA21_SP_2026-03-31_2026-04-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-04-05",
+   "last": "2026-04-09",
+   "rows": 1138,
+   "file": "VIIRS_NOAA21_SP_2026-04-05_2026-04-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-04-10",
+   "last": "2026-04-14",
+   "rows": 583,
+   "file": "VIIRS_NOAA21_SP_2026-04-10_2026-04-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-04-15",
+   "last": "2026-04-19",
+   "rows": 951,
+   "file": "VIIRS_NOAA21_SP_2026-04-15_2026-04-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-04-20",
+   "last": "2026-04-24",
+   "rows": 238,
+   "file": "VIIRS_NOAA21_SP_2026-04-20_2026-04-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-04-25",
+   "last": "2026-04-29",
+   "rows": 453,
+   "file": "VIIRS_NOAA21_SP_2026-04-25_2026-04-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-04-30",
+   "last": "2026-05-04",
+   "rows": 914,
+   "file": "VIIRS_NOAA21_SP_2026-04-30_2026-05-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-05-05",
+   "last": "2026-05-09",
+   "rows": 346,
+   "file": "VIIRS_NOAA21_SP_2026-05-05_2026-05-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-05-10",
+   "last": "2026-05-14",
+   "rows": 596,
+   "file": "VIIRS_NOAA21_SP_2026-05-10_2026-05-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-05-15",
+   "last": "2026-05-19",
+   "rows": 121,
+   "file": "VIIRS_NOAA21_SP_2026-05-15_2026-05-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-05-20",
+   "last": "2026-05-24",
+   "rows": 62,
+   "file": "VIIRS_NOAA21_SP_2026-05-20_2026-05-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-05-25",
+   "last": "2026-05-29",
+   "rows": 34,
+   "file": "VIIRS_NOAA21_SP_2026-05-25_2026-05-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-05-30",
+   "last": "2026-06-03",
+   "rows": 64,
+   "file": "VIIRS_NOAA21_SP_2026-05-30_2026-06-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-06-04",
+   "last": "2026-06-08",
+   "rows": 22,
+   "file": "VIIRS_NOAA21_SP_2026-06-04_2026-06-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-06-09",
+   "last": "2026-06-13",
+   "rows": 5,
+   "file": "VIIRS_NOAA21_SP_2026-06-09_2026-06-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-06-14",
+   "last": "2026-06-18",
+   "rows": 8,
+   "file": "VIIRS_NOAA21_SP_2026-06-14_2026-06-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-06-19",
+   "last": "2026-06-23",
+   "rows": 7,
+   "file": "VIIRS_NOAA21_SP_2026-06-19_2026-06-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-06-24",
+   "last": "2026-06-28",
+   "rows": 9,
+   "file": "VIIRS_NOAA21_SP_2026-06-24_2026-06-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-06-29",
+   "last": "2026-07-03",
+   "rows": 2,
+   "file": "VIIRS_NOAA21_SP_2026-06-29_2026-07-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-07-04",
+   "last": "2026-07-08",
+   "rows": 14,
+   "file": "VIIRS_NOAA21_SP_2026-07-04_2026-07-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-07-09",
+   "last": "2026-07-13",
+   "rows": 7,
+   "file": "VIIRS_NOAA21_SP_2026-07-09_2026-07-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-07-14",
+   "last": "2026-07-18",
+   "rows": 4,
+   "file": "VIIRS_NOAA21_SP_2026-07-14_2026-07-18.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-07-19",
+   "last": "2026-07-23",
+   "rows": 22,
+   "file": "VIIRS_NOAA21_SP_2026-07-19_2026-07-23.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-07-24",
+   "last": "2026-07-28",
+   "rows": 26,
+   "file": "VIIRS_NOAA21_SP_2026-07-24_2026-07-28.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_SP",
+   "first": "2026-07-29",
+   "last": "2026-07-31",
+   "rows": 2,
+   "file": "VIIRS_NOAA21_SP_2026-07-29_2026-07-31.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-01",
+   "last": "2026-08-05",
+   "rows": 61,
+   "file": "VIIRS_NOAA21_NRT_2026-08-01_2026-08-05.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-06",
+   "last": "2026-08-10",
+   "rows": 28,
+   "file": "VIIRS_NOAA21_NRT_2026-08-06_2026-08-10.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-11",
+   "last": "2026-08-15",
+   "rows": 25,
+   "file": "VIIRS_NOAA21_NRT_2026-08-11_2026-08-15.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-16",
+   "last": "2026-08-20",
+   "rows": 35,
+   "file": "VIIRS_NOAA21_NRT_2026-08-16_2026-08-20.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-21",
+   "last": "2026-08-25",
+   "rows": 47,
+   "file": "VIIRS_NOAA21_NRT_2026-08-21_2026-08-25.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-26",
+   "last": "2026-08-30",
+   "rows": 20,
+   "file": "VIIRS_NOAA21_NRT_2026-08-26_2026-08-30.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-08-31",
+   "last": "2026-09-04",
+   "rows": 30,
+   "file": "VIIRS_NOAA21_NRT_2026-08-31_2026-09-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-09-05",
+   "last": "2026-09-09",
+   "rows": 58,
+   "file": "VIIRS_NOAA21_NRT_2026-09-05_2026-09-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-09-10",
+   "last": "2026-09-14",
+   "rows": 33,
+   "file": "VIIRS_NOAA21_NRT_2026-09-10_2026-09-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-09-15",
+   "last": "2026-09-19",
+   "rows": 31,
+   "file": "VIIRS_NOAA21_NRT_2026-09-15_2026-09-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-09-20",
+   "last": "2026-09-24",
+   "rows": 20,
+   "file": "VIIRS_NOAA21_NRT_2026-09-20_2026-09-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-09-25",
+   "last": "2026-09-29",
+   "rows": 12,
+   "file": "VIIRS_NOAA21_NRT_2026-09-25_2026-09-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-09-30",
+   "last": "2026-10-04",
+   "rows": 167,
+   "file": "VIIRS_NOAA21_NRT_2026-09-30_2026-10-04.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-10-05",
+   "last": "2026-10-09",
+   "rows": 38,
+   "file": "VIIRS_NOAA21_NRT_2026-10-05_2026-10-09.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-10-10",
+   "last": "2026-10-14",
+   "rows": 95,
+   "file": "VIIRS_NOAA21_NRT_2026-10-10_2026-10-14.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-10-15",
+   "last": "2026-10-19",
+   "rows": 154,
+   "file": "VIIRS_NOAA21_NRT_2026-10-15_2026-10-19.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-10-20",
+   "last": "2026-10-24",
+   "rows": 376,
+   "file": "VIIRS_NOAA21_NRT_2026-10-20_2026-10-24.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-10-25",
+   "last": "2026-10-29",
+   "rows": 668,
+   "file": "VIIRS_NOAA21_NRT_2026-10-25_2026-10-29.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-10-30",
+   "last": "2026-11-03",
+   "rows": 1449,
+   "file": "VIIRS_NOAA21_NRT_2026-10-30_2026-11-03.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-11-04",
+   "last": "2026-11-08",
+   "rows": 1688,
+   "file": "VIIRS_NOAA21_NRT_2026-11-04_2026-11-08.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-11-09",
+   "last": "2026-11-13",
+   "rows": 2016,
+   "file": "VIIRS_NOAA21_NRT_2026-11-09_2026-11-13.csv"
+  },
+  {
+   "source": "VIIRS_NOAA21_NRT",
+   "first": "2026-11-14",
+   "last": "2026-11-14",
+   "rows": 873,
+   "file": "VIIRS_NOAA21_NRT_2026-11-14_2026-11-14.csv"
   }
  ]
 }

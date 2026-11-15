@@ -68,7 +68,8 @@ class GridTests(unittest.TestCase):
     def test_columns_and_row_order(self):
         self.assertEqual(list(self.out.columns), [
             "date", "lat", "lon", "daynight", "terra_n", "aqua_n", "viirs_n",
-            "terra_frp_mean", "aqua_frp_mean", "viirs_frp_mean"])
+            "terra_frp_mean", "aqua_frp_mean", "viirs_frp_mean",
+            "n20_n", "n21_n", "n20_frp_mean", "n21_frp_mean"])   # DP-013: NOAA columns appended, model's unchanged
         keys = list(zip(self.out.date, self.out.lat, self.out.lon, self.out.daynight))
         self.assertEqual(keys, [
             ("2020-01-01", -0.25, -8.0, "D"),
@@ -99,14 +100,43 @@ class GridTests(unittest.TestCase):
         self.assertTrue(pd.isna(r.terra_frp_mean[2]))
 
     def test_dtypes(self):
-        for c in ("terra_n", "aqua_n", "viirs_n"):
+        for c in ("terra_n", "aqua_n", "viirs_n", "n20_n", "n21_n"):
             self.assertTrue(pd.api.types.is_integer_dtype(self.out[c]), c)
-        for c in ("lat", "lon", "terra_frp_mean", "aqua_frp_mean", "viirs_frp_mean"):
+        for c in ("lat", "lon", "terra_frp_mean", "aqua_frp_mean", "viirs_frp_mean", "n20_frp_mean", "n21_frp_mean"):
             self.assertEqual(self.out[c].dtype, np.float64, c)
 
     def test_empty_frp_written_blank_in_csv(self):
         text = self.out.to_csv(index=False, lineterminator="\n").splitlines()
-        self.assertEqual(text[2], "2020-01-01,-0.25,-8.0,N,0,0,1,,,7.0")
+        self.assertEqual(text[2], "2020-01-01,-0.25,-8.0,N,0,0,1,,,7.0,0,0,,")
+
+    def test_noaa_counts_get_own_columns_and_rows(self):
+        out = build.grid(frame([det(-0.1, -8.0, sat="N", frp=2.0), det(-0.1, -8.0, sat="N20", frp=4.0),
+                                det(-0.1, -8.0, sat="N20", frp=6.0), det(1.1, 1.1, date="2026-11-10", sat="N21", frp=1.5)]))
+        self.assertEqual(out.viirs_n.tolist(), [1, 0])
+        self.assertEqual(out.n20_n.tolist(), [2, 0])
+        self.assertEqual(out.n21_n.tolist(), [0, 1])
+        self.assertEqual(out.n20_frp_mean[0], 5.0)
+        self.assertEqual(out.viirs_frp_mean[0], 2.0)            # S-NPP values untouched by NOAA rows in the same cell
+        self.assertEqual(out.n21_frp_mean[1], 1.5)
+        self.assertEqual((out.terra_n[1], out.aqua_n[1], out.viirs_n[1]), (0, 0, 0))   # NOAA-only row
+
+    def test_noaa_rows_never_change_model_columns(self):
+        base = [det(-0.1, -8.0, sat="Terra", frp=1.0), det(-0.1, -8.0, sat="N", frp=2.0, dn="N"),
+                det(0.3, 0.3, date="2020-01-03", sat="Aqua")]
+        noaa = [det(-0.1, -8.0, sat="N20"), det(-0.1, -8.0, sat="N21", dn="N"), det(5.0, 5.0, sat="N20")]
+        legacy = list(build.grid(frame(base)).columns[:10])
+        a = build.grid(frame(base))[legacy]
+        b = build.grid(frame(base + noaa))
+        b = b[(b.terra_n + b.aqua_n + b.viirs_n) > 0][legacy].reset_index(drop=True)
+        pd.testing.assert_frame_equal(a, b)
+
+    def test_check_model_cells(self):
+        base = [det(-0.1, -8.0, sat="Terra"), det(0.3, 0.3, date="2020-01-03", sat="Aqua")]
+        build.check_model_cells(build.grid(frame(base + [det(0.3, 0.3, date="2020-01-05", sat="N20")])), "x")   # fine
+        with self.assertRaises(SystemExit):   # a cell only NOAA saw
+            build.check_model_cells(build.grid(frame(base + [det(5.0, 5.0, sat="N21")])), "x")
+        with self.assertRaises(SystemExit):   # NOAA brings a cell forward: model.py's cell order would change
+            build.check_model_cells(build.grid(frame(base + [det(0.3, 0.3, date="2019-12-31", sat="N20")])), "x")
 
     def test_input_not_modified(self):
         df = frame([det(-0.1, -8.0)])
@@ -142,6 +172,18 @@ class RawDirCase(unittest.TestCase):
 
 
 class LoadRegionTests(RawDirCase):
+    def test_noaa20_archive_read_but_archive_through_from_modis_and_snpp_only(self):
+        write_raw(self.raw, "viirs-jpss1_2020_XX.csv", [det(37, -7, sat="N20", date="2020-12-31")])
+        ends = {}
+        with mock.patch.object(build, "SRC", {"modis": range(2020, 2021), "viirs-snpp": range(2020, 2021),
+                                              "viirs-jpss1": range(2020, 2021)}):
+            write_raw(self.raw, "modis_2020_XX.csv", [det(37, -7, date="2020-06-01")])
+            write_raw(self.raw, "viirs-snpp_2020_XX.csv", [det(37, -7, sat="N", date="2020-06-02")])
+            df, through = quiet(build.load_region, self.region, ends)
+        self.assertEqual(sorted(df.satellite), ["N", "N20", "Terra"])
+        self.assertEqual(through, "2020-06-02")              # NOAA-20 reaching further does not move it
+        self.assertEqual(ends, {"terra": "2020-06-01", "aqua": "2020-06-01", "viirs": "2020-06-02", "n20": "2020-12-31"})
+
     def test_type_filter_drops_non_zero(self):
         df, _ = self.load([det(37, -7, time="0001", typ=0), det(37, -7, time="0002", typ=1),
                            det(37, -7, time="0003", typ=2), det(37, -7, time="0004", typ=3)])
@@ -317,6 +359,10 @@ class WritePointsTests(unittest.TestCase):
         sats = [ln.split(",")[4] for ln in self.lines(2020)[1:4]]
         self.assertEqual(sats, ["Terra", "Aqua", "SNPP"])
 
+    def test_noaa_satellite_names_in_output(self):
+        self.write([det(0, -7, time="0001", sat="N20"), det(0, -7, time="0002", sat="N21")])
+        self.assertEqual([ln.split(",")[4] for ln in self.lines(2020)[1:3]], ["NOAA20", "NOAA21"])
+
     def test_sorted_by_date_then_time_and_split_by_year(self):
         years, n = self.write([
             det(0, -7, date="2021-01-01", time="0100"),
@@ -362,7 +408,7 @@ class WriteIndexTests(unittest.TestCase):
         self.assertEqual((by_id["a"]["point_years"], by_id["a"]["point_rows"]), ([2021], 3))
         self.assertEqual((by_id["b"]["point_years"], by_id["b"]["point_rows"]), ([2020], 5))
         self.assertEqual(by_id["b"]["data_through"], "2020-12-31")
-        self.assertEqual(set(by_id["b"]["sensors"]["terra"]), {"first_date", "last_date"})
+        self.assertEqual(set(by_id["b"]["sensors"]["terra"]), {"first_date", "last_date", "data_through"})
 
     def test_new_region_without_history_gets_empty_points(self):
         r = [{"id": "a", "name": "A", "bbox": [0, 0, 1, 1], "fire_type": "w"}]
@@ -396,11 +442,17 @@ class EndToEndTests(RawDirCase):
         self.assertEqual((years, files), ([2020], ["2020.csv"]))
         cov = build.coverage(df, out, through)
         self.assertEqual(cov["sensors"], {
-            "terra": {"first_date": "2020-01-01", "last_date": "2020-01-05", "detections": 2},
-            "aqua": {"first_date": "2020-01-01", "last_date": "2020-01-01", "detections": 1},
-            "viirs": {"first_date": "2020-02-02", "last_date": "2020-02-02", "detections": 2},
+            "terra": {"first_date": "2020-01-01", "last_date": "2020-01-05", "detections": 2, "data_through": "2020-02-02"},
+            "aqua": {"first_date": "2020-01-01", "last_date": "2020-01-01", "detections": 1, "data_through": "2020-02-02"},
+            "viirs": {"first_date": "2020-02-02", "last_date": "2020-02-02", "detections": 2, "data_through": "2020-02-02"},
+            "n20": {"first_date": None, "last_date": None, "detections": 0, "data_through": None},
+            "n21": {"first_date": None, "last_date": None, "detections": 0, "data_through": None},
         })
         self.assertEqual(cov["grid_rows"], len(out))
+        cov = build.coverage(df, out, through, {"n20": "2026-11-14", "terra": "2020-03-01"})
+        self.assertEqual(cov["sensors"]["n20"]["data_through"], "2026-11-14")
+        self.assertEqual(cov["sensors"]["terra"]["data_through"], "2020-03-01")
+        self.assertIsNone(cov["sensors"]["n21"]["data_through"])
         self.assertEqual(cov["archive_through"], "2020-02-02")
 
 

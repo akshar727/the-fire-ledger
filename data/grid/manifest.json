@@ -5,20 +5,35 @@
       "terra": {
         "first_date": "2000-11-02",
         "last_date": "2026-11-02",
-        "detections": 356203
+        "detections": 356203,
+        "data_through": "2026-11-02"
       },
       "aqua": {
         "first_date": "2002-07-19",
         "last_date": "2026-11-01",
-        "detections": 873075
+        "detections": 873075,
+        "data_through": "2026-11-02"
       },
       "viirs": {
         "first_date": "2012-01-20",
         "last_date": "2026-11-02",
-        "detections": 2986818
+        "detections": 2986818,
+        "data_through": "2026-11-02"
+      },
+      "n20": {
+        "first_date": "2018-04-01",
+        "last_date": "2026-11-14",
+        "detections": 1597689,
+        "data_through": "2026-11-14"
+      },
+      "n21": {
+        "first_date": "2024-01-01",
+        "last_date": "2026-11-14",
+        "detections": 454258,
+        "data_through": "2026-11-14"
       }
     },
-    "grid_rows": 593771
+    "grid_rows": 679789
   },
   "portugal": {
     "archive_through": "2026-11-02",
@@ -26,20 +41,35 @@
       "terra": {
         "first_date": "2000-11-06",
         "last_date": "2026-11-01",
-        "detections": 37879
+        "detections": 37879,
+        "data_through": "2026-11-02"
       },
       "aqua": {
         "first_date": "2002-07-04",
         "last_date": "2026-11-01",
-        "detections": 39857
+        "detections": 39857,
+        "data_through": "2026-11-02"
       },
       "viirs": {
         "first_date": "2012-01-20",
         "last_date": "2026-11-02",
-        "detections": 108703
+        "detections": 108703,
+        "data_through": "2026-11-02"
+      },
+      "n20": {
+        "first_date": "2018-04-03",
+        "last_date": "2026-11-14",
+        "detections": 51069,
+        "data_through": "2026-11-14"
+      },
+      "n21": {
+        "first_date": "2024-01-02",
+        "last_date": "2026-11-14",
+        "detections": 26391,
+        "data_through": "2026-11-14"
       }
     },
-    "grid_rows": 36779
+    "grid_rows": 41811
   },
   "punjab": {
     "archive_through": "2026-11-02",
@@ -47,19 +77,34 @@
       "terra": {
         "first_date": "2000-11-01",
         "last_date": "2026-11-02",
-        "detections": 104264
+        "detections": 104264,
+        "data_through": "2026-11-02"
       },
       "aqua": {
         "first_date": "2002-07-18",
         "last_date": "2026-11-02",
-        "detections": 360715
+        "detections": 360715,
+        "data_through": "2026-11-02"
       },
       "viirs": {
         "first_date": "2012-01-20",
         "last_date": "2026-11-02",
-        "detections": 1329802
+        "detections": 1329802,
+        "data_through": "2026-11-02"
+      },
+      "n20": {
+        "first_date": "2018-04-01",
+        "last_date": "2026-11-14",
+        "detections": 698187,
+        "data_through": "2026-11-14"
+      },
+      "n21": {
+        "first_date": "2024-01-01",
+        "last_date": "2026-11-14",
+        "detections": 118902,
+        "data_through": "2026-11-14"
       }
     },
-    "grid_rows": 215344
+    "grid_rows": 254901
   }
 }
