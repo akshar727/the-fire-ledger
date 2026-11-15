@@ -12,6 +12,7 @@ import os
 import sys
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest import mock
 
@@ -159,8 +160,8 @@ class StreamingGrid(unittest.TestCase):
             run(C, self.raw, self.out, fetch=flaky, delete_raw=True)
         self.assertEqual(Path(self.out, "fire_grid_daily_x.csv").read_bytes(), before)
         self.assertFalse(Path(self.out, "fire_grid_daily_x.csv.part").exists())
-        self.assertEqual(len(log), 2)                   # 2019 gridded, then its downloads deleted
-        self.assertEqual(os.listdir(self.raw), [])
+        # all files are fetched before gridding, so nothing was gridded: the 2019 files stay for the re-run
+        self.assertEqual(sorted(os.listdir(self.raw)), ["modis_2019_X.csv", "viirs-snpp_2019_X.csv"])
 
     def test_file_from_another_year_is_refused(self):
         files = {**FILES, ("modis", 2020): [det(1.1, 2.1, "2019-03-01")]}
@@ -171,8 +172,72 @@ class StreamingGrid(unittest.TestCase):
         with self.assertRaises(SystemExit):
             bc.check_countries([{"id": "Bad Id", "name": "a", "country": "a", "fire_type": "a"}])
         with self.assertRaises(SystemExit):
-            bc.check_countries([{"id": "a", "name": "a", "country": "a"}])
-        bc.check_countries(json.loads((ROOT / "countries.json").read_text(encoding="utf-8")))
+            bc.check_countries([{"id": "a", "name": "a"}])            # no FIRMS file name
+        bc.check_countries([{"id": "a", "name": "a", "country": "a"}])   # fire_type is optional
+        world = json.loads((ROOT / "countries.json").read_text(encoding="utf-8"))
+        bc.check_countries(world)
+        self.assertGreater(len(world), 150)
+        self.assertTrue(all(len(c["iso_a3"]) == 3 and c["tier"] == "country" for c in world))
+        regions = {r["id"] for r in json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))}
+        self.assertFalse(regions & {c["id"] for c in world})        # no clash with the deep-dive ids
+
+    def test_missing_year_is_zero_and_listed(self):
+        files = {k: v for k, v in FILES.items() if k != ("modis", 2019)}   # FIRMS has no 2019 MODIS file
+        log = []
+        ok = stub_fetch(files, log)
+        def fetch(url, path):
+            if "modis_2019" in url:
+                raise SystemExit("404") from urllib.error.HTTPError(url, 404, "Not Found", None, None)
+            ok(url, path)
+        grid, e, _ = run(C, self.raw, self.out, files=files, fetch=fetch)
+        pd.testing.assert_frame_equal(grid, expected(files))
+        self.assertEqual(e["missing_files"], ["modis_2019_X.csv"])
+
+    def test_all_files_missing_fails(self):
+        def fetch(url, path):
+            raise SystemExit("404") from urllib.error.HTTPError(url, 404, "Not Found", None, None)
+        with self.assertRaises(SystemExit):
+            run(C, self.raw, self.out, fetch=fetch)
+
+    def test_parallel_downloads_same_grid(self):
+        grid, _, log = run(C, self.raw, self.out, jobs=4)
+        pd.testing.assert_frame_equal(grid, expected(FILES))
+        self.assertEqual(len(log), 4)
+
+    def test_lock_keeps_both_entries(self):
+        import threading
+        out, entry, _ = run(C, self.raw, self.out)
+        mpath = str(Path(self.out, "manifest.json"))
+        def put(i):
+            with bc.Lock(mpath):
+                man = bc.load_manifest(str(self.out))
+                man[f"c{i}"] = {}
+                build.write_json(mpath, man)
+        ts = [threading.Thread(target=put, args=(i,)) for i in range(8)]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        self.assertEqual(set(bc.load_manifest(str(self.out))), {"x"} | {f"c{i}" for i in range(8)})
+        self.assertFalse(Path(mpath + ".lock").exists())
+
+    def test_main_goes_on_past_a_failed_country_and_skips_done(self):
+        world = [{"id": i, "name": i, "country": i} for i in ("aa", "bb", "cc")]
+        calls = []
+        def fake(c, **kw):
+            calls.append(c["id"])
+            if c["id"] == "bb":
+                raise SystemExit("network down")
+        with mock.patch.object(bc, "build_country", side_effect=fake), \
+                mock.patch.object(bc.json, "load", return_value=world), \
+                mock.patch.object(bc, "load_manifest", return_value={"aa": {}}), \
+                mock.patch.object(bc.os.path, "exists", return_value=True), \
+                mock.patch("builtins.open", mock.mock_open(read_data="[]")), \
+                mock.patch.object(bc.os, "chdir"), mock.patch.object(bc.os, "makedirs"), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            with self.assertRaises(SystemExit) as cm:
+                bc.main(["--all", "--skip-done", "--jobs", "3"])
+        self.assertEqual(cm.exception.code, 1)
+        self.assertEqual(calls, ["bb", "cc"])                       # aa skipped, cc still ran after bb failed
+        self.assertIn("FAILED: bb", out.getvalue())
 
 
 @unittest.skipUnless((ROOT / "data/raw/modis_2010_Portugal.csv").exists(), "Portugal raw files not present")
