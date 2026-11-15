@@ -60,19 +60,23 @@ const fixture = {
     { id: "greece", name: "Greece", tier: "country", season: "Summer wildfire.", data_through: "2025-12-31" },
     { id: "brazil", name: "Brazil", tier: "country", data_through: "2025-12-31" },
     { id: "chad", name: "Chad", tier: "country", data_through: "2025-12-31" },
+    { id: "nauru", name: "Nauru", tier: "country", data_through: "2025-12-31" },
+    { id: "laos", name: "Laos", tier: "country", data_through: "2025-12-31" },
     { id: "built-only", name: "Built, not modelled" },
   ],
 };
-const fixtureBundle = { ghana: {}, greece: { ship: "ratio" }, brazil: { ship: "caveat", caveat: "Cloudy in the wet season." }, chad: { ship: "model" } };
+const fixtureBundle = { ghana: {}, greece: { ship: "ratio" }, brazil: { ship: "caveat", caveat: "Cloudy in the wet season." }, chad: { ship: "model" }, nauru: { ship: "sparse", caveat: "Too little fire to check." }, laos: { ship: "model", caveat: "FIRMS has no file for 2 sensor-year(s)." } };
 
 test("buildRegions: countries get their tier, ship sentence and what they leave out; unmodelled regions are hidden", () => {
   const b = buildRegions(fixture, fixtureBundle);
-  assert.deepEqual(b.ids, ["ghana", "greece", "brazil", "chad"]);
-  assert.deepEqual(b.tier, { ghana: "region", greece: "country", brazil: "country", chad: "country" });
+  assert.deepEqual(b.ids, ["ghana", "greece", "brazil", "chad", "nauru", "laos"]);
+  assert.deepEqual(b.tier, { ghana: "region", greece: "country", brazil: "country", chad: "country", nauru: "country", laos: "country" });
   assert.equal(b.caveat.ghana, undefined);
   assert.match(b.caveat.greece!, /^The harmonized line here is a constant-ratio estimate .* not the model\. Whole-country record .* ending in December 2025\./);
   assert.match(b.caveat.brazil!, /^Cloudy in the wet season\. Whole-country record/);
   assert.match(b.caveat.chad!, /^Whole-country record/);
+  assert.match(b.caveat.nauru!, /^The harmonized line here is a constant-ratio estimate .* not the model\. Too little fire to check\. Whole-country record/);
+  assert.match(b.caveat.laos!, /^FIRMS has no file for 2 sensor-year\(s\)\. Whole-country record/);
   assert.equal(b.season.brazil, "");
   for (const s of Object.values(b.caveat)) assert.doesNotMatch(s ?? "", /[–—]/);
 });

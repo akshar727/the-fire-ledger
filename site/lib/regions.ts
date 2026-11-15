@@ -39,13 +39,16 @@ export function countryNote(through: string): string {
   );
 }
 
-/** What a country's ship rule adds to its note: "caveat" ships the model with the pipeline's sentence; "ratio" ships
- * MODIS scaled by one constant factor, which must not pass for the model. */
+/** What a country's label adds to its note (ML-023): "ratio" ships MODIS scaled by one constant factor, which must not
+ * pass for the model, so it always says so; every label then adds the pipeline's own sentence when there is one
+ * ("caveat": the band is too narrow; "sparse": too little fire to check; any label: missing FIRMS files or a high
+ * 2001-2002 back-cast). */
 export function shipNote(a: AnnualHead | undefined): string | undefined {
-  if (a?.ship === "ratio")
-    return "The harmonized line here is a constant-ratio estimate (MODIS times this country's 2012 to 2019 VIIRS/MODIS ratio), not the model.";
-  if (a?.ship === "caveat") return a.caveat || undefined;
-  return undefined;
+  const ratio =
+    a?.ship === "ratio" || a?.ship === "sparse"
+      ? "The harmonized line here is a constant-ratio estimate (MODIS times this country's 2012 to 2019 VIIRS/MODIS ratio), not the model."
+      : undefined;
+  return [ratio, a?.caveat].filter(Boolean).join(" ") || undefined;
 }
 
 export function buildRegions(index: { regions: IndexEntry[] }, bundle: Record<string, AnnualHead>) {

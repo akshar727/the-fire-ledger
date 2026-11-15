@@ -96,7 +96,7 @@ class StreamingGrid(unittest.TestCase):
         with mock.patch.object(bc, "CHUNK", 2):   # every file is read in pieces of 2 rows
             grid, entry, _ = run(C, self.raw, self.out)
         pd.testing.assert_frame_equal(grid, expected(FILES))
-        self.assertEqual(entry["archive_through"], "2020-12-30")
+        self.assertEqual(entry["archive_through"], "2020-12-31")
         row = grid[(grid.date == "2019-03-01") & (grid.lat == 1.0) & (grid.daynight == "D")].iloc[0]
         self.assertEqual(row.viirs_frp_mean, 1.67)   # mean of 1, 2, 2 rounded like build.grid
 
@@ -118,9 +118,10 @@ class StreamingGrid(unittest.TestCase):
 
     def test_manifest_fields_and_no_forward_link(self):
         _, e, _ = run({**C, "bbox": BOX}, self.raw, self.out)
-        # archive_through: latest day in any MODIS / S-NPP file before filtering (the 2020-12-30 Aqua row is outside)
-        self.assertEqual(e["archive_through"], "2020-12-30")
-        self.assertEqual({v["data_through"] for v in e["sensors"].values()}, {"2020-12-30"})
+        # archive_through: 31 Dec of the last year with an archive file (a yearly file covers the whole year, even when
+        # its last fire is 30 Dec)
+        self.assertEqual(e["archive_through"], "2020-12-31")
+        self.assertEqual({v["data_through"] for v in e["sensors"].values()}, {"2020-12-31"})
         self.assertEqual(e["sensors"]["terra"]["first_date"], "2019-03-01")
         self.assertEqual(e["sensors"]["viirs"]["detections"], 6)
         self.assertEqual(e["tier"], "country")
@@ -132,10 +133,10 @@ class StreamingGrid(unittest.TestCase):
         files = {k: ([] if k[1] == 2020 else v) for k, v in FILES.items()}   # 2020: header-only files
         grid, e, _ = run(C, self.raw, self.out, files=files)
         pd.testing.assert_frame_equal(grid, expected(files))
-        self.assertEqual(e["archive_through"], "2019-12-31")
+        self.assertEqual(e["archive_through"], "2020-12-31")   # a header-only year is covered, with no fire
         empty = {k: [] for k in FILES}
         grid, e, _ = run({**C, "id": "y", "country": "Y"}, self.raw, self.out, files=empty)
-        self.assertEqual((len(grid), list(grid.columns), e["archive_through"]), (0, bc.COLUMNS, None))
+        self.assertEqual((len(grid), list(grid.columns), e["archive_through"]), (0, bc.COLUMNS, "2020-12-31"))
 
     def test_delete_raw_removes_only_downloaded_files(self):
         mine = Path(self.raw, "modis_2019_X.csv")
