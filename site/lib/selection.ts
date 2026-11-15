@@ -66,6 +66,21 @@ export function withSelection(
   return next;
 }
 
+/**
+ * The range after one end is set to `v`. If the new end crosses the other one, the other end moves to the same day, so
+ * either field can be moved anywhere in the record without editing the other field first.
+ */
+export function moveEnd(sel: { from: string; to: string }, end: "from" | "to", v: string): { from: string; to: string } {
+  if (end === "from") return { from: v, to: v > sel.to ? v : sel.to };
+  return { from: v < sel.from ? v : sel.from, to: v };
+}
+
+/** Years with a point file that start before the selectable record (2000: partial year, MODIS Terra only). */
+export function yearsBefore(bounds: Bounds, pointYears: number[]): number[] {
+  const first = Number(bounds.min.slice(0, 4));
+  return pointYears.filter((y) => y < first).sort((a, b) => a - b);
+}
+
 /** Days from `from` to `to`, both included. */
 export function spanDays(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;

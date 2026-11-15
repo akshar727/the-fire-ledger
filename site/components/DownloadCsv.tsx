@@ -1,7 +1,8 @@
 "use client";
 
 // Downloads for the current selection (BE-001): "Download CSV" links to /api/hotspots while the range fits in one
-// request (MAX_SPAN_DAYS); the static per-year point files are always listed as the fallback and for longer ranges;
+// request (MAX_SPAN_DAYS); the static per-year point files are always listed as the fallback and for longer ranges,
+// plus any file from before the selectable record (2000), which no date range can reach;
 // "Download analytics" links to /api/series. The FIRMS acknowledgment sits next to the buttons (nothing is added
 // inside the CSV).
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
@@ -9,17 +10,18 @@ import { FirmsAcknowledgment } from "@/components/FirmsAcknowledgment";
 import { Button } from "@/components/ui/button";
 import { regionInfo } from "@/lib/data";
 import { REGIONS } from "@/lib/regions";
-import { hotspotsUrl, MAX_SPAN_DAYS, pointFileUrl, seriesUrl, spanDays, yearsIn } from "@/lib/selection";
+import { hotspotsUrl, MAX_SPAN_DAYS, pointFileUrl, seriesUrl, spanDays, yearsBefore, yearsIn } from "@/lib/selection";
 import { useSelection } from "@/lib/use-selection";
 
 const fmt = (v: number) => v.toLocaleString("en-US");
 
 export function DownloadCsv() {
-  const { sel } = useSelection();
+  const { sel, bounds } = useSelection();
   const days = spanDays(sel.from, sel.to);
   const fits = days <= MAX_SPAN_DAYS;
   const available = new Set(regionInfo(sel.region).point_years);
   const years = yearsIn(sel.from, sel.to).filter((y) => available.has(y));
+  const earlier = yearsBefore(bounds, regionInfo(sel.region).point_years);
 
   return (
     <section aria-labelledby="download-heading" className="grid gap-8 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
@@ -88,6 +90,24 @@ export function DownloadCsv() {
               ))}
             </ul>
           </div>
+        )}
+        {earlier.length > 0 && (
+          <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+            Before the record starts:{" "}
+            {earlier.map((y, i) => (
+              <span key={y}>
+                {i > 0 && ", "}
+                <a
+                  className="font-mono tabular-nums underline underline-offset-2 hover:text-foreground"
+                  href={pointFileUrl(sel.region, y)}
+                  download
+                >
+                  {y}
+                </a>
+              </span>
+            ))}{" "}
+            (partial year, MODIS Terra only).
+          </p>
         )}
       </div>
 
