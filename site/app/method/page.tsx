@@ -115,6 +115,17 @@ export default function MethodPage() {
               full week with Aqua) it uses Terra and Aqua.
             </li>
             <li>
+              <span className="font-medium text-foreground">
+                The Terra-only years are the least certain, most of all in north-west India.
+              </span>{" "}
+              Fitting both models on 2012-2019 and predicting 2003-2011, where they can be compared, the Terra-only
+              model&apos;s annual totals are 7% lower than the Terra and Aqua model&apos;s in Portugal, and in the other
+              regions we model 11% lower in Ghana and 32% higher in north-west India. If the same offset holds
+              earlier, north-west India&apos;s 2001 and early-2002 values are too high and should not be compared
+              directly with later years, while Portugal&apos;s and Ghana&apos;s are somewhat low. The band does not
+              include this offset.
+            </li>
+            <li>
               <span className="font-medium text-foreground">One fit per region.</span> Each region gets its own model
               and its own hold-out score, because fire types and the Terra/Aqua mix differ. This page shows mainland
               Portugal.
