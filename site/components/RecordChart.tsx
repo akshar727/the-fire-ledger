@@ -16,12 +16,14 @@ import {
   completeEnd,
   dayLabel,
   eraMeans,
+  estimateOf,
   forwardFrom,
   harmonizedLabel,
   HOLD_FROM,
   holdoutYears,
   isForward,
   isPartial,
+  isSparse,
   lastCompleteYear,
   partialLabel,
   VIIRS_FROM,
@@ -116,10 +118,22 @@ export function RecordChart({
   // `harmonized` (eraMeans, as JumpStat), so a 2012 that starts 20 Jan doesn't pull it down.
   const era = eraMeans(D);
   const s = D.score;
+  // FE-029: most whole countries publish a constant-ratio estimate (ML-023 method "ratio"), so the text names what
+  // filled 1-19 January 2012 and the back-cast; a sparse country has too few detections to score or read a jump from
+  const by = estimateOf(D) === "ratio" ? "the ratio" : "the model";
+  const sparse = isSparse(D); // scores are noise (HoldoutStats and the proof strip use the same flag)
+  const noJump = sparse || !Number.isFinite(era.jump); // as JumpStat
   const note =
     mode === "raw"
-      ? `Naively stitched record. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by the model): ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire changed.`
-      : `Hold-out ${h0}-${h1} (the model never saw these years): mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for a single constant factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`;
+      ? `Naively stitched record. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by ${by})` +
+        (noJump
+          ? `: too few detections to read a jump.`
+          : `: ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire changed.`)
+      : sparse
+        ? `Too little fire here to score the hold-out years ${h0}-${h1}: the back-cast is MODIS times one ratio and is not validated.`
+        : by === "the ratio"
+          ? `Constant-ratio estimate. Hold-out ${h0}-${h1}: mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for one pooled factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`
+          : `Hold-out ${h0}-${h1} (the model never saw these years): mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for a single constant factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`;
 
   const legend: { color: string; label: string; kind?: "dash" | "ring" }[] =
     mode === "raw"
@@ -129,7 +143,7 @@ export function RecordChart({
         ]
       : [
           { color: "var(--primary)", label: "Back-cast VIIRS-equivalent, 5-95% band" },
-          { color: "var(--viirs)", label: `VIIRS observed (1-19 Jan ${VIIRS_FROM} from the model)` },
+          { color: "var(--viirs)", label: `VIIRS observed (1-19 Jan ${VIIRS_FROM} from ${by})` },
           { color: "var(--primary)", label: `Hold-out prediction ${h0}-${h1}`, kind: "dash" },
         ];
   for (const i of tail) {
@@ -379,7 +393,7 @@ export function RecordChart({
             <th scope="col">Year</th>
             <th scope="col">MODIS</th>
             <th scope="col">VIIRS observed</th>
-            <th scope="col">VIIRS-equivalent (model)</th>
+            <th scope="col">VIIRS-equivalent ({by === "the ratio" ? "constant ratio" : "model"})</th>
             <th scope="col">Harmonized record</th>
             <th scope="col">5th percentile</th>
             <th scope="col">95th percentile</th>
@@ -402,7 +416,7 @@ export function RecordChart({
               ) : (
                 <>
                   <td>{fmt(D.pred[i])}</td>
-                  <td>{fmt(D.harmonized[i])}{D.viirs_partial[i] === 1 ? " (observed VIIRS part year + model)" : ""}</td>
+                  <td>{fmt(D.harmonized[i])}{D.viirs_partial[i] === 1 ? ` (observed VIIRS part year + ${by === "the ratio" ? "ratio" : "model"})` : ""}</td>
                   <td>{fmt(D.lo[i])}</td>
                   <td>{fmt(D.hi[i])}</td>
                 </>
@@ -439,6 +453,6 @@ function readoutRows(D: Annual, i: number, mode: Mode, hold: boolean): [string, 
   const rows: [string, string][] = blended
     ? [["Harmonized", fmt(D.harmonized[i])], ["VIIRS observed (part year)", fmt(v)]]
     : [["VIIRS observed", fmt(v)]];
-  if (hold) rows.push(["Model prediction", fmt(D.pred[i])], ["5-95% band", band]);
+  if (hold) rows.push([D.method === "ratio" ? "Ratio estimate" : "Model prediction", fmt(D.pred[i])], ["5-95% band", band]);
   return [...rows, ...through];
 }

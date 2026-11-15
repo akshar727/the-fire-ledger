@@ -414,13 +414,16 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
       <div className="sr-only">
         <table>
           <caption>
-            Running total of fire detections per season in {region}, at {stale ? "season end" : `${shortDay(o.through)} (week ${seasonWeek(o)} of the season)`} and at season end.
+            {/* FE-029: a record that has ended (every whole country) has no running season, so one total column, not two equal ones */}
+            {stale
+              ? `Fire detections per season in ${region}, at season end.`
+              : `Running total of fire detections per season in ${region}, at ${shortDay(o.through)} (week ${seasonWeek(o)} of the season) and at season end.`}
           </caption>
           <thead>
             <tr>
               <th scope="col">Season</th>
               <th scope="col">Starts</th>
-              <th scope="col">{stale ? "Season total" : `Total by ${shortDay(o.through)}`}</th>
+              {!stale && <th scope="col">Total by {shortDay(o.through)}</th>}
               <th scope="col">Season total</th>
             </tr>
           </thead>
@@ -436,7 +439,7 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
                     {s === quietest ? ", quietest" : s === busiest ? ", busiest" : ""}
                   </th>
                   <td>{dayLabel(s.start)}</td>
-                  <td>{isFocus ? `${fmt(nowVal)}${fwd.length ? " (with the NOAA-20/21 forward link)" : ""}` : fmt(atNow)}</td>
+                  {!stale && <td>{isFocus ? `${fmt(nowVal)}${fwd.length ? " (with the NOAA-20/21 forward link)" : ""}` : fmt(atNow)}</td>}
                   <td>
                     {s.complete
                       ? fmt(s.cum[WK - 1])

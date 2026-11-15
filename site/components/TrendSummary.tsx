@@ -50,7 +50,8 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
           Theil-Sen slope as a share of the median year, with its {Math.round(ALPHA * 100)}% interval; significant means a
           Mann-Kendall p below 0.05. Partial years are left out. The stitched record glues raw MODIS (before 20 January{" "}
           {VIIRS_FROM}) to raw VIIRS, so it carries the sensor change.
-          {r.boot && " The thin tick marks show how much the harmonized slope moves across the model's back-cast draws."}
+          {r.boot &&
+            ` The thin tick marks show how much the harmonized slope moves across the ${D.method === "ratio" ? "ratio estimate's" : "model's"} back-cast draws.`}
         </p>
       </Disclosure>
     </div>

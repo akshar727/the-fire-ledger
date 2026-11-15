@@ -9,7 +9,7 @@ export type Score = {
   n_hold: number; // complete hold-out years
   ratio: number;
   alpha: number;
-  weekly_r: number;
+  weekly_r: number; // null in a sparse country's file (no fire to correlate); read only when not sparse
   sigma_year: number; // year-level error (RMS of log obs/pred, leave-one-year-out on the training years); sizes the band
   forward?: ForwardScore | null; // ML-017: hold-out score of the NOAA-20/21 forward link; null without NOAA data
 };
@@ -59,7 +59,20 @@ export type Annual = {
   // after `data_through` up to `forward_through`; raw modis/viirs still stop at `data_through`
   source?: YearSource[];
   forward_through?: string | null;
+  // ML-023, whole countries only (registry "Country-tier outputs"); the deep dives' files have none of these.
+  // method "ratio": pred/harmonized before 2012 are MODIS x the 2012-2019 VIIRS/MODIS ratio (day and night apart), not
+  // the model, and `score.mape_model` is that ratio estimate's error; `model_score` is the model's own score when it
+  // ran and lost to one constant ratio
+  method?: "model" | "ratio";
+  ship?: "model" | "caveat" | "ratio" | "sparse";
+  model_score?: Score | null;
 };
+
+/** FE-029: what made the harmonized line before 2012: the model, or (most whole countries) a constant ratio. */
+export const estimateOf = (D: Pick<Annual, "method">): "model" | "ratio" => (D.method === "ratio" ? "ratio" : "model");
+
+/** FE-029: too little fire to check (ship "sparse"): hold-out errors and the 2012 jump are noise, not evidence. */
+export const isSparse = (D: Pick<Annual, "ship">) => D.ship === "sparse";
 
 /** True when year i's harmonized value runs past the S-NPP end on the NOAA-20/21 link (FE-009). */
 export const isForward = (D: Annual, i: number) => D.source?.[i] === "forward" && !!D.forward_through;

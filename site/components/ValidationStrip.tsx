@@ -4,7 +4,7 @@
 // the hero number on /record. Numbers come from annual.json `score` and referee.json; wording from lib/proof.ts.
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";
-import { holdoutYears } from "@/lib/annual";
+import { estimateOf, holdoutYears, isSparse } from "@/lib/annual";
 import { loadReferee, type Annual } from "@/lib/data";
 import { proof } from "@/lib/proof";
 import { useSelection } from "@/lib/use-selection";
@@ -28,7 +28,12 @@ function Item({ value, text, href, accent }: { value: string; text: string; href
 
 export function ValidationStrip({ data: D }: { data: Annual }) {
   const { sel } = useSelection();
-  const p = proof(D.score, holdoutYears(D), REF.regions[sel.region], REF);
+  // FE-029: a whole country's line may be a constant-ratio estimate (or too sparse to check); the wording says which
+  const p = proof(D.score, holdoutYears(D), REF.regions[sel.region], REF, {
+    kind: estimateOf(D),
+    sparse: isSparse(D),
+    modelScore: D.model_score,
+  });
   return (
     <section aria-labelledby="proof-heading" className="flex flex-col gap-1 border-y">
       <h2 id="proof-heading" className="pt-4 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
