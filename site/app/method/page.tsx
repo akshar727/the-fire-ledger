@@ -23,7 +23,7 @@ const DATA_SOURCES = [
 ];
 
 const SOFTWARE = [
-  ["numpy, pandas, statsmodels, patsy", "Gridding, model fitting and bootstrap (Python)"],
+  ["numpy, pandas, statsmodels, patsy, scipy", "Gridding, model fitting and bootstrap (Python)"],
   ["Next.js, React", "This website"],
   ["Tailwind CSS, shadcn/ui, Radix UI", "Styling and interface components"],
   ["Phosphor Icons, Geist", "Icons and typeface"],
