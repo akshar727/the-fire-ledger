@@ -440,7 +440,7 @@ function NotPublished() {
         </p>
       </div>
       <Button asChild>
-        <Link href="/">
+        <Link href="/record">
           View the record
           <ArrowRightIcon aria-hidden />
         </Link>
