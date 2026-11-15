@@ -4,12 +4,12 @@
 
 ## Run it
 
-Python precompute (from the repo root). Tested with Python 3.14.3, numpy 2.4.4, pandas 3.0.2, statsmodels 0.14.6, patsy 1.0.2 (Python 3.8+ and pandas 1.5+ required). Use `python` on Windows, `python3` on macOS.
+Python precompute (from the repo root). Needs Python 3.12 or newer (tested with 3.14): check with `python3 --version` (Windows: `python --version`) first, and install a newer one from python.org or Homebrew if it's older, or `pip install` fails with "No matching distribution found for scipy==1.18.1"; library versions are pinned in `requirements.txt` (numpy 2.4.4, pandas 3.0.2, statsmodels 0.14.6, patsy 1.0.2, scipy 1.18.1), so reruns reproduce the committed outputs. Use `python` on Windows, `python3` on macOS.
 
 1. Create and activate a virtual environment.
    - Windows (PowerShell): `python -m venv .venv` then `.venv\Scripts\Activate.ps1` (if blocked: `Set-ExecutionPolicy -Scope Process Bypass`)
    - macOS: `python3 -m venv .venv` then `source .venv/bin/activate`
-2. `pip install numpy pandas statsmodels patsy`
+2. `pip install -r requirements.txt`
 
 ```bash
 python build.py             # all regions in regions.json; the first run downloads ~1 GB for Ghana + NW India into data/raw/
@@ -50,8 +50,8 @@ The site only reads files under `site/public/data/`; it never runs the model. Ho
 There is no CI: run these yourself before every pull request to `main`, from the repo root, in the virtual environment from "Run it" (Node.js 24 or newer for `npm test`):
 
 ```bash
-pip install numpy pandas statsmodels patsy       # or: pip install -r requirements.txt, once it exists
-python -m unittest discover -s tests -v          # only if tests/ exists
+pip install -r requirements.txt                  # pinned versions (Python 3.12+)
+python -m unittest discover -s tests -v
 python scripts/check_outputs.py --snapshot       # before the pipeline: remembers your working tree
 python build.py portugal                         # no network: Portugal's raw files are committed
 python model.py
@@ -78,11 +78,12 @@ Data
 - MODIS active fire algorithm — method behind the MODIS detections — https://doi.org/10.1016/j.rse.2016.02.054 — Giglio, L., Schroeder, W., & Justice, C. O. (2016). The collection 6 MODIS active fire detection algorithm and fire products. Remote Sensing of Environment, 178, 31–41.
 - VIIRS 375 m active fire algorithm — method behind the VIIRS detections — https://doi.org/10.1016/j.rse.2013.12.008 — Schroeder, W., Oliva, P., Giglio, L., & Csiszar, I. A. (2014). The New VIIRS 375 m active fire detection data product: Algorithm description and initial assessment. Remote Sensing of Environment, 143, 85–96.
 
-Python libraries (precompute)
-- numpy: arrays and bootstrap sampling. https://numpy.org . BSD-3-Clause
-- pandas (1.5 or later, for `to_csv(lineterminator=...)`): reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
-- statsmodels: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
-- patsy: model design matrices. https://github.com/pydata/patsy . BSD-2-Clause
+Python libraries (precompute; exact versions in `requirements.txt`)
+- numpy 2.4.4: arrays and bootstrap sampling. https://numpy.org . BSD-3-Clause
+- pandas 3.0.2: reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
+- statsmodels 0.14.6: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
+- patsy 1.0.2: model design matrices. https://github.com/pydata/patsy . BSD-2-Clause
+- scipy 1.18.1: numerical routines used by statsmodels (installed with it, pinned for reproducibility). https://scipy.org . BSD-3-Clause
 - Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`, `unittest`, `pathlib`, `datetime`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line; the `tests/test_site_data.py` data checks. https://docs.python.org/3/library/ . PSF License 2.0
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
