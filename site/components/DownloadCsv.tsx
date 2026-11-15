@@ -4,14 +4,27 @@
 // request (MAX_SPAN_DAYS); the static per-year point files are always listed as the fallback and for longer ranges,
 // plus any file from before the selectable record (2000), which no date range can reach;
 // "Download analytics" links to /api/series. The FIRMS acknowledgment sits next to the buttons (nothing is added
-// inside the CSV).
+// inside the CSV). FE-020: an optional latitude/longitude box (?bbox=, BoxFilter) narrows the "Download CSV" link; the
+// whole-year files and the analytics stay whole-region. A box in the URL that misses the region is ignored, and said so.
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
+import { BoxFilter } from "@/components/BoxFilter";
 import { FirmsAcknowledgment } from "@/components/FirmsAcknowledgment";
 import { Button } from "@/components/ui/button";
 import { regionInfo } from "@/lib/data";
 import { REGIONS } from "@/lib/regions";
-import { hotspotsUrl, MAX_SPAN_DAYS, pointFileUrl, seriesUrl, spanDays, yearsBefore, yearsIn } from "@/lib/selection";
-import { useSelection } from "@/lib/use-selection";
+import {
+  boxesOverlap,
+  boxLabel,
+  hotspotsUrl,
+  MAX_SPAN_DAYS,
+  pointFileUrl,
+  regionBox,
+  seriesUrl,
+  spanDays,
+  yearsBefore,
+  yearsIn,
+} from "@/lib/selection";
+import { useBox, useSelection } from "@/lib/use-selection";
 
 const fmt = (v: number) => v.toLocaleString("en-US");
 
@@ -22,6 +35,9 @@ export function DownloadCsv() {
   const available = new Set(regionInfo(sel.region).point_years);
   const years = yearsIn(sel.from, sel.to).filter((y) => available.has(y));
   const earlier = yearsBefore(bounds, regionInfo(sel.region).point_years);
+  const [urlBox, setBox] = useBox();
+  const rbox = regionBox(regionInfo(sel.region).bbox);
+  const box = urlBox && boxesOverlap(urlBox, rbox) ? urlBox : null;
 
   return (
     <section aria-labelledby="download-heading" className="grid gap-8 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
@@ -31,7 +47,14 @@ export function DownloadCsv() {
             Download the detections
           </h2>
           <p className="max-w-[60ch] leading-relaxed text-muted-foreground">
-            Every FIRMS hotspot in {REGIONS[sel.region]} from{" "}
+            Every FIRMS hotspot in {REGIONS[sel.region]}
+            {box && (
+              <>
+                {" "}
+                inside <span className="text-foreground">{boxLabel(box)}</span>
+              </>
+            )}{" "}
+            from{" "}
             <span className="font-mono text-foreground tabular-nums">{sel.from}</span> to{" "}
             <span className="font-mono text-foreground tabular-nums">{sel.to}</span> ({fmt(days)} days): date, time
             (UTC), latitude, longitude, satellite, confidence, fire radiative power and day or night. Raw detections,
@@ -39,10 +62,23 @@ export function DownloadCsv() {
           </p>
         </div>
 
+        <BoxFilter box={box} region={rbox} regionName={REGIONS[sel.region]} onApply={setBox} />
+        {urlBox && !box && (
+          <p className="max-w-[60ch] text-sm leading-relaxed">
+            The box in this link ({boxLabel(urlBox)}) is outside {REGIONS[sel.region]}, so the CSV covers the whole
+            region.
+          </p>
+        )}
+        {box && (
+          <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+            The box narrows only the CSV. The chart, calendar, analytics and whole-year files still cover all of{" "}
+            {REGIONS[sel.region]}.
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           {fits ? (
             <Button asChild size="lg" className="px-4">
-              <a href={hotspotsUrl(sel)} download>
+              <a href={hotspotsUrl(sel, box)} download>
                 <DownloadSimpleIcon aria-hidden />
                 Download CSV
               </a>
@@ -79,7 +115,9 @@ export function DownloadCsv() {
 
         {years.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Whole-year files</p>
+            <p className="text-sm font-medium">
+              Whole-year files{box && <span className="font-normal text-muted-foreground"> (whole region)</span>}
+            </p>
             <ul className="flex flex-wrap gap-1.5" aria-label="Whole-year hotspot files">
               {years.map((y) => (
                 <li key={y}>

@@ -37,12 +37,22 @@ export type RegionInfo = {
   data_through: string; // YYYY-MM-DD, end of the downloaded archive
   point_years: number[]; // years with a points/<year>.csv file
   point_rows: number;
+  bbox: [number, number, number, number]; // [west, south, east, north] degrees, from regions.json
 };
 
 /** Regions in index.json order (the DP-003 region list), limited to those this site has pages for. */
 export const REGION_LIST: RegionInfo[] = regionIndex.regions.flatMap((r) =>
   isRegionId(r.id)
-    ? [{ id: r.id, name: r.name, data_through: r.data_through, point_years: r.point_years, point_rows: r.point_rows }]
+    ? [
+        {
+          id: r.id,
+          name: r.name,
+          data_through: r.data_through,
+          point_years: r.point_years,
+          point_rows: r.point_rows,
+          bbox: r.bbox as RegionInfo["bbox"],
+        },
+      ]
     : [],
 );
 

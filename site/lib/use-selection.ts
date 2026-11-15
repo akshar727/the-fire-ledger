@@ -6,10 +6,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { regionBounds } from "@/lib/data";
 import type { RegionId } from "@/lib/regions";
 import {
+  parseBox,
   parseSelection,
   parseView,
+  withBox,
   withSelection,
   withView,
+  type Box,
   type Bounds,
   type CalendarView,
   type Selection,
@@ -25,6 +28,18 @@ export function useCalendarView(): [CalendarView, (view: CalendarView) => void] 
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
   return [parseView(new URLSearchParams(params)), set];
+}
+
+/** The optional ?bbox= box for the hotspot CSV (FE-020); `null` clears it. Written back the same way as the selection. */
+export function useBox(): [Box | null, (box: Box | null) => void] {
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const set = (box: Box | null) => {
+    const qs = withBox(new URLSearchParams(params), box).toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+  return [parseBox(new URLSearchParams(params)), set];
 }
 
 export function useSelection(): {

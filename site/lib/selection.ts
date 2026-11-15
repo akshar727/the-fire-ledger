@@ -112,9 +112,61 @@ export function yearRange(year: number, bounds: Bounds): { from: string; to: str
   return { from: clamp(`${year}-01-01`, bounds), to: clamp(`${year}-12-31`, bounds) };
 }
 
+/**
+ * Optional latitude/longitude box for the hotspot CSV (FE-020), kept in the URL as ?bbox=w,s,e,n, the same order and
+ * edges (all inclusive) as /api/hotspots. It filters the CSV only; the chart, calendar and analytics stay whole-region.
+ */
+export type Box = { w: number; s: number; e: number; n: number };
+
+/** Why a box can't be used, or null when it is valid. Same rules as `parseBbox` in lib/server-data.ts. */
+export function boxError(b: Box): string | null {
+  if (![b.w, b.s, b.e, b.n].every(Number.isFinite)) return "Enter all four edges as numbers.";
+  if (b.s < -90 || b.n > 90) return "Latitude must be between -90 and 90.";
+  if (b.w < -180 || b.e > 180) return "Longitude must be between -180 and 180.";
+  if (!(b.s < b.n)) return "South must be less than north.";
+  if (!(b.w < b.e)) return "West must be less than east.";
+  return null;
+}
+
+/** Reads ?bbox=w,s,e,n; a missing or invalid value means no box. */
+export function parseBox(params: URLSearchParams): Box | null {
+  const v = params.get("bbox");
+  if (v === null) return null;
+  const nums = v.split(",").map((p) => (p.trim() === "" ? NaN : Number(p)));
+  if (nums.length !== 4) return null;
+  const b = { w: nums[0], s: nums[1], e: nums[2], n: nums[3] };
+  return boxError(b) ? null : b;
+}
+
+/** The query string with the box set, or removed for `null`; other parameters are kept. */
+export function withBox(params: URLSearchParams, box: Box | null): URLSearchParams {
+  const next = new URLSearchParams(params);
+  if (box && !boxError(box)) next.set("bbox", [box.w, box.s, box.e, box.n].join(","));
+  else next.delete("bbox");
+  return next;
+}
+
+/** True when the two boxes share any ground (touching edges count, since every edge is inclusive). */
+export const boxesOverlap = (a: Box, b: Box) => a.w <= b.e && b.w <= a.e && a.s <= b.n && b.s <= a.n;
+
+/** Region box from index.json ([west, south, east, north]) as a Box. */
+export const regionBox = ([w, s, e, n]: [number, number, number, number]): Box => ({ w, s, e, n });
+
+/** "38.5°N to 39°N, 9°W to 8°W": a box in words for the download copy. */
+export function boxLabel(b: Box): string {
+  const deg = (v: number, pos: string, neg: string) =>
+    `${Number(Math.abs(v).toFixed(4))}°${v < 0 ? neg : v > 0 ? pos : ""}`;
+  return `${deg(b.s, "N", "S")} to ${deg(b.n, "N", "S")}, ${deg(b.w, "E", "W")} to ${deg(b.e, "E", "W")}`;
+}
+
 /** Hotspot CSV for the selection (GET /api/hotspots, registry §4); valid only when the span is <= MAX_SPAN_DAYS. */
-export const hotspotsUrl = (s: Selection) =>
-  `/api/hotspots?${new URLSearchParams({ region: s.region, from: s.from, to: s.to })}`;
+export const hotspotsUrl = (s: Selection, box: Box | null = null) =>
+  `/api/hotspots?${new URLSearchParams({
+    region: s.region,
+    from: s.from,
+    to: s.to,
+    ...(box && !boxError(box) ? { bbox: [box.w, box.s, box.e, box.n].join(",") } : {}),
+  })}`;
 
 /** Monthly analytics CSV for the selection (GET /api/series, registry §4). */
 export const seriesUrl = (s: Selection) =>

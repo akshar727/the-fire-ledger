@@ -3,8 +3,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { MAX_SPAN_DAYS as SERVER_MAX } from "./server-data.ts";
+import { parseBbox } from "./server-data.ts";
 import {
+  boxError,
+  boxesOverlap,
+  boxLabel,
   hotspotsUrl,
+  parseBox,
+  regionBox,
+  withBox,
   isDate,
   MAX_SPAN_DAYS,
   moveEnd,
@@ -19,6 +26,7 @@ import {
   yearsBefore,
   yearsIn,
   type Bounds,
+  type Box,
 } from "./selection.ts";
 
 const B: Bounds = { min: "2001-01-01", max: "2025-12-31" };
@@ -108,4 +116,54 @@ test("calendar view: ?view=week, anything else is month; month drops the paramet
   assert.equal(q.toString(), "region=ghana&from=2017-01-01", "input is not mutated");
   // the selection helpers keep the view
   assert.equal(withSelection(new URLSearchParams("view=week"), { region: "punjab" }, B).get("view"), "week");
+});
+
+test("box: ?bbox= parses like the route handler, and bad values mean no box (FE-020)", () => {
+  const q = (v: string) => parseBox(new URLSearchParams({ bbox: v }));
+  assert.deepEqual(q("-9,38.5,-8,39"), { w: -9, s: 38.5, e: -8, n: 39 });
+  assert.equal(parseBox(new URLSearchParams("")), null);
+  for (const bad of ["", "1,2,3", "1,2,3,4,5", "a,1,2,3", "-8,38,-9,39", "-9,39,-8,38", "-200,0,0,1", "0,-91,1,0", "-9,,-8,39"]) {
+    assert.equal(q(bad), null, bad);
+    assert.throws(() => parseBbox(bad), /bbox/, `server must reject ${bad} too`);
+  }
+  // every value the client accepts, the server accepts
+  for (const good of ["-9,38.5,-8,39", "-180,-90,180,90", "73.75,28.75,77.5,32.5"]) {
+    assert.deepEqual(parseBbox(good), q(good), good);
+  }
+});
+
+test("box: errors name the problem, in the order the form shows the fields", () => {
+  assert.equal(boxError({ w: -9, s: 38, e: -8, n: 39 }), null);
+  assert.match(boxError({ w: NaN, s: 38, e: -8, n: 39 })!, /all four/);
+  assert.match(boxError({ w: -9, s: 38, e: -8, n: 95 })!, /Latitude/);
+  assert.match(boxError({ w: -190, s: 38, e: -8, n: 39 })!, /Longitude/);
+  assert.match(boxError({ w: -9, s: 39, e: -8, n: 39 })!, /South must be less than north/);
+  assert.match(boxError({ w: -8, s: 38, e: -9, n: 39 })!, /West must be less than east/);
+});
+
+test("box: withBox sets and clears ?bbox= and keeps the selection; hotspotsUrl carries it", () => {
+  const p = new URLSearchParams("region=portugal&from=2017-06-01&to=2017-06-30");
+  const b: Box = { w: -8.7, s: 39.6, e: -7.8, n: 40.3 };
+  const set = withBox(p, b);
+  assert.equal(set.toString(), "region=portugal&from=2017-06-01&to=2017-06-30&bbox=-8.7%2C39.6%2C-7.8%2C40.3");
+  assert.deepEqual(parseBox(set), b);
+  assert.equal(withBox(set, null).toString(), p.toString());
+  assert.equal(withBox(p, { w: 1, s: 0, e: 0, n: 1 }).has("bbox"), false, "an invalid box is never written");
+  const s = parse("region=portugal&from=2017-06-01&to=2017-06-30");
+  assert.equal(hotspotsUrl(s), "/api/hotspots?region=portugal&from=2017-06-01&to=2017-06-30");
+  assert.equal(
+    hotspotsUrl(s, b),
+    "/api/hotspots?region=portugal&from=2017-06-01&to=2017-06-30&bbox=-8.7%2C39.6%2C-7.8%2C40.3",
+  );
+  assert.deepEqual(parseBbox(new URL(hotspotsUrl(s, b), "http://x").searchParams.get("bbox")), b);
+});
+
+test("box: overlap with the region box (edges inclusive) and the label", () => {
+  const pt = regionBox([-10, 36.9, -6, 42.2]);
+  assert.ok(boxesOverlap({ w: -9, s: 38, e: -8, n: 39 }, pt));
+  assert.ok(boxesOverlap({ w: -12, s: 30, e: 0, n: 50 }, pt), "a box around the whole region");
+  assert.ok(boxesOverlap({ w: -6, s: 42.2, e: -5, n: 43 }, pt), "touching corner counts");
+  assert.ok(!boxesOverlap({ w: -3.5, s: 4.5, e: 1.5, n: 11.5 }, pt), "Ghana's box misses Portugal");
+  assert.equal(boxLabel({ w: -9, s: 38.5, e: -8, n: 39 }), "38.5°N to 39°N, 9°W to 8°W");
+  assert.equal(boxLabel({ w: -1.25, s: -0.5, e: 0, n: 0.123456 }), "0.5°S to 0.1235°N, 1.25°W to 0°");
 });
