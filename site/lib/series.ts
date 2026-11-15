@@ -12,7 +12,13 @@ export type Monthly = {
   pred: number[]; // VIIRS-equivalent model mean
   lo: number[];
   hi: number[];
+  source?: Source[]; // ML-017; optional so older bundles still parse
+  last_month_days?: number; // ML-017: days with data in the last month (it may be partial: the forward month to date)
 };
+
+/** Where a period's value comes from (ML-017): MODIS back-cast, observed S-NPP, or S-NPP equivalent from NOAA-20/21. */
+export type Source = "backcast" | "observed" | "forward";
+const SOURCES = new Set(["backcast", "observed", "forward"]);
 
 /** Weekly series: week `w` of a year = day-of-year 7w+1..7w+7, week 51 runs to 31 Dec (8 or 9 days). */
 export type Weekly = {
@@ -23,6 +29,7 @@ export type Weekly = {
   pred: number[];
   lo: number[];
   hi: number[];
+  source?: Source[];
   last_week_days: number; // days with data in the last week (it may be partial)
 };
 
@@ -48,6 +55,14 @@ export class SeriesFormatError extends Error {}
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
+function sourceArray(v: unknown, name: string, len: number): void {
+  if (v === undefined) return;
+  if (!Array.isArray(v) || v.length !== len) throw new SeriesFormatError(`${name} must be an array of ${len} values`);
+  v.forEach((x, i) => {
+    if (!SOURCES.has(x as string)) throw new SeriesFormatError(`${name}[${i}] is not backcast, observed or forward`);
+  });
+}
+
 function numArray(v: unknown, name: string, len?: number, nullable = false): void {
   if (!Array.isArray(v)) throw new SeriesFormatError(`${name} is not an array`);
   if (len != null && v.length !== len) throw new SeriesFormatError(`${name} has ${v.length} values, expected ${len}`);
@@ -71,6 +86,10 @@ export function parseSeries(raw: unknown): SeriesBundle {
   if (n === 0) throw new SeriesFormatError("monthly series is empty");
   numArray(m.viirs, "monthly.viirs", n, true);
   for (const k of ["pred", "lo", "hi"]) numArray(m[k], `monthly.${k}`, n);
+  sourceArray(m.source, "monthly.source", n);
+  const md = m.last_month_days;
+  if (md !== undefined && (!Number.isInteger(md) || (md as number) < 1 || (md as number) > 31))
+    throw new SeriesFormatError("monthly.last_month_days must be an integer from 1 to 31");
   const w = b.weekly as Record<string, unknown> | undefined;
   if (w != null) {
     if (typeof w !== "object") throw new SeriesFormatError("weekly is not an object");
@@ -81,6 +100,7 @@ export function parseSeries(raw: unknown): SeriesBundle {
     if (nw === 0) throw new SeriesFormatError("weekly series is empty");
     numArray(w.viirs, "weekly.viirs", nw, true);
     for (const k of ["pred", "lo", "hi"]) numArray(w[k], `weekly.${k}`, nw);
+    sourceArray(w.source, "weekly.source", nw);
     const d = w.last_week_days;
     if (!Number.isInteger(d) || (d as number) < 1 || (d as number) > 9)
       throw new SeriesFormatError("weekly.last_week_days must be an integer from 1 to 9");
@@ -191,8 +211,9 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
       const v = i < n ? s.viirs[i] : null;
       const value = i < n ? (v ?? s.pred[i]) : null;
       const span = week ? weekSpan(year, col) : monthSpan(year, col + 1);
-      // monthly arrays hold complete months only; the last week can stop early (weekly.last_week_days)
-      const days = i >= n ? 0 : week && i === n - 1 ? Math.min(b.weekly!.last_week_days, span.length) : span.length;
+      // the last week (weekly.last_week_days) and the last month (monthly.last_month_days, ML-017) can stop early
+      const lastDays = week ? b.weekly!.last_week_days : b.monthly.last_month_days;
+      const days = i >= n ? 0 : i === n - 1 && lastDays != null ? Math.min(lastDays, span.length) : span.length;
       const cell: CalendarCell = {
         index: i,
         year,

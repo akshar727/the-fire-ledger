@@ -223,6 +223,37 @@ test("month grid cells carry their dates and are never partial", () => {
   assert.ok(g.rows.flat().every((c) => !c.partial));
 });
 
+test("month grid: monthly.last_month_days marks the last month partial (ML-017, forward month to date)", () => {
+  const b = structuredClone(fixture);
+  b.monthly.last_month_days = 14;
+  const g = buildGrid(parseSeries(b));
+  const last = g.latest!;
+  assert.equal(last.index, 299);
+  assert.equal(last.days, 14);
+  assert.equal(last.through, "2025-12-14");
+  assert.equal(last.partial, true);
+  assert.deepEqual(g.partialYears, [2025]);
+  assert.ok(g.rows.flat().filter((c) => c !== last).every((c) => !c.partial));
+  b.monthly.last_month_days = 31; // a whole last month is not partial
+  assert.equal(buildGrid(parseSeries(b)).latest?.partial, false);
+});
+
+test("parser checks monthly.source, weekly.source and monthly.last_month_days when present", () => {
+  const bad = (mutate: (b: ReturnType<typeof withWeekly>) => void) => {
+    const b = withWeekly();
+    mutate(b);
+    return () => parseSeries(b);
+  };
+  const src = (n: number) => Array.from({ length: n }, (_, i) => (i < 5 ? "backcast" : "observed"));
+  assert.doesNotThrow(bad((b) => ((b.monthly.source = src(300)), (b.weekly.source = src(b.weekly.modis.length)))));
+  assert.doesNotThrow(bad((b) => (b.monthly.last_month_days = 31)));
+  assert.throws(bad((b) => (b.monthly.source = src(299))), SeriesFormatError);
+  assert.throws(bad((b) => (b.monthly.source = [...src(299), "model"])), SeriesFormatError);
+  assert.throws(bad((b) => (b.weekly.source = src(3))), SeriesFormatError);
+  assert.throws(bad((b) => (b.monthly.last_month_days = 0)), SeriesFormatError);
+  assert.throws(bad((b) => (b.monthly.last_month_days = 32)), SeriesFormatError);
+});
+
 test("week grid needs the weekly series", () => {
   assert.throws(() => buildGrid(parseSeries(fixture), "week"), SeriesFormatError);
 });
@@ -280,6 +311,17 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(latest.partial, b.weekly.last_week_days < latest.length);
     // every period before the last has full days
     assert.ok(g.rows.flat().filter((c) => c.value != null && c !== latest).every((c) => !c.partial));
+  });
+  test(`published ${region} month grid: source per month, last month to date (ML-017)`, { skip: !existsSync(url) }, () => {
+    const b = parseSeries(JSON.parse(readFileSync(url, "utf8")));
+    const m = b.monthly, n = m.modis.length;
+    if (!m.source) return; // bundle from before ML-017
+    assert.equal(m.source.length, n);
+    m.source.forEach((s, i) => assert.equal(s === "observed", m.viirs[i] != null, `month ${i}`));
+    const latest = buildGrid(b).latest!;
+    assert.equal(latest.index, n - 1);
+    assert.equal(latest.days, Math.min(m.last_month_days ?? latest.length, latest.length));
+    if (m.source[n - 1] === "forward") assert.equal(b.calendar?.anomaly[n - 1] ?? null, null);
   });
 }
 
