@@ -348,6 +348,12 @@ export default function StoryPage() {
               How it works
             </Link>
           </div>
+          <p className="pt-1 text-sm">
+            <Link href="/globe" className="underline underline-offset-4 hover:text-primary">
+              See every place on the globe
+            </Link>
+            , coloured by its fire record from 2001.
+          </p>
         </Chapter>
       </main>
     </div>
