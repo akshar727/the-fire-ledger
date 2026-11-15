@@ -3,13 +3,15 @@ regions.json and grid them to 0.25 deg cells per day -> data/grid/fire_grid_dail
 plus data/grid/manifest.json and site/public/data/index.json. Also writes the individual detections,
 one CSV per region and year -> site/public/data/<id>/points/<year>.csv (see write_points).
 Usage: python build.py [region_id ...]   (no ids = all regions)
-Source: https://firms.modaps.eosdis.nasa.gov/country/ (no key needed)."""
+Source: https://firms.modaps.eosdis.nasa.gov/country/ (no key needed), plus 2026 chunks that fetch_recent.py
+cached in data/raw/recent/<id>/ (area API; build.py itself never needs a key)."""
 import argparse, json, os, re, time, urllib.error, urllib.request
 import numpy as np, pandas as pd
 
 BASE = "https://firms.modaps.eosdis.nasa.gov/data/country"
 SRC = {"modis": range(2000, 2026), "viirs-snpp": range(2012, 2026)}
 RAW = "data/raw"
+RECENT = "data/raw/recent"   # 2026 chunks written by fetch_recent.py (committed; build.py never needs the key)
 GRID = "data/grid"
 INDEX = "site/public/data/index.json"
 COLS = ["latitude", "longitude", "acq_date", "acq_time", "satellite", "confidence", "frp", "daynight", "type"]
@@ -19,6 +21,7 @@ POINT_COLS = ["date", "time_utc", "lat", "lon", "satellite", "confidence", "frp_
 POINT_SAT = {"Terra": "Terra", "Aqua": "Aqua", "N": "SNPP"}
 SAT = {"Terra": "terra", "Aqua": "aqua", "N": "viirs"}  # NOAA-20/21 intentionally not mapped
 CELL_DEG = 0.25
+KNOWN_DEG = 0.05   # load_recent: a 2026 detection must fall on a 0.05° sub-cell seen in the archive (border filter)
 
 
 def header_missing(path, cols=COLS):
@@ -114,6 +117,56 @@ def load_region(region):
     if unknown:
         raise ValueError(f"Unknown satellite value(s): {unknown}; expected one of {sorted(SAT)}")
     return df, archive_through
+
+
+def load_recent(region, archive_df, root=RECENT):
+    """2026 detections cached by fetch_recent.py in <root>/<id>/ (none -> empty frame, through None).
+    Same filters as the archive: inside the bbox and type 0 where the file has a `type` column (NRT files don't:
+    those rows are kept, so non-vegetation hotspots can slip in). The area API returns the whole bbox, the
+    archives only the country, so a 2026 detection is kept only if its KNOWN_DEG (0.05°, ~5.5 km) sub-cell had a
+    detection in this region's archive. Measured (DP-005 review): with 0.25° cells ~6% of 2026 detections fell on
+    ground with no detection in 2000-2024 (neighbour side of border cells + untyped NRT static sources), against
+    0.04-0.3% for 2025; the 0.05° mask drops at most ~0.3% of genuine detections.
+    Returns (detections, through): through = last day fetch_recent covered for both sensors."""
+    folder = os.path.join(root, region["id"])
+    cov_path = os.path.join(folder, "coverage.json")
+    if not os.path.exists(cov_path):
+        return archive_df.iloc[0:0], None
+    with open(cov_path, encoding="utf-8") as f:
+        cov = json.load(f)
+    if len(archive_df) and cov["start"] <= str(archive_df.acq_date.max()):
+        raise SystemExit(f"{cov_path}: starts {cov['start']}, but the archive already reaches {archive_df.acq_date.max()}; "
+                         "rows would be counted twice. Drop the overlapping years from SRC or re-run fetch_recent.py.")
+    x0, y0, x1, y1 = region["bbox"]
+    key = lambda d: (np.floor(d.latitude.to_numpy() / KNOWN_DEG + 1e-9).astype(np.int64) * 100_000
+                     + np.floor(d.longitude.to_numpy() / KNOWN_DEG + 1e-9).astype(np.int64))
+    known = np.unique(key(archive_df))
+    frames = []
+    for c in cov["chunks"]:
+        path = os.path.join(folder, c["file"])
+        cols = [k for k in COLS if k != "type" or not header_missing(path, ["type"])]
+        missing = header_missing(path, [k for k in COLS if k != "type"])
+        if missing:
+            raise SystemExit(f"{path} is missing columns {missing}; delete it and re-run fetch_recent.py.")
+        d = pd.read_csv(path, usecols=cols, dtype={**STR_COLS, "latitude": float, "longitude": float, "frp": float})
+        if len(d) != c["rows"]:
+            raise SystemExit(f"{path}: {len(d)} rows, coverage.json says {c['rows']}; re-run fetch_recent.py.")
+        if not len(d):              # a quiet 5 days: an empty frame would turn number columns into text on concat
+            continue
+        if "type" not in d:
+            d["type"] = 0           # NRT: no type column (see docstring)
+        d["type"] = d["type"].astype(archive_df["type"].dtype)
+        d["satellite"] = d.satellite.replace({"T": "Terra", "A": "Aqua"})   # MODIS NRT may use one-letter names
+        d = d[(d.type == 0) & d.longitude.between(x0, x1, inclusive="left") & d.latitude.between(y0, y1, inclusive="left")]
+        d = d[np.isin(key(d), known)] if len(d) else d
+        frames.append(d)
+    df = pd.concat(frames, ignore_index=True) if frames else archive_df.iloc[0:0]
+    df = df[(df.acq_date >= cov["start"]) & (df.acq_date <= cov["through"])]
+    unknown = sorted(set(df.satellite.dropna()) - set(SAT)) + (["NaN"] if df.satellite.isna().any() else [])
+    if unknown:
+        raise ValueError(f"{region['id']} recent: unknown satellite value(s) {unknown}; expected one of {sorted(SAT)}")
+    print(f"recent {region['id']}: {len(df)} detections {cov['start']} .. {cov['through']}")
+    return df, cov["through"]
 
 
 def grid(df):
@@ -261,6 +314,10 @@ def main(argv=None):
     for r in todo:  # manifest and index are written after EACH region, so a later failure leaves them consistent
         print(f"== {r['id']} ==")
         df, archive_through = load_region(r)
+        recent, through = load_recent(r, df)
+        if through:   # 2026 from the area API (DP-005): same schema, data now reaches `through`
+            df = pd.concat([df, recent], ignore_index=True)
+            archive_through = through
         out = grid(df)
         path = f"{GRID}/fire_grid_daily_{r['id']}.csv"
         out.to_csv(path + ".part", index=False, lineterminator="\n")

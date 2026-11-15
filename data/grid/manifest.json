@@ -1,65 +1,65 @@
 {
   "ghana": {
-    "archive_through": "2025-12-31",
+    "archive_through": "2026-11-02",
     "sensors": {
       "terra": {
         "first_date": "2000-11-02",
-        "last_date": "2025-12-31",
-        "detections": 352696
+        "last_date": "2026-11-02",
+        "detections": 356203
       },
       "aqua": {
         "first_date": "2002-07-19",
-        "last_date": "2025-12-31",
-        "detections": 858576
+        "last_date": "2026-11-01",
+        "detections": 873075
       },
       "viirs": {
         "first_date": "2012-01-20",
-        "last_date": "2025-12-31",
-        "detections": 2877348
+        "last_date": "2026-11-02",
+        "detections": 2986818
       }
     },
-    "grid_rows": 575310
+    "grid_rows": 593771
   },
   "portugal": {
-    "archive_through": "2025-12-31",
+    "archive_through": "2026-11-02",
     "sensors": {
       "terra": {
         "first_date": "2000-11-06",
-        "last_date": "2025-11-28",
-        "detections": 36967
+        "last_date": "2026-11-01",
+        "detections": 37879
       },
       "aqua": {
         "first_date": "2002-07-04",
-        "last_date": "2025-11-27",
-        "detections": 38884
+        "last_date": "2026-11-01",
+        "detections": 39857
       },
       "viirs": {
         "first_date": "2012-01-20",
-        "last_date": "2025-12-31",
-        "detections": 103300
+        "last_date": "2026-11-02",
+        "detections": 108703
       }
     },
-    "grid_rows": 35297
+    "grid_rows": 36779
   },
   "punjab": {
-    "archive_through": "2025-12-31",
+    "archive_through": "2026-11-02",
     "sensors": {
       "terra": {
         "first_date": "2000-11-01",
-        "last_date": "2025-12-22",
-        "detections": 103537
+        "last_date": "2026-11-02",
+        "detections": 104264
       },
       "aqua": {
         "first_date": "2002-07-18",
-        "last_date": "2025-12-27",
-        "detections": 357700
+        "last_date": "2026-11-02",
+        "detections": 360715
       },
       "viirs": {
         "first_date": "2012-01-20",
-        "last_date": "2025-12-30",
-        "detections": 1302376
+        "last_date": "2026-11-02",
+        "detections": 1329802
       }
     },
-    "grid_rows": 208467
+    "grid_rows": 215344
   }
 }
