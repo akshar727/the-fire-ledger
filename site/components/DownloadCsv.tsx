@@ -72,6 +72,10 @@ export function DownloadCsv() {
           </a>
           ).
         </p>
+        <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+          Pictures: &quot;Download picture&quot; under the record chart and the calendar saves what is on screen as PNG
+          or SVG, with title, legend and the FIRMS acknowledgment.
+        </p>
 
         {years.length > 0 && (
           <div className="flex flex-col gap-2">
