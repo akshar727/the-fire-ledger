@@ -1,0 +1,8 @@
+# Python precompute (build.py, model.py, tests). Exact versions, so reruns reproduce the committed
+# outputs within scripts/check_outputs.py's tolerance. Needs Python 3.12 or newer: scipy 1.18 sets that
+# floor (numpy/pandas need 3.11), so relax the scipy pin first if 3.11 support is ever needed.
+numpy==2.4.4
+pandas==3.0.2
+statsmodels==0.14.6
+patsy==1.0.2
+scipy==1.18.1  # installed by statsmodels; pinned because it affects the model's numbers
