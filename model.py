@@ -1,5 +1,8 @@
 """Per-region model: fit VIIRS ~ MODIS count model on 2012-2019, back-cast a VIIRS-equivalent record
 for 2001-2011, validate on held-out 2020-2025. Usage: python model.py [region_id ...] [--nboot N]
+Whole countries (countries.json, ML-023): python model.py <country_id> [--method model|ratio] [--cell-deg D]; or the
+batch runner run_countries.py. A country is fitted on coarser cells (`cell_deg`, ML-024) or with the constant-ratio
+method (`method="ratio"`: MODIS x the 2012-2019 VIIRS/MODIS ratio, no fit, seconds), and labelled by the ship rule.
 Writes site/public/data/<region_id>/annual.json and series.json (monthly + weekly series with 5-95% bands,
 plus the burn-calendar block from calendar_stats.calendar_block);
 run() also returns per-week sums and bootstrap draw sums.
@@ -14,6 +17,7 @@ from trend_stats import trend_block
 from forward_link import run_forward
 from cells import cells_bundle
 import site_bundle
+import globe
 try:
     import resource   # not on Windows
 except ImportError:
@@ -27,6 +31,100 @@ F_TERRA = "viirs_n ~ lt + lft + lrt + I(terra_n == 0)" + COMMON         # Terra 
 # overpass drift (ML-016): satellite key in annual.json -> `satellite` value in points/<year>.csv
 OVERPASS_SATS = {"terra": "Terra", "aqua": "Aqua", "snpp": "SNPP"}
 DRIFT_BASE, DRIFT_LIMIT, DRIFT_SATS = range(2013, 2020), 0.5, ("terra", "aqua")   # stable-orbit years; hours
+# whole countries (ML-023, ML-024): cell sizes tried smallest first, the largest burning-cell count a fit may have
+# (Ghana's 362 at 0.25 deg was the largest proven run), and the least training VIIRS a model is checked on
+CELL_STEPS, MAX_CELLS, SPARSE_MIN = (0.25, 0.5, 1.0, 2.0, 4.0, 8.0), 400, 1000
+COUNTRY_GRID = "data/grid/country"
+COUNTRY_NBOOT = 100   # ML-024: same score as 200 draws on Ghana at 1 deg, half the time
+
+def coarsen(d, cell_deg):
+    """Sum a 0.25 deg daily grid to cell_deg cells (ML-024): counts summed, mean FRP weighted by counts (so
+    n * frp_mean, what run() uses, is the exact sum of the small cells'). Cells are named by their south-west corner."""
+    d = d.copy()
+    d["lat"] = np.floor(d.lat / cell_deg) * cell_deg
+    d["lon"] = np.floor(d.lon / cell_deg) * cell_deg
+    keys = ["date", "lat", "lon", "daynight"]
+    sums = {}
+    for k in ("terra", "aqua", "viirs", "n20", "n21"):
+        if f"{k}_n" in d.columns:
+            d[f"{k}_frp_sum"] = d[f"{k}_n"] * d[f"{k}_frp_mean"].fillna(0)
+            sums[k] = [f"{k}_n", f"{k}_frp_sum"]
+    g = d.groupby(keys, sort=True)[[c for v in sums.values() for c in v]].sum().reset_index()
+    for k, (n, fs) in sums.items():
+        g[f"{k}_frp_mean"] = np.where(g[n] > 0, g[fs] / g[n].clip(lower=1), np.nan)
+        g = g.drop(columns=fs)
+    return g
+
+
+def burning_cells(d, cell_deg):
+    """Cells of size cell_deg with any Terra, Aqua or S-NPP detection (the model's cell list)."""
+    seen = d[(d.terra_n + d.aqua_n + d.viirs_n) > 0]
+    return len(set(zip(np.floor(seen.lat / cell_deg), np.floor(seen.lon / cell_deg))))
+
+
+def pick_cell_deg(d, steps=CELL_STEPS, max_cells=MAX_CELLS):
+    """Smallest cell size in steps with at most max_cells burning cells (ML-024 rule), else the largest. Returns
+    (cell_deg, {cell_deg: burning cells})."""
+    counts = {}
+    for c in steps:
+        counts[c] = burning_cells(d, c)
+        if counts[c] <= max_cells:
+            return c, counts
+    return steps[-1], counts
+
+
+def ship_rule(score, method, sparse):
+    """The label a whole country is published with (ML-024): "sparse" (too little fire to check), "ratio" (the ratio
+    method ran, or one constant ratio beat the model on the hidden years), "model" (beats the ratio and >= 4 of 6
+    hidden years inside the band), "caveat" (beats the ratio, band too narrow)."""
+    if sparse or score.get("mape_model") is None or score.get("mape_ratio") is None:
+        return "sparse"
+    if method == "ratio" or score["mape_model"] >= score["mape_ratio"]:
+        return "ratio"
+    return "model" if score["coverage"] >= min(4, score["n_hold"]) else "caveat"
+
+
+def mape(pred, obs):
+    """Mean absolute % error over years with observed fire (a 0 year can't be scored; None if there is none)."""
+    pred, obs = np.asarray(pred, float), np.asarray(obs, float)
+    ok = obs > 0
+    return float((abs(pred[ok] - obs[ok]) / obs[ok]).mean() * 100) if ok.any() else None
+
+
+def corr(a, b):
+    """Pearson r, or None when either side is constant (e.g. no fire at all)."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    return float(np.corrcoef(a, b)[0, 1]) if a.std() > 0 and b.std() > 0 else None
+
+
+def country_caveat(ship, score, model_score, ann, missing_files):
+    """Plain sentences a whole country shows with its record, or None."""
+    out = []
+    pct = lambda v: f"{v:.1f}%"
+    if ship == "caveat":
+        out.append(f"Only {score['coverage']} of the {score['n_hold']} hidden years (2020-2025) fell inside the model's "
+                   "5-95% band, so the band is too narrow here.")
+    elif ship == "ratio" and model_score and model_score.get("mape_model") is not None:
+        out.append(f"On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model "
+                   f"({pct(model_score['mape_ratio'])} vs {pct(model_score['mape_model'])} average error), so the "
+                   "years before 2012 are MODIS times that ratio.")
+    elif ship == "sparse":
+        out.append("Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than "
+                   f"{SPARSE_MIN:,}, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated.")
+    # the yearly total itself, not per MODIS detection: before mid-2002 MODIS is Terra only, so per-detection runs
+    # about 2x by design
+    hm = ann.harmonized
+    base = hm[(hm.index >= 2003) & (hm.index <= 2011)]
+    early = hm[hm.index <= 2002]
+    if len(base) >= 5 and len(early) and (early > 1.5 * base.median()).any():
+        out.append("The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 "
+                   "with caution.")
+    if missing_files:
+        years = sorted({int(f.split("_")[1]) for f in missing_files})
+        out.append(f"FIRMS has no file for {len(missing_files)} sensor-year(s) ({', '.join(map(str, years))}); "
+                   "those count as no fire.")
+    return " ".join(out) or None
+
 
 def week_end(yr, wk):
     """Last day of week wk (covers day-of-year 7wk+1..7wk+7; week 51 runs to Dec 31)."""
@@ -159,18 +257,32 @@ def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
     return {"schema": 1, "region": region_id, "monthly": monthly, "weekly": weekly,
             "calendar": calendar_block(harmonized, monthly["start_year"])}
 
-def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None, write_cells=False):
+def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None, write_cells=False,
+        cell_deg=None, method="model", tier=None, model_score=None):
     """Fit one region and write annual.json + series.json. Returns dict: weeks (list of (year, week)), modis/viirs/pred
     (per-week region totals, arrays), draws (nboot x n_weeks bootstrap draw sums), ann (annual DataFrame), score.
     points_dir (default <out_dir>/<region_id>/points, written by build.py) feeds only the overpass fields.
     write_cells (ML-018): also write cells.json (per-cell monthly back-cast, cells.py). Off by default; the CLI
-    (main) turns it on, and main only runs the regions.json regions."""
+    (main) turns it on for the regions.json regions only.
+    Whole countries (ML-023): cell_deg sums the grid to coarser cells (None = as built, the 3 regions unchanged);
+    method="ratio" skips the fit (pred = MODIS x the 2012-2019 VIIRS/MODIS ratio, by day/night, Terra-only ratio
+    before Aqua); tier="country" adds tier/cell_deg/method/ship/caveat to both files, and a model that loses to one
+    constant ratio on the hidden years is re-run as the ratio (model_score keeps the model's score)."""
+    if method not in ("model", "ratio"):
+        raise ValueError(f"method must be 'model' or 'ratio', not {method!r}")
+    if write_cells and method != "model":
+        raise ValueError("write_cells needs the cell model (method='model')")
+    args = dict(nboot=nboot, grid_dir=grid_dir, out_dir=out_dir, points_dir=points_dir, cell_deg=cell_deg, tier=tier)
     t0 = time.time()
     rng = np.random.default_rng(0)   # per region, so output doesn't depend on which other regions ran
     man = load_json(os.path.join(grid_dir, "manifest.json"))[region_id]
     through = man["archive_through"]
     weeks = kept_weeks(through)
     d = pd.read_csv(os.path.join(grid_dir, f"fire_grid_daily_{region_id}.csv"), parse_dates=["date"])
+    if method == "ratio":
+        d["lat"], d["lon"] = 0.0, 0.0   # the ratio has no spatial terms: one cell gives the same totals, far faster
+    elif cell_deg is not None:
+        d = coarsen(d, cell_deg)
     # forward link (ML-017): its own random stream, so the back-cast below is byte-identical with or without it
     fend = forward_through(man.get("sensors", {}), through)
     # fend comes from the manifest build.py writes with the grid; not clipped to the last grid row, because the grid is
@@ -213,6 +325,17 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     no_viirs = wk_nov[widx]
     istrain = w.year.isin(TRAIN).values & ~no_viirs                    # 2012 weeks 0-2 left out of training
 
+    # too little fire to check (ML-014, ML-023): no inf/NaN from empty totals; a zero hold-out year can't be scored
+    tr_v, tr_m = float(y[istrain].sum()), float(w.modis_n.values[istrain].sum())
+    if tr_v == 0 or tr_m == 0:
+        raise SystemExit(f"{region_id}: 2012-2019 training has {tr_v:.0f} VIIRS and {tr_m:.0f} MODIS detections; "
+                         "there is nothing to scale")
+    sparse = (tr_v < SPARSE_MIN or any(y[istrain & (yrs == yr)].sum() == 0 for yr in TRAIN)
+              or any(y[yrs == yr].sum() == 0 for yr in HOLD if yr in set(yrs.tolist())))
+    if sparse and method == "model" and tier is not None:   # the 3 deep dives always fit the model
+        method = "ratio"   # a model fit on near-empty training years would be noise; the label says so
+        print(f"{region_id}: too little fire to check the model ({tr_v:.0f} VIIRS detections 2012-2019): ratio method")
+
     def fit(f, rows):
         """Poisson mean model: its score equations make predicted totals match observed totals in training."""
         params = sm.GLM(y[rows], X[f][rows], family=sm.families.Poisson()).fit().params
@@ -225,32 +348,68 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         mu[~pre] = np.exp(X[F_FULL][~pre] @ fit(F_FULL, rows))
         return mu
 
-    tr = np.flatnonzero(istrain)
-    mu = predict(tr)
-    mu_t = mu[tr]
-    a_full = max(float(np.sum((y[tr] - mu_t) ** 2 - y[tr]) / np.sum(mu_t ** 2)), 1e-3)   # NB dispersion (Cameron-Trivedi)
+    if method == "model":
+        tr = np.flatnonzero(istrain)
+        mu = predict(tr)
+        mu_t = mu[tr]
+        a_full = max(float(np.sum((y[tr] - mu_t) ** 2 - y[tr]) / np.sum(mu_t ** 2)), 1e-3)   # NB dispersion (Cameron-Trivedi)
 
-    # year-level error (ML-002): refit without each training year, compare that year's predicted and observed totals.
-    # The bootstrap below misses this: its per-row noise averages out over a year, so annual bands came out ~2x too
-    # narrow (hold-out coverage 1-4 of 6). sigma_year = RMS of log(observed / predicted) over the 8 left-out years.
-    # Slightly conservative (it also holds parameter and count noise the bootstrap adds again). Thin: 8 years, F_FULL
-    # only, applied to every year; the 2001-2011 back-cast extrapolates, so its true year error may be larger.
-    rows_by_year = {yr: np.flatnonzero(istrain & (yrs == yr)) for yr in TRAIN}
-    loyo = []
-    for yr in TRAIN:
-        p = fit(F_FULL, np.flatnonzero(istrain & (yrs != yr)))
-        r = rows_by_year[yr]
-        loyo.append(np.log(y[r].sum() / np.exp(X[F_FULL][r] @ p).sum()))
-    sigma_year = float(np.sqrt(np.mean(np.square(loyo))))
-    yidx = yrs - 2001                                                   # row -> year index, for one factor per year
+        # year-level error (ML-002): refit without each training year, compare that year's predicted and observed totals.
+        # The bootstrap below misses this: its per-row noise averages out over a year, so annual bands came out ~2x too
+        # narrow (hold-out coverage 1-4 of 6). sigma_year = RMS of log(observed / predicted) over the 8 left-out years.
+        # Slightly conservative (it also holds parameter and count noise the bootstrap adds again). Thin: 8 years, F_FULL
+        # only, applied to every year; the 2001-2011 back-cast extrapolates, so its true year error may be larger.
+        rows_by_year = {yr: np.flatnonzero(istrain & (yrs == yr)) for yr in TRAIN}
+        loyo = []
+        for yr in TRAIN:
+            p = fit(F_FULL, np.flatnonzero(istrain & (yrs != yr)))
+            r = rows_by_year[yr]
+            loyo.append(np.log(y[r].sum() / np.exp(X[F_FULL][r] @ p).sum()))
+        sigma_year = float(np.sqrt(np.mean(np.square(loyo))))
+        yidx = yrs - 2001                                                   # row -> year index, for one factor per year
 
-    # intervals: year-block bootstrap of the fit, a shared lognormal factor per year (mean 1, sd sigma_year in log
-    # terms), then negative-binomial sampling noise; keep only per-week sums
-    draws = np.empty((nboot, nw))
-    for b in range(nboot):
-        mub = predict(np.concatenate([rows_by_year[yr] for yr in rng.choice(list(TRAIN), len(TRAIN))]))
-        mub *= np.exp(sigma_year * rng.standard_normal(yidx.max() + 1) - sigma_year ** 2 / 2)[yidx]
-        draws[b] = np.bincount(widx, weights=rng.poisson(mub * rng.gamma(1 / a_full, a_full, len(mub))), minlength=nw)
+        # intervals: year-block bootstrap of the fit, a shared lognormal factor per year (mean 1, sd sigma_year in log
+        # terms), then negative-binomial sampling noise; keep only per-week sums
+        draws = np.empty((nboot, nw))
+        for b in range(nboot):
+            mub = predict(np.concatenate([rows_by_year[yr] for yr in rng.choice(list(TRAIN), len(TRAIN))]))
+            mub *= np.exp(sigma_year * rng.standard_normal(yidx.max() + 1) - sigma_year ** 2 / 2)[yidx]
+            draws[b] = np.bincount(widx, weights=rng.poisson(mub * rng.gamma(1 / a_full, a_full, len(mub))), minlength=nw)
+    else:
+        # constant ratio (ML-023): MODIS x the 2012-2019 VIIRS/MODIS ratio per day/night, Terra-only ratio before
+        # Aqua; year error from leaving each training year out (as sigma_year above), then Poisson count noise
+        a_full = None
+        dn, terra, modis = w.daynight.values, w.terra_n.values, w.modis_n.values
+
+        def ratios(rows, floor=30):
+            # day and night apart, but the pooled day+night ratio where MODIS (or Terra) saw fewer than `floor`
+            # training detections: 800 VIIRS over 1 Terra detection is not a ratio
+            pool = (y[rows].sum() / max(modis[rows].sum(), 1), y[rows].sum() / max(terra[rows].sum(), 1))
+            r = {}
+            for k in ("D", "N"):
+                m = rows & (dn == k)
+                r[k] = (y[m].sum() / modis[m].sum() if modis[m].sum() >= floor else pool[0],
+                        y[m].sum() / terra[m].sum() if terra[m].sum() >= floor else pool[1])
+            return r
+
+        def ratio_pred(r):
+            full = np.where(dn == "D", r["D"][0], r["N"][0])
+            tonly = np.where(dn == "D", r["D"][1], r["N"][1])
+            return np.where(pre, terra * tonly, modis * full)
+
+        mu = ratio_pred(ratios(istrain))
+        loyo = []
+        for yr in TRAIN:
+            r = istrain & (yrs == yr)
+            p = ratio_pred(ratios(istrain & (yrs != yr)))[r].sum()
+            if y[r].sum() > 0 and p > 0:
+                loyo.append(np.log(y[r].sum() / p))
+        sigma_year = float(np.sqrt(np.mean(np.square(loyo)))) if loyo else 0.0
+        yidx = yrs - 2001
+        draws = np.empty((nboot, nw))
+        for b in range(nboot):
+            mub = mu * np.exp(sigma_year * rng.standard_normal(yidx.max() + 1) - sigma_year ** 2 / 2)[yidx]
+            draws[b] = np.bincount(widx, weights=rng.poisson(mub), minlength=nw)
 
     wk_modis = np.bincount(widx, weights=w.modis_n.values, minlength=nw)
     wk_viirs = np.bincount(widx, weights=y, minlength=nw)
@@ -307,13 +466,23 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     ratio = train.viirs_n.sum() / train.modis_n.sum()                  # naive baseline: one constant factor
     hm = np.isin(wyear, hy)
     score = {
-        "mape_model": float((abs(h.mu - h.viirs_n) / h.viirs_n).mean() * 100),
-        "mape_ratio": float((abs(h.modis_n * ratio - h.viirs_n) / h.viirs_n).mean() * 100),
+        "mape_model": mape(h.mu, h.viirs_n),
+        "mape_ratio": mape(h.modis_n * ratio, h.viirs_n),
         "coverage": int(((h.viirs_n >= h.lo) & (h.viirs_n <= h.hi)).sum()), "n_hold": len(h),
         "ratio": float(ratio), "alpha": a_full,
-        "weekly_r": float(np.corrcoef(wk_pred[hm], wk_viirs[hm])[0, 1]), "sigma_year": sigma_year,
+        "weekly_r": corr(wk_pred[hm], wk_viirs[hm]), "sigma_year": sigma_year,
         "forward": fwd["score"] if fwd else None,   # ML-017: NOAA-20/21 -> S-NPP link, hold-out 2024 -> S-NPP end
     }
+    country = None
+    if tier is not None:
+        ship = ship_rule(score, method, sparse)
+        if method == "model" and ship == "ratio":   # one constant ratio did better on the hidden years: publish that
+            print(f"{region_id}: model {score['mape_model']:.1f}% vs one ratio {score['mape_ratio']:.1f}% on 2020-2025: "
+                  "published as the constant-ratio estimate", flush=True)
+            return run(region_id, method="ratio", model_score=score, **args)
+        country = {"tier": tier, "cell_deg": cell_deg if method == "model" else None, "method": method, "ship": ship,
+                   "caveat": country_caveat(ship, score, model_score, ann, man.get("missing_files") or []),
+                   "model_score": model_score}
     yfwd = [bool(wk_fwd[wyear == yr].any()) for yr in years]
     out = {"years": [int(v) for v in ann.index], "modis": [float(v) for v in ann.modis_n],
            "viirs": [None if np.isnan(v) else float(v) for v in ann.viirs_n],
@@ -327,6 +496,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
            "overpass": overpass, "obs_over_pred": obs_over_pred, "drifted": drifted,
            "forward_through": end.strftime("%Y-%m-%d") if fwd else None,   # last forward (NOAA) day (ML-017)
            "source": source_of(yfwd, [None if yr < 2012 else 1 for yr in years])}
+    if country:
+        out.update(country)
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
     bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_bc}, draws, through, fwd)
@@ -343,6 +514,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         ysum(np.where(wk_nov, draws, wk_viirs))[:, full],
         [mo if v is None else v for v, mo in zip(m["viirs"], m["modis"])],
         [p if v is None else v for v, p in zip(m["viirs"], m["pred"])], m["start_year"])
+    if country:
+        bundle.update({k: country[k] for k in ("tier", "cell_deg", "method", "ship")})
     write_json(os.path.join(out_dir, region_id, "annual.json"), out)
     write_json(os.path.join(out_dir, region_id, "series.json"), bundle)
     if cb is not None:
@@ -356,18 +529,36 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     return {"weeks": weeks, "modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred, "draws": draws_all, "ann": ann,
             "score": score}
 
-def main():
+def main(argv=None):
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))   # ML-014: paths are relative to the repo root
     ids = [r["id"] for r in load_json("regions.json")]
+    cids = [c["id"] for c in load_json("countries.json")] if os.path.exists("countries.json") else []
     ap = argparse.ArgumentParser(description="Per-region VIIRS back-cast model.")
-    ap.add_argument("regions", nargs="*", metavar="region_id", help=f"any of {ids}; default all")
-    ap.add_argument("--nboot", type=int, default=NBOOT)
-    a = ap.parse_args()
-    bad = [r for r in a.regions if r not in ids]
+    ap.add_argument("regions", nargs="*", metavar="region_id",
+                    help=f"any of {ids}, or a countries.json id; default the regions")
+    ap.add_argument("--nboot", type=int, default=None, help=f"default {NBOOT}, {COUNTRY_NBOOT} for a country")
+    ap.add_argument("--method", choices=("model", "ratio"), default="model", help="countries only")
+    ap.add_argument("--cell-deg", type=float, default=None,
+                    help=f"countries only; default: smallest of {CELL_STEPS} deg with <= {MAX_CELLS} burning cells")
+    ap.add_argument("--no-bundle", action="store_true", help="skip site_bundle/globe (run_countries.py runs them)")
+    a = ap.parse_args(argv)
+    bad = [r for r in a.regions if r not in ids and r not in cids]
     if bad:
-        ap.error(f"unknown region_id {bad}; choose from {ids}")
+        ap.error(f"unknown region_id {bad}; choose from {ids} or countries.json")
     for r in a.regions or ids:
-        run(r, a.nboot, write_cells=True)
-    site_bundle.main()  # DP-009 / DP-018: refresh index.json countries and record fields from the files just written
+        if r in cids:
+            cell = a.cell_deg
+            if a.method == "model" and cell is None:
+                g = pd.read_csv(os.path.join(COUNTRY_GRID, f"fire_grid_daily_{r}.csv"),
+                                usecols=["lat", "lon", "terra_n", "aqua_n", "viirs_n"])
+                cell, counts = pick_cell_deg(g)
+                print(f"{r}: burning cells by size {counts}: {cell} deg", flush=True)
+            run(r, a.nboot or COUNTRY_NBOOT, grid_dir=COUNTRY_GRID, cell_deg=cell, method=a.method, tier="country")
+        else:
+            run(r, a.nboot or NBOOT, write_cells=True)   # ML-018: cells.json for the deep dives
+    if not a.no_bundle:
+        site_bundle.main()  # DP-009 / DP-018: refresh index.json countries and record fields from the files just written
+        globe.main()        # ML-023: refresh globe.json
 
 if __name__ == "__main__":
     main()

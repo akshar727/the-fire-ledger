@@ -76,21 +76,26 @@ const fixture = {
     { id: "greece", name: "Greece", tier: "country", season: "Summer wildfire.", data_through: "2025-12-31", first_year: 2001, ship: "ratio" },
     { id: "brazil", name: "Brazil", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "caveat", ship_caveat: "Cloudy in the wet season." },
     { id: "chad", name: "Chad", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "model" },
-    { id: "nauru", name: "Nauru", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "sparse" },
+    { id: "nauru", name: "Nauru", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "sparse", ship_caveat: "Too little fire to check." },
+    { id: "laos", name: "Laos", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "model", ship_caveat: "FIRMS has no file for 2 sensor-year(s)." },
+    { id: "india", name: "India", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "ratio", ship_caveat: "One constant ratio was closer than the model." },
     { id: "built-only", name: "Built, not modelled" },
   ],
 };
 
 test("buildRegions: countries get their tier, ship label and note; unmodelled regions are hidden", () => {
   const b = buildRegions(fixture);
-  assert.deepEqual(b.ids, ["ghana", "greece", "brazil", "chad", "nauru"]);
-  assert.deepEqual(b.tier, { ghana: "region", greece: "country", brazil: "country", chad: "country", nauru: "country" });
-  assert.deepEqual(b.label, { greece: "constant-ratio estimate", nauru: "too little fire to check" });
+  assert.deepEqual(b.ids, ["ghana", "greece", "brazil", "chad", "nauru", "laos", "india"]);
+  assert.deepEqual(b.tier, { ghana: "region", greece: "country", brazil: "country", chad: "country", nauru: "country", laos: "country", india: "country" });
+  assert.deepEqual(b.label, { greece: "constant-ratio estimate", nauru: "too little fire to check", india: "constant-ratio estimate" });
   assert.equal(b.caveat.ghana, undefined);
   assert.match(b.caveat.greece!, /^Constant-ratio estimate: .* not the model\. Whole-country record .* ending in December 2025\./);
   assert.match(b.caveat.brazil!, /^Cloudy in the wet season\. Whole-country record/);
   assert.match(b.caveat.chad!, /^Whole-country record/);
   assert.match(b.caveat.nauru!, /^Too little fire to check: /);
+  assert.doesNotMatch(b.caveat.nauru!, /Too little fire to check\. /);   // the fixed line, not the pipeline's twice
+  assert.match(b.caveat.laos!, /^FIRMS has no file for 2 sensor-year\(s\)\. Whole-country record/);
+  assert.match(b.caveat.india!, /^Constant-ratio estimate: .* not the model\. One constant ratio was closer than the model\. Whole-country record/);
   assert.equal(b.season.brazil, "");
   for (const s of Object.values(b.caveat)) assert.doesNotMatch(s ?? "", /[–—]/);
 });

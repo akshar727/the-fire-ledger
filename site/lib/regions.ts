@@ -46,14 +46,17 @@ export function countryNote(through: string): string {
 }
 
 /** What a country's ship rule adds to its note: "caveat" ships the model with the pipeline's sentence; "ratio" ships
- * MODIS scaled by one constant factor, which must not pass for the model; "sparse" has too little fire to check. */
+ * MODIS scaled by one constant factor, which must not pass for the model; "sparse" has too little fire to check.
+ * ML-023: the pipeline's own sentence (`ship_caveat`: missing FIRMS files, a high 2001-2002 back-cast, the ratio beat
+ * the model) is shown for every label except "sparse", whose fixed line already says it all. */
 export function shipNote(e: Pick<IndexEntry, "ship" | "ship_caveat">): string | undefined {
   if (e.ship === "ratio")
-    return "Constant-ratio estimate: the harmonized line here is MODIS times this country's 2012 to 2019 VIIRS/MODIS ratio, not the model.";
+    return ["Constant-ratio estimate: the harmonized line here is MODIS times this country's 2012 to 2019 VIIRS/MODIS ratio, not the model.", e.ship_caveat]
+      .filter(Boolean)
+      .join(" ");
   if (e.ship === "sparse")
     return "Too little fire to check: the hold-out has too few detections to test the conversion here, so treat the harmonized line as unchecked.";
-  if (e.ship === "caveat") return e.ship_caveat || undefined;
-  return undefined;
+  return e.ship_caveat || undefined;
 }
 
 /** The short label shown next to a country's record, or null for the model (a "caveat" country shows its sentence in
