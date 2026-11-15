@@ -11,6 +11,7 @@ import type { Referee } from "@/lib/referee";
 import { isRegionId, REGIONS, type RegionId } from "@/lib/regions";
 import type { Bounds } from "@/lib/selection";
 import { parseSeries, SeriesFormatError, type SeriesBundle } from "@/lib/series";
+import { parseWeather, type Weather } from "@/lib/weather";
 
 export { REGIONS, type RegionId } from "@/lib/regions";
 export type { Annual, Score } from "@/lib/annual";
@@ -99,5 +100,19 @@ export async function fetchSeries(region: RegionId, signal?: AbortSignal): Promi
   } catch (e) {
     if (signal?.aborted) throw e;
     return { status: "error", message: e instanceof SeriesFormatError ? `Unexpected file format: ${e.message}.` : "The file is not valid JSON." };
+  }
+}
+
+/**
+ * Loads a region's fire-weather file (DP-014, /data/<region>/weather.json) in the browser. Optional extra: null when it
+ * is missing, unreadable or in an unexpected format, and the calendar then shows no weather (FE-012).
+ */
+export async function fetchWeather(region: RegionId, signal?: AbortSignal): Promise<Weather | null> {
+  try {
+    const res = await fetch(`/data/${region}/weather.json`, { signal, cache: "no-cache" });
+    return res.ok ? parseWeather(await res.json()) : null;
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    return null;
   }
 }
