@@ -191,6 +191,20 @@ def scan_line(frame: float):
     return None
 
 
+def flight(ps: dict, frame: float) -> float:
+    """
+    Km along the track of pass `ps`'s scan line at `frame`, carried on at the speed it enters and leaves at before
+    and after the pass: the satellite flies in from out of the picture and on out of it instead of popping in and
+    out where the pass's keys start and end (scene.py shows it outside the pass only while it is still in view).
+    """
+    kf, km = zip(*ps["track"])
+    if frame < kf[0]:
+        return km[0] + (frame - kf[0]) * (km[1] - km[0]) / (kf[1] - kf[0])
+    if frame > kf[-1]:
+        return km[-1] + (frame - kf[-1]) * (km[-1] - km[-2]) / (kf[-1] - kf[-2])
+    return float(np.interp(frame, kf, km))
+
+
 def clock(frame: float) -> float:
     """Minute of the year the scene has reached at `frame`."""
     return float(np.interp(frame, [k[0] for k in CLOCK], [k[1] for k in CLOCK]))
@@ -208,14 +222,27 @@ def on_frames(p: dict) -> np.ndarray:
     return out
 
 
+# (from, to) frames over which the squares already on dim, one pair per pass of PASSES, and the factor they dim by
+PASS_DIM = (((40.0, 46.0), (55.0, 57.5)), 0.3)
+
+
 def heat(p: dict, on: np.ndarray, frame: float) -> np.ndarray:
     """
     Glow of each detection at `frame`, 0..1: 0 until it switches on, then 1 cooling to a faint 0.2 (two days in
     scene time, or a few frames of scrolling, whichever keeps it brighter). They all light again as they leave the
     ground for the timeline.
+
+    Before each pass of chapter 3 the squares already on (the night's VIIRS pass and Terra's morning pass before
+    Aqua's; Aqua's before Suomi NPP's) dim by PASS_DIM's factor, so the squares each pass adds light up visibly as its
+    scan line crosses them, instead of landing on squares still glowing at the same spots.
     """
     age_days = (clock(frame) - p["t"]) / 1440.0
-    h = np.maximum(np.exp(-np.maximum(age_days, 0) / 2.0), np.exp(-np.maximum(frame - on, 0) / 5.0))
+    cooling = np.exp(-np.maximum(age_days, 0) / 2.0)
+    spans, dim = PASS_DIM
+    for ps, (f0, f1) in zip(PASSES, spans):
+        fade = 1 - (1 - dim) * _ease((frame - f0) / (f1 - f0))
+        cooling = np.where(on < ps["frames"][0], cooling * fade, cooling)
+    h = np.maximum(cooling, np.exp(-np.maximum(frame - on, 0) / 5.0))
     h = np.where(on <= frame, np.maximum(h, 0.2), 0.0)
     return np.maximum(h, to_timeline(len(on), frame) * 0.8)
 
@@ -307,7 +334,8 @@ def squares(p: dict, ground_z: np.ndarray, on: np.ndarray, slots_t, slots_c, fra
     """Position (n x 3), edge length and glow of every detection square at `frame`."""
     n = len(on)
     u, v = to_timeline(n, frame), to_calendar(n, frame)
-    lift = np.where(p["modis"], 0.02, 0.05)  # VIIRS squares sit just above the MODIS ones they overlap
+    # VIIRS squares sit just above the MODIS ones they overlap, and the passes' new ones above the night's
+    lift = np.where(p["modis"], 0.02, np.where(on >= PASSES[0]["frames"][0], 0.058, 0.05))
     gx, gy, gz = p["x"], p["y"], ground_z + lift
     tx, ty = slots_t
     cx, cy = slots_c
@@ -372,8 +400,25 @@ def _spline(frames: np.ndarray, values: np.ndarray, f: float) -> np.ndarray:
     return h00 * values[i] + h10 * m0 + h01 * values[i + 1] + h11 * m1
 
 
+# While the satellites cross (PASSES), the camera leaves the vertical: it holds `elevation` degrees above the
+# horizon, so the scan fans hanging from the satellites are seen from the side, and swings a sixth of a turn round
+# the fire, its bearing from the fire (degrees clockwise from north) going from `bearing[0]` (where the climb out
+# of the smoke already looks from) to `bearing[1]`. It eases off CAMERA's path over `in` and back onto it over
+# `out`, which ends at the chapter-3 key, so frame 72 and everything after are unchanged. Its distance from the
+# target stays CAMERA's; it aims `aim` x that distance above the target, between the fire and the satellite.
+ORBIT = {"in": (39.0, 45.0), "out": (67.0, 72.0), "elevation": 50.0, "bearing": (135.0, 195.0), "turn": (44.0, 72.0),
+         "aim": 0.1}
+
+
+def orbit_weight(frame: float) -> float:
+    """0..1: how far the camera is off CAMERA's path onto ORBIT's at `frame`."""
+    (a0, a1), (b0, b1) = ORBIT["in"], ORBIT["out"]
+    return float(_ease((frame - a0) / (a1 - a0)) * _ease((b1 - frame) / (b1 - b0)))
+
+
 def camera(dem: np.ndarray, frame: float) -> dict:
-    """Eye and target (scene km) and focal length at `frame`."""
+    """Eye and target (scene km), focal length and up hint (the world direction the top of the picture leans to)
+    at `frame`."""
     keys = np.array(CAMERA, dtype=float)
     k = _spline(keys[:, 0], keys[:, 1:], frame)
     ex, ey, eh, tx, ty, th, mm, ground = k
@@ -383,7 +428,29 @@ def camera(dem: np.ndarray, frame: float) -> dict:
     eh = float(np.exp(logh))
     ez = eh + ground * float(height_km(dem, ex, ey))
     tz = max(th, 0.0) + ground * float(height_km(dem, tx, ty))
-    return {"eye": (float(ex), float(ey), float(ez)), "target": (float(tx), float(ty), float(tz)), "mm": float(mm)}
+    # up is the sky near the ground, north once we look straight down
+    w = float(_ease((frame - 30.0) / 24.0))
+    up = np.array([0.0, w, 1.0 - w])
+
+    o = orbit_weight(frame)
+    if o > 0:
+        d = np.array([ex - tx, ey - ty, ez - tz])
+        dist = float(np.linalg.norm(d))
+        el0 = math.atan2(d[2], math.hypot(d[0], d[1]))
+        b0, b1 = ORBIT["bearing"]
+        u0, u1 = ORBIT["turn"]
+        az = math.radians(b0 + (b1 - b0) * float(_ease((frame - u0) / (u1 - u0))))
+        az0 = math.atan2(d[0], d[1])
+        az0 = az + (az0 - az + math.pi) % (2 * math.pi) - math.pi  # CAMERA's own bearing, the side nearest az
+        el = el0 + o * (math.radians(ORBIT["elevation"]) - el0)
+        az = az0 + o * (az - az0)
+        ex, ey, ez = tx + dist * math.cos(el) * math.sin(az), ty + dist * math.cos(el) * math.cos(az), tz + dist * math.sin(el)
+        level = np.array([-math.sin(az), -math.cos(az), 0.0])  # looking across the land: the far side at the top
+        up = up * (1 - o) + level * o
+        tz += o * ORBIT["aim"] * dist  # aim a little above the ground: the satellites and their fans in the picture
+    up = up / np.linalg.norm(up)
+    return {"eye": (float(ex), float(ey), float(ez)), "target": (float(tx), float(ty), float(tz)), "mm": float(mm),
+            "up": tuple(float(v) for v in up)}
 
 
 def viewpoint(dem: np.ndarray, p: dict, until: float, near: float = 7.0, far: float = 13.0, step: float = 0.45):
