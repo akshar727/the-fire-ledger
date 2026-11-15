@@ -12,6 +12,7 @@ from patsy import dmatrix
 from calendar_stats import calendar_block
 from trend_stats import trend_block
 from forward_link import run_forward
+from cells import cells_bundle
 import site_bundle
 try:
     import resource   # not on Windows
@@ -158,10 +159,12 @@ def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
     return {"schema": 1, "region": region_id, "monthly": monthly, "weekly": weekly,
             "calendar": calendar_block(harmonized, monthly["start_year"])}
 
-def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None):
+def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None, write_cells=False):
     """Fit one region and write annual.json + series.json. Returns dict: weeks (list of (year, week)), modis/viirs/pred
     (per-week region totals, arrays), draws (nboot x n_weeks bootstrap draw sums), ann (annual DataFrame), score.
-    points_dir (default <out_dir>/<region_id>/points, written by build.py) feeds only the overpass fields."""
+    points_dir (default <out_dir>/<region_id>/points, written by build.py) feeds only the overpass fields.
+    write_cells (ML-018): also write cells.json (per-cell monthly back-cast, cells.py). Off by default; the CLI
+    (main) turns it on, and main only runs the regions.json regions."""
     t0 = time.time()
     rng = np.random.default_rng(0)   # per region, so output doesn't depend on which other regions ran
     man = load_json(os.path.join(grid_dir, "manifest.json"))[region_id]
@@ -252,6 +255,9 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     wk_modis = np.bincount(widx, weights=w.modis_n.values, minlength=nw)
     wk_viirs = np.bincount(widx, weights=y, minlength=nw)
     wk_pred = np.bincount(widx, weights=mu, minlength=nw)
+    # ML-018: per-cell monthly back-cast, built here while `weeks` is still the back-cast weeks (no forward padding)
+    cb = cells_bundle(region_id, w.lat.values, w.lon.values, widx, weeks, through, w.modis_n.values, y, mu,
+                      a_full, sigma_year, VIIRS_START) if write_cells else None
     # forward link (ML-017): weeks run on to the last NOAA day; the back-cast arrays get zeros there (wk_bc, draws: what
     # series_bundle splits over months), the forward days are added per week for the annual totals (wk_pred, draws_all)
     end = fwd["dates"][-1] if fwd else pd.Timestamp(through)
@@ -339,6 +345,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         [p if v is None else v for v, p in zip(m["viirs"], m["pred"])], m["start_year"])
     write_json(os.path.join(out_dir, region_id, "annual.json"), out)
     write_json(os.path.join(out_dir, region_id, "series.json"), bundle)
+    if cb is not None:
+        write_json(os.path.join(out_dir, region_id, "cells.json"), cb)
 
     mem = ""
     if resource:
@@ -358,7 +366,7 @@ def main():
     if bad:
         ap.error(f"unknown region_id {bad}; choose from {ids}")
     for r in a.regions or ids:
-        run(r, a.nboot)
+        run(r, a.nboot, write_cells=True)
     site_bundle.main()  # DP-009 / DP-018: refresh index.json countries and record fields from the files just written
 
 if __name__ == "__main__":

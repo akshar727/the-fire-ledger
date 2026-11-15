@@ -317,18 +317,23 @@ class SiteDataTests(unittest.TestCase):
             found = True
             with self.subTest(file=str(p)):
                 c = load_json(p)
-                self.assertEqual(c.get("schema"), 1, f"{p}: schema")
+                # ML-018: schema 2 = monthly (cell c, month m at c * n_months + m), integers = value * scale
+                self.assertEqual(c.get("schema"), 2, f"{p}: schema")
                 self.assertEqual(c.get("region"), rid, f"{p}: region != folder name")
                 self.assertEqual(c.get("cell_deg"), 0.25, f"{p}: cell_deg")
-                self.assertTrue(isinstance(c.get("years"), list) and all(map(is_int, c["years"])), f"{p}: years")
+                for k in ("scale", "start_year", "n_months", "viirs_from"):
+                    self.assertTrue(is_int(c.get(k)) and c[k] >= 0, f"{p}: {k}")
+                for k in ("alpha", "sigma_year"):
+                    self.assertTrue(is_num(c.get(k)) and c[k] >= 0, f"{p}: {k}")
                 lat, lon = c.get("lat"), c.get("lon")
                 self.assertTrue(isinstance(lat, list) and isinstance(lon, list), f"{p}: lat/lon lists")
                 self.assertEqual(len(lat), len(lon), f"{p}: len(lat) != len(lon)")
                 self.assertTrue(all(map(is_num, lat + lon)), f"{p}: lat/lon numbers")
-                want = len(lat) * len(c["years"])
+                want = len(lat) * c["n_months"]
                 for k in ("modis", "viirs", "pred"):
                     self.assertIsInstance(c.get(k), list, f"{p}: {k}")
                     self.assertEqual(len(c[k]), want, f"{p}: {k} length {len(c[k])} != {want}")
+                    self.assertTrue(all(is_int(v) and v >= 0 for v in c[k]), f"{p}: {k} values")
         if not found:
             self.skipTest("no cells.json produced yet")
 
