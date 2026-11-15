@@ -1,6 +1,6 @@
 "use client";
 
-// One Fire Record view for the selected region and dates (?region=&from=&to=): hero stat, the record chart and its trend (FE-014), hold-out
+// Fire Ledger view for the selected region and dates (?region=&from=&to=): hero stat, the record chart and its trend (FE-014), hold-out
 // scores and downloads. DP-018: the region's annual.json is fetched when it is picked (`use(fetchAnnual(...))`, so the
 // page's Suspense fallback shows while it loads; a region switch is a router transition, so the old view stays until
 // the new one is ready); nothing per region is in the page bundle.

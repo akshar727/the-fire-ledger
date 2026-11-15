@@ -1,6 +1,6 @@
 // Landing story (FE-018): six chapters that end in the data. Every number and figure comes from the published files
 // (lib/story-data.ts, read while the page is prerendered), so `/` is static HTML that reads in full without
-// JavaScript. StoryMotion only adds reveal and count-up effects. The tool itself lives at /record.
+// JavaScript. StoryMotion only adds reveal and count-up effects. The tool itself lives at /ledger.
 // FE-019: on wide screens with motion allowed, StorySceneGate puts a scroll-scrubbed canvas behind the chapters
 // (pre-rendered frames in public/scene/). It is decoration: the chapters below stay the whole, accessible story.
 import type { Metadata } from "next";
@@ -19,7 +19,7 @@ import { bigCount, jumpVerb, PIXEL_M, STORY_FIRE } from "@/lib/story";
 import { loadStory } from "@/lib/story-data";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: { absolute: "One Fire Record" } };
+export const metadata: Metadata = { title: { absolute: "Fire Ledger" } };
 
 const MONTH_NAMES = [
   "January",
@@ -126,7 +126,7 @@ export default function StoryPage() {
   const total = s.counts.reduce((a, c) => a + c.rows, 0);
   const top = [...s.counts].sort((a, b) => b.rows - a.rows)[0];
   const [h0, h1] = s.holdout;
-  const record = `/record?region=${s.region.id}`;
+  const record = `/ledger?region=${s.region.id}`;
   const terraSince = s.counts.map((c) => c.since).sort()[0];
   const sat = (p: { satellite: string }) => SAT[p.satellite] ?? p.satellite;
 
@@ -155,11 +155,11 @@ export default function StoryPage() {
             <p className="max-w-[58ch] text-lg leading-[1.65] text-muted-foreground">
               NASA&apos;s MODIS instruments have watched for fire from orbit
               since {monthYear(terraSince)}, and VIIRS since {VIIRS_FROM}. They
-              work differently, so the record breaks in {VIIRS_FROM}. One Fire
-              Record mends it for {span.regions}.
+              work differently, so the record breaks in {VIIRS_FROM}. Fire
+              Ledger mends it for {span.regions}.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <Link href="/record" className={primaryLink}>
+              <Link href="/ledger" className={primaryLink}>
                 Skip to the data
                 <ArrowRightIcon className="size-4" aria-hidden />
               </Link>
@@ -335,7 +335,7 @@ export default function StoryPage() {
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link href={record} className={primaryLink}>
-              Open the record
+              Open the ledger
               <ArrowRightIcon className="size-4" aria-hidden />
             </Link>
             <Link

@@ -5,9 +5,9 @@ import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { JumpStat, RecordExplorer, RecordSkeleton } from "@/components/RecordExplorer";
 import { recordSpan } from "@/lib/data-server";
 
-export const metadata: Metadata = { title: "Record" };
+export const metadata: Metadata = { title: "Ledger" };
 
-export default function RecordPage() {
+export default function LedgerPage() {
   const { first, lastComplete } = recordSpan();
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-6 pb-20 sm:px-6">
@@ -15,7 +15,7 @@ export default function RecordPage() {
       <section className="grid items-end gap-5 md:grid-cols-12">
         <div className="flex flex-col gap-2 md:col-span-8">
           <h1 className="text-3xl leading-tight font-bold tracking-tight text-balance md:text-4xl">
-            Two satellites, one fire record.
+            The Fire Ledger
           </h1>
           <p className="max-w-[62ch] leading-relaxed text-muted-foreground">
             MODIS and VIIRS count fire differently, so we put the MODIS years into VIIRS terms and every year from {first}{" "}

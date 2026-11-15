@@ -161,7 +161,7 @@ export function RegionSwitcher({ className = "" }: { className?: string }) {
                     className="flex min-h-9 cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm data-[active=true]:bg-primary/15"
                   >
                     <CheckIcon aria-hidden className={`size-3.5 shrink-0 text-primary ${selected ? "" : "invisible"}`} />
-                    {/* the tag sits under the name: the Record page's column is narrow */}
+                    {/* the tag sits under the name: the Ledger page's column is narrow */}
                     <span className="min-w-0 flex-1 leading-snug">
                       {it.name}
                       {it.tag && (

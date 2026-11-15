@@ -3,15 +3,19 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
-  // FE-018: the record moved from / to /record and / became the story. Old shared links (/?region=…, /?from=…,
-  // /?to=…) still open the record; Next.js carries the query string over unchanged.
+  // FE-018: the record moved from / to /record and / became the story; later /record was renamed /ledger (Fire Ledger).
+  // Old shared links (/?region=…, /?from=…, /?to=…, /record?…) still open the ledger; Next.js carries the query
+  // string over unchanged.
   async redirects() {
-    return ["region", "from", "to"].map((key) => ({
-      source: "/",
-      has: [{ type: "query" as const, key }],
-      destination: "/record",
-      permanent: false,
-    }));
+    return [
+      ...["region", "from", "to"].map((key) => ({
+        source: "/",
+        has: [{ type: "query" as const, key }],
+        destination: "/ledger",
+        permanent: false,
+      })),
+      { source: "/record", destination: "/ledger", permanent: true },
+    ];
   },
   experimental: {
     // Vercel restores .next/cache between builds. On 2026-11-15 a restored Turbopack cache from a pre-theme build

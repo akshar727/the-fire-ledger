@@ -110,7 +110,7 @@ export function WorldScoreboard({ rows }: { rows: ScoreRow[] }) {
                 <tr key={r.id}>
                   <th scope="row" className="px-3 py-2 text-left font-normal">
                     <Link
-                      href={`/record?region=${encodeURIComponent(r.id)}`}
+                      href={`/ledger?region=${encodeURIComponent(r.id)}`}
                       className="text-foreground underline underline-offset-2"
                     >
                       {r.name}

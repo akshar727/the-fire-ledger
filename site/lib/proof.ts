@@ -1,4 +1,4 @@
-// FE-020: wording for the validation strip on the Record page (under the record chart since FE-025), from annual.json `score` (whole-year hold-out)
+// FE-020: wording for the validation strip on the Ledger page (under the record chart since FE-025), from annual.json `score` (whole-year hold-out)
 // and referee.json (MODIS burned area). Pure and import-free apart from types, so `node --test` covers every sentence.
 import type { Score } from "./annual.ts";
 import type { RefereeRegion } from "./referee.ts";
