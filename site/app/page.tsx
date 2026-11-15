@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { JumpStat, RecordExplorer, RecordSkeleton } from "@/components/RecordExplorer";
+import { recordSpan } from "@/lib/data";
 
 export default function RecordPage() {
+  const { first, lastComplete } = recordSpan();
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-4 pt-12 pb-20 sm:px-6 md:pt-16">
       <section className="grid items-end gap-8 md:grid-cols-12">
@@ -12,8 +14,8 @@ export default function RecordPage() {
             Two satellites, one fire record.
           </h1>
           <p className="max-w-[60ch] text-lg leading-relaxed text-muted-foreground">
-            MODIS and VIIRS count fire differently. We convert the MODIS years into VIIRS terms so 25 years compare
-            fairly.
+            MODIS and VIIRS count fire differently. We convert the MODIS years into VIIRS terms so every year from{" "}
+            {first} to {lastComplete} compares fairly.
           </p>
         </div>
         {/* region-specific parts read ?region=&from=&to=; Suspense keeps the page statically rendered */}
