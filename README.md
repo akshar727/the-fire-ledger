@@ -70,6 +70,15 @@ CSV download endpoints (read-only, served from `site/public/data/`):
 
 The site only reads files under `site/public/data/`; it never runs the model. Hosting: Vercel, project Root Directory `site`.
 
+Landing-page scene (`scripts/landing_scene/`, FE-019): the 180 frames in `site/public/scene/` that scroll behind the story on `/`. They are rendered with [Blender](https://www.blender.org) 5.3 from this repository's own files: NASA SRTM elevation of central Portugal (`scripts/landing_scene/srtm_tiles/`, four tiles, committed), the 2017 detections in `site/public/data/portugal/points/2017.csv`, and the harmonized monthly record in `site/public/data/portugal/series.json` (the closing calendar layout). `layout.py` (numpy only, covered by `tests/test_landing_scene.py`) decides where everything is on each frame; `scene.py` draws it. No models, textures or images are imported: the trees, smoke, sky and the two plain satellites are built by the script. Terrain heights are multiplied by 2.5.
+
+```bash
+# macOS path shown; on Windows use the full path to blender.exe. About 6 minutes for all 180 frames (Apple M2 Pro).
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P scripts/landing_scene/scene.py -- --all --quality 75
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P scripts/landing_scene/scene.py -- --frames 0,36,72 --scale 50 --out "$TMPDIR/scene-preview"   # a quick look, outside the repo
+/Applications/Blender.app/Contents/MacOS/Blender --factory-startup -P scripts/landing_scene/scene.py   # open the scene (new, unsaved file) and scrub frames 0-179
+```
+
 ## Check before you open a PR
 
 There is no CI: run these yourself before every pull request to `main`, from the repo root, in the virtual environment from "Run it" (Node.js 24 or newer for `npm test`):
@@ -93,6 +102,8 @@ Local runs compare against your working tree as it was before the pipeline ran (
 
 Code, page text and documentation in this repository were written with help from Claude (Anthropic).
 
+The frames in `site/public/scene/` are not AI-generated images: they are Blender renders of the scene that `scripts/landing_scene/scene.py` builds from SRTM elevation and FIRMS detections. That script, like the rest of the code, was written with help from Claude.
+
 ## References
 
 Data
@@ -115,6 +126,8 @@ Data
 - MODIS burned area, MCD64CMQ Collection 6 (0.25° monthly climate-modelling-grid summary of MCD64A1) — burned area per region-month 2000-11 to 2022-12 for the independent check (`referee.py`) — https://doi.org/10.5067/MODIS/MCD64A1.006 — Giglio, L., Justice, C., Boschetti, L., & Roy, D. (2015). MCD64A1 MODIS/Terra+Aqua Burned Area Monthly L3 Global 500m SIN Grid V006 [Dataset]. NASA Land Processes Distributed Active Archive Center. MCD64CMQ has no DOI of its own; files from the University of Maryland SFTP server (MCD64 user guide §4.1, https://lpdaac.usgs.gov/documents/1006/MCD64_User_Guide_V61.pdf, checked 2026-11-15). No restrictions on use.
 - MODIS burned area algorithm — method behind MCD64 — https://doi.org/10.1016/j.rse.2018.08.005 — Giglio, L., Boschetti, L., Roy, D. P., Humber, M. L., & Justice, C. O. (2018). The Collection 6 MODIS burned area mapping algorithm and product. Remote Sensing of Environment, 217, 72–85.
 - VIIRS 375 m active fire algorithm — method behind the VIIRS detections — https://doi.org/10.1016/j.rse.2013.12.008 — Schroeder, W., Oliva, P., Giglio, L., & Csiszar, I. A. (2014). The New VIIRS 375 m active fire detection data product: Algorithm description and initial assessment. Remote Sensing of Environment, 143, 85–96.
+- NASA Shuttle Radar Topography Mission Global 3 arc second (SRTM GL3, about 90 m), tiles N39W009, N39W008, N40W009, N40W008 (39-41 N, 9-7 W), committed in `scripts/landing_scene/srtm_tiles/` — the terrain of the landing-page scene (`scripts/landing_scene/`) — https://doi.org/10.5067/MEASURES/SRTM/SRTMGL3.003 — NASA JPL (2013). NASA Shuttle Radar Topography Mission Global 3 arc second [Data set]. NASA Land Processes Distributed Active Archive Center (DataCite record checked 2026-11-15). NASA data, openly shared without restriction. Downloaded as GeoTIFF from OpenTopography's public bulk-download bucket (`https://opentopography.s3.sdsc.edu/raster/SRTM_GL3/SRTM_GL3_srtm/North/North_30_60/<tile>.tif`, no login, fetched 2026-11-15): NASA Shuttle Radar Topography Mission (SRTM) (2013). Shuttle Radar Topography Mission (SRTM) Global. Distributed by OpenTopography. https://doi.org/10.5069/G9445JDF (DataCite record checked 2026-11-15).
+- Pedrógão Grande fire, 17 June 2017 (the fire the landing page and its scene follow): place and date only; every detection drawn is from the FIRMS files above (`site/public/data/portugal/points/2017.csv`). Torre, Serra da Estrela (1,993 m, 40.3217 N, 7.6130 W) is used by `tests/test_landing_scene.py` to check that the SRTM mosaic is placed correctly (general geographic fact).
 
 Python libraries (precompute; exact versions in `requirements.txt`)
 - numpy 2.4.4: arrays and bootstrap sampling. https://numpy.org . BSD-3-Clause
@@ -124,6 +137,9 @@ Python libraries (precompute; exact versions in `requirements.txt`)
 - pyhdf 0.11.7: reads the HDF4 burned-area files in `referee.py extract` only (one-off; not in `requirements.txt` because it has no build for Python 3.15). https://github.com/fhs/pyhdf . MIT
 - scipy 1.18.1: numerical routines used by statsmodels, and `scipy.stats.theilslopes` / `kendalltau` for the trend block (`trend_stats.py`). https://scipy.org . BSD-3-Clause
 - Python standard library (`urllib.request`, `urllib.error`, `os`, `re`, `time`, `json`, `argparse`, `unittest`, `pathlib`, `datetime`): downloads with timeout, retry and atomic rename; JSON export; region config checks and command line; the `tests/test_site_data.py` data checks. https://docs.python.org/3/library/ . PSF License 2.0
+- Blender 5.3 (EEVEE renderer, compositor glare, WebP writer) with its bundled Python 3.13 and numpy 2.3: builds and renders the landing-page scene (`scripts/landing_scene/scene.py`); not needed to run the site or the model. https://www.blender.org . GPL-2.0-or-later (the program; the rendered frames are ours)
+- Python standard library, also `struct`, `zlib`, `csv`, `math`, `sys`, `tempfile` (`scripts/landing_scene/srtm.py`, `layout.py`, `scene.py`, `tests/test_landing_scene.py`): decoding the SRTM GeoTIFF tiles (tiled, deflate) and reading the points file. Same link and license as above.
+- `bpy` and `mathutils` (Blender's own Python modules, part of Blender 5.3 above): scene building and vector maths in `scene.py`. GPL-2.0-or-later
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
 - Next.js 16: web framework. https://nextjs.org . MIT
@@ -147,8 +163,13 @@ Code
 - Latitude/longitude box for the hotspot CSV (`site/components/BoxFilter.tsx`, box helpers in `site/lib/selection.ts`, `useBox` in `site/lib/use-selection.ts`): four typed edges, kept in the URL as `?bbox=w,s,e,n` and passed to this project's own `/api/hotspots` `bbox` filter; the region boxes it checks against come from this project's own `regions.json` via `site/public/data/index.json` (NASA FIRMS data above). Plain text inputs; no new library, data source or asset.
 - Partial-year handling in the record chart (`site/lib/annual.ts`, `site/components/RecordChart.tsx`): reads the `partial` and `data_through` fields of this project's own `site/public/data/<region>/annual.json` (written by `model.py`; NASA FIRMS data above, including the 2026 area-API rows). The model years (VIIRS from 2012, hold-out from 2020) mirror `model.py`. No new library, data source or asset.
 - Trend block in `annual.json` (`trend_stats.py`, called by `model.py`): Theil-Sen slope with a 90% interval and the Mann-Kendall trend test, on the naive stitched record and the harmonized record of this project's own model output (NASA FIRMS data above). Methods: Sen, P. K. (1968), "Estimates of the regression coefficient based on Kendall's tau", JASA 63(324), 1379–1389; Mann, H. B. (1945), "Nonparametric tests against trend", Econometrica 13(3), 245–259; implemented with scipy (above). No new library or data source.
+- Landing-page scene (`scripts/landing_scene/srtm.py`, `layout.py`, `scene.py`, `tests/test_landing_scene.py`): written for this project. Terrain from the SRTM tiles above; squares from this project's own `site/public/data/portugal/points/2017.csv`, at the nominal pixel sizes (MODIS 1 km, VIIRS 375 m) already cited above; the calendar layout from this project's own `site/public/data/portugal/series.json`. The trees, smoke, sky, satellites and scan lines are simple shapes made by the script: no 3D model, texture, HDRI or NASA media is used. The slope limiter in the camera curve is the standard Fritsch-Carlson monotone cubic: Fritsch, F. N., & Carlson, R. E. (1980). Monotone piecewise cubic interpolation. SIAM Journal on Numerical Analysis, 17(2), 238-246. https://doi.org/10.1137/0717021
+- Scroll scene on `/` (`site/lib/scene.ts`, `site/components/story/StoryScene.tsx`, `StorySceneGate.tsx`, "Scroll scene" in `site/app/globals.css`): written for this project; draws the frames in `site/public/scene/` on a `<canvas>` with browser APIs only (`fetch`, `createImageBitmap`, `requestAnimationFrame`, `ResizeObserver`, `matchMedia`), no added package.
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
 
+
+Images
+- `site/public/scene/f000.webp` to `f179.webp` (180 frames, 1600 x 900): rendered by this project with Blender from `scripts/landing_scene/scene.py` (SRTM elevation and FIRMS detections cited above). No third-party image, model or texture.
 
 AI
 - Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude

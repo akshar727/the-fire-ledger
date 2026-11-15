@@ -183,3 +183,89 @@
   [data-motion] [data-chapter]:not([data-in]) .story-fade { opacity: 0; }
   [data-motion] [data-chapter]:not([data-in]) .story-draw { stroke-dashoffset: 1; }
 }
+
+/* Scroll scene (FE-019). StorySceneGate renders .story-scene only on wide screens with motion allowed, and sets
+   [data-scene] on the shell once the first frame is drawn. Without that attribute every rule below is inert, so
+   phones, reduced motion and no-JavaScript keep the static story above exactly as it was. */
+/* clip, not hidden: the pinned scene must stop at the end of the story (it would otherwise ride one more screen and
+   cover the footer), and `clip` does this without making a scroll container, so `position: sticky` keeps working.
+   Only while the scene shows: before that it is invisible and paints nothing. */
+.story-shell[data-scene] { overflow: clip; }
+.story-scene {
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  height: 100svh;
+  margin-bottom: -100svh;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+.story-scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* a light vignette under the header and at the foot; the words carry their own dark halo (.story-text below) */
+.story-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, oklch(0.12 0.008 40 / 0.55) 0%, transparent 20%, transparent 86%, oklch(0.12 0.008 40 / 0.35) 100%);
+}
+/* The caption about the scene keeps its line where the scene can run (so turning it on moves nothing) and takes no
+   room anywhere else. The query is lib/scene.ts SCENE_MEDIA, negated. */
+.story-scene-note { visibility: hidden; }
+@media not ((min-width: 768px) and (min-aspect-ratio: 3/2) and (prefers-reduced-motion: no-preference)) {
+  .story-scene-note { display: none; }
+}
+
+/* The scene is dark whatever the system colour scheme, so the story over it, and the header above it, take the dark
+   palette. In a light scheme the page therefore turns dark in one step when the first frame is ready (decision in
+   the frontend notes): a dark picture under light-theme text would be unreadable. */
+[data-story-shell][data-scene],
+html:has([data-story-shell][data-scene]) body > header {
+  --background: oklch(0.165 0.008 40);
+  --foreground: oklch(0.96 0.007 60);
+  --card: oklch(0.2 0.01 40);
+  --card-foreground: oklch(0.96 0.007 60);
+  --primary: oklch(0.72 0.18 40);
+  --primary-foreground: oklch(0.17 0.01 40);
+  --muted: oklch(0.25 0.012 40);
+  --muted-foreground: oklch(0.84 0.012 55);
+  --accent: oklch(0.29 0.04 38);
+  --accent-foreground: oklch(0.96 0.007 60);
+  --border: oklch(1 0 0 / 14%);
+  --ring: oklch(0.72 0.18 40);
+  --modis: oklch(0.78 0.09 240);
+  --viirs: oklch(0.96 0.007 60);
+  color: var(--foreground);
+}
+[data-story-shell][data-scene] { background: oklch(0.12 0.008 40); }
+/* at the top of the page the header has the (possibly light) body behind it, so it gets a solid dark fill */
+html:has([data-story-shell][data-scene]) body > header { background-color: oklch(0.14 0.008 40); }
+[data-scene] .story-scene { visibility: visible; }
+[data-scene] .story-scene canvas { opacity: 1; }
+[data-scene] .story-scene-note { visibility: visible; }
+[data-scene] .story-cell { fill: var(--cd); }
+[data-scene] [data-chapter] { border-color: transparent; }
+/* the words sit on a soft dark cloud that travels with them, so they stay readable over any frame while the rest of
+   the picture stays clear. Shadow only: it takes no room, so turning the scene on moves nothing. */
+[data-scene] .story-text {
+  border-radius: 1.5rem;
+  background: oklch(0.12 0.008 40 / 0.74);
+  box-shadow: 0 0 3.5rem 3.5rem oklch(0.12 0.008 40 / 0.74);
+  text-shadow: 0 1px 10px oklch(0.1 0.008 40 / 0.9);
+}
+/* figures sit on a dark panel; the negative margin keeps their size and place, so turning the scene on moves nothing.
+   No backdrop-filter on purpose: a blur over a canvas that redraws on every scroll frame is the first thing to drop
+   frames on a weak GPU. */
+[data-scene] .story-figure {
+  margin: -1.25rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: oklch(0.13 0.008 40 / 0.8);
+  box-shadow: 0 0 0 1px oklch(1 0 0 / 9%);
+}
