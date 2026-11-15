@@ -7,6 +7,7 @@ import { DownloadCsv } from "@/components/DownloadCsv";
 import { HoldoutStats } from "@/components/HoldoutStats";
 import { RecordChart } from "@/components/RecordChart";
 import { RegionSwitcher } from "@/components/RegionSwitcher";
+import { SeasonOutlook } from "@/components/SeasonOutlook";
 import { TrendSummary } from "@/components/TrendSummary";
 import { eraMeans, HOLD_FROM, holdoutYears, lastCompleteYear, VIIRS_FROM } from "@/lib/annual";
 import { loadAnnual } from "@/lib/data";
@@ -53,6 +54,9 @@ export function RecordExplorer() {
         <RecordChart data={data} region={REGIONS[sel.region]} regionId={sel.region} years={years} />
         <TrendSummary data={data} regionId={sel.region} years={years} />
       </section>
+
+      {/* FE-022: this season against every past season, with the forecast range (lib/outlook.ts) */}
+      <SeasonOutlook data={data} regionId={sel.region} region={REGIONS[sel.region]} />
 
       <section aria-labelledby="holdout-heading" className="flex flex-col gap-6">
         <div className="flex max-w-[65ch] flex-col gap-2">
