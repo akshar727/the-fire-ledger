@@ -119,9 +119,13 @@ class SiteDataTests(unittest.TestCase):
                 self.assertTrue(-180 <= w < e <= 180, f"{p}:{rid}: bbox lon {w},{e}")
                 self.assertTrue(-90 <= s < n <= 90, f"{p}:{rid}: bbox lat {s},{n}")
                 self.assertTrue(iso(r.get("data_through")), f"{p}:{rid}: data_through")
-                for sen in ("terra", "aqua", "viirs"):
+                for sen in ("terra", "aqua", "viirs", "n20", "n21"):
                     sd = r.get("sensors", {}).get(sen)
                     self.assertIsInstance(sd, dict, f"{p}:{rid}: sensors.{sen}")
+                    dt = sd.get("data_through")
+                    self.assertTrue(dt is None or iso(dt), f"{p}:{rid}: {sen}.data_through")
+                    if sen in ("terra", "aqua", "viirs"):
+                        self.assertEqual(dt, r["data_through"], f"{p}:{rid}: {sen}.data_through")
                     fd = sd.get("first_date")
                     self.assertTrue(iso(fd) or (fd is None and sd.get("last_date") is None),
                                     f"{p}:{rid}: {sen}.first_date")
@@ -314,7 +318,7 @@ class SiteDataTests(unittest.TestCase):
                 key = (c[0], c[1])
                 self.assertTrue(prev is None or prev <= key, f"{p}:{ln}: rows not sorted by (date, time_utc)")
                 prev = key
-                self.assertIn(c[4], ("Terra", "Aqua", "SNPP"), f"{p}:{ln}: satellite {c[4]!r}")
+                self.assertIn(c[4], ("Terra", "Aqua", "SNPP", "NOAA20", "NOAA21"), f"{p}:{ln}: satellite {c[4]!r}")
                 self.assertIn(c[7], ("D", "N"), f"{p}:{ln}: daynight {c[7]!r}")
                 rows += 1
         return rows
