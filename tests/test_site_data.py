@@ -188,8 +188,15 @@ class SiteDataTests(unittest.TestCase):
                 # ML-009: harmonized (no nulls) and the blended-year flag; harmonized = viirs ?? pred except blended years
                 self.check_arrays(p, a, ["years", "harmonized", "viirs_partial"])
                 self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["viirs_partial"]), f"{p}: viirs_partial")
+                # ML-017: per-year source; a forward year is blended the same way (weekly viirs is null for weeks with
+                # forward days, whose pred = back-cast to the S-NPP end + forward link after)
+                src = a.get("source")
+                if src is not None:
+                    self.assertEqual(len(src), len(a["years"]), f"{p}: source length")
+                    self.assertTrue(set(src) <= {"backcast", "observed", "forward"}, f"{p}: source values")
                 for i, (v, pr, h, bl) in enumerate(zip(a["viirs"], a["pred"], a["harmonized"], a["viirs_partial"])):
-                    if bl:
+                    fwd = src is not None and src[i] == "forward"
+                    if bl or fwd:
                         # blended year = model for weeks with null weekly viirs + observed for the rest (series.json)
                         self.assertIsNotNone(v, f"{p}: blended year {a['years'][i]} has no observed VIIRS")
                         sp = d / "series.json"

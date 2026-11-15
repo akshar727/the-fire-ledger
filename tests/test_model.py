@@ -136,20 +136,24 @@ class ModelRunTests(unittest.TestCase):
     def test_annual_keys_and_lengths(self):
         a = self.annual
         self.assertEqual(list(a), ["years", "modis", "viirs", "pred", "lo", "hi", "score", "partial", "data_through",
-                                   "harmonized", "viirs_partial", "overpass", "obs_over_pred", "drifted", "trend"])
+                                   "harmonized", "viirs_partial", "overpass", "obs_over_pred", "drifted",
+                                   "forward_through", "source", "trend"])
         self.assertEqual(a["years"], YEARS)
         for k in ("modis", "viirs", "pred", "lo", "hi", "partial", "harmonized", "viirs_partial", "obs_over_pred",
-                  "drifted"):
+                  "drifted", "source"):
             self.assertEqual(len(a[k]), 25, k)
         self.assertEqual(list(a["overpass"]), ["terra", "aqua", "snpp"])
         for k, v in a["overpass"].items():
             self.assertEqual(len(v), 25, k)
         self.assertEqual(list(a["score"]), ["mape_model", "mape_ratio", "coverage", "n_hold", "ratio", "alpha",
-                                            "weekly_r", "sigma_year"])
+                                            "weekly_r", "sigma_year", "forward"])
         self.assertEqual(a["score"]["n_hold"], 6)
-        self.assertTrue(all(np.isfinite(v) for v in a["score"].values()))
+        self.assertIsNone(a["score"]["forward"])   # no NOAA columns in this grid: no forward link
+        self.assertTrue(all(np.isfinite(v) for k, v in a["score"].items() if k != "forward"))
         self.assertEqual(a["partial"], [0] * 25)
         self.assertEqual(a["data_through"], THROUGH)
+        self.assertIsNone(a["forward_through"])
+        self.assertEqual(a["source"], ["backcast"] * 11 + ["observed"] * 14)
 
     def test_trend(self):
         # ML-020: the synthetic record has no trend, but VIIRS is ~2.5x MODIS, so the stitched record jumps in 2012
@@ -226,13 +230,18 @@ class ModelRunTests(unittest.TestCase):
         s = self.series
         self.assertEqual(list(s), ["schema", "region", "monthly", "weekly", "calendar"])
         self.assertEqual((s["schema"], s["region"]), (1, RID))
-        self.assertEqual(list(s["monthly"]), ["start_year", "bucketing", "modis", "viirs", "pred", "lo", "hi"])
+        self.assertEqual(list(s["monthly"]), ["start_year", "bucketing", "modis", "viirs", "pred", "lo", "hi",
+                                              "source", "last_month_days"])
         self.assertEqual(list(s["weekly"]), ["start_year", "weeks_per_year", "modis", "viirs", "pred", "lo", "hi",
-                                             "last_week_days"])
+                                             "source", "last_week_days"])
         self.assertEqual(s["weekly"]["last_week_days"], 8)   # whole year: week 51 of 2025 is 24-31 Dec
-        for k in ("modis", "viirs", "pred", "lo", "hi"):
+        self.assertEqual(s["monthly"]["last_month_days"], 31)
+        for k in ("modis", "viirs", "pred", "lo", "hi", "source"):
             self.assertEqual(len(s["monthly"][k]), 300, k)
             self.assertEqual(len(s["weekly"][k]), 1300, k)
+        # ML-017 source: back-cast to January 2012 (viirs null), observed after; no forward without NOAA columns
+        for name, d in (("monthly", s["monthly"]), ("weekly", s["weekly"])):
+            self.assertEqual(d["source"], ["backcast" if v is None else "observed" for v in d["viirs"]], name)
         c = s["calendar"]
         self.assertEqual(list(c), ["baseline_years", "month_median", "month_p25", "month_p75", "anomaly", "flag"])
         self.assertEqual((len(c["anomaly"]), len(c["flag"]), len(c["month_median"])), (300, 300, 12))
@@ -297,6 +306,122 @@ class PartialYearRunTests(unittest.TestCase):
         self.assertEqual(w["last_week_days"], 5)
         self.assertEqual(len(self.series["calendar"]["flag"]), 24 * 12 + 10)
         self.assertEqual(self.series["calendar"]["baseline_years"], [2001, 2025])
+
+
+def with_noaa(g, through, fwd_through, rng):
+    """Add synthetic NOAA-20 (from 2018-04-01, S-NPP ~ 0.95 x NOAA-20) and NOAA-21 (from 2024, ~1.1 x fewer than
+    NOAA-20) columns to the grid, plus NOAA-only rows after the S-NPP end (same cells, mid-week and on 4 Nov)."""
+    g = g[g.date <= through].copy()
+    dt = pd.to_datetime(g.date)
+    rate = 2.5 * (g.terra_n + g.aqua_n) + 0.1
+    g["n20_n"] = np.where(dt >= "2018-04-01", rng.poisson(rate / 0.95), 0)
+    g["n21_n"] = np.where(dt >= "2024-01-01", rng.poisson(rate / 0.95 / 1.1), 0)
+    g["n20_frp_mean"] = g["n21_frp_mean"] = None
+    extra = []
+    for day in pd.date_range(pd.Timestamp(through) + pd.Timedelta(days=1), fwd_through):
+        if day.dayofweek not in (1, 5):   # a few NOAA days only, incl. 4 Nov (in the S-NPP end week)
+            continue
+        for lat, lon in ((38.25, -8.5), (39.75, -7.25)):
+            for dn in ("D", "N"):
+                extra.append((day.strftime("%Y-%m-%d"), lat, lon, dn, 0, 0, 0, None, None, None,
+                              int(rng.poisson(6)), int(rng.poisson(5)), None, None))
+    return pd.concat([g, pd.DataFrame(extra, columns=g.columns)], ignore_index=True)
+
+
+class ForwardRunTests(unittest.TestCase):
+    """ML-017: S-NPP ends Sun 2 Nov 2025 (inside week 43), NOAA-20/21 continue to Thu 20 Nov 2025. The back-cast part
+    must be byte-identical to the run without NOAA (PartialYearRunTests' grid); forward days extend the record."""
+    THROUGH, FWD = "2025-11-02", "2025-11-20"
+    NW, NM = 24 * 52 + 43, 24 * 12 + 10   # weeks / months that end on or before the S-NPP end, untouched
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp(prefix="test_model_forward_")
+        out = {}
+        g = synthetic_grid()
+        for name, grid, sensors in (
+                ("base", g[g.date <= cls.THROUGH], {}),
+                ("fwd", with_noaa(g, cls.THROUGH, cls.FWD, np.random.default_rng(7)),
+                 {"n20": {"data_through": cls.FWD}, "n21": {"data_through": cls.FWD}})):
+            grid_dir, out_dir = os.path.join(cls.tmp, name, "grid"), os.path.join(cls.tmp, name, "out")
+            os.makedirs(grid_dir)
+            grid.to_csv(os.path.join(grid_dir, f"fire_grid_daily_{RID}.csv"), index=False)
+            with open(os.path.join(grid_dir, "manifest.json"), "w", encoding="utf-8") as f:
+                json.dump({RID: {"archive_through": cls.THROUGH, "sensors": sensors}}, f)
+            with contextlib.redirect_stdout(io.StringIO()):
+                model.run(RID, nboot=5, grid_dir=grid_dir, out_dir=out_dir)
+            out[name] = (load_strict(os.path.join(out_dir, RID, "annual.json")),
+                         load_strict(os.path.join(out_dir, RID, "series.json")))
+        (cls.a0, cls.s0), (cls.a, cls.s) = out["base"], out["fwd"]
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+
+    def test_backcast_part_unchanged(self):
+        for k in ("modis", "viirs", "pred", "lo", "hi", "harmonized", "obs_over_pred", "viirs_partial", "drifted"):
+            self.assertEqual(self.a[k][:24], self.a0[k][:24], k)
+        for k in ("modis", "viirs"):
+            self.assertEqual(self.a[k], self.a0[k], k)   # raw counts: NOAA rows add nothing
+        self.assertEqual(self.a["obs_over_pred"], self.a0["obs_over_pred"])
+        self.assertEqual(self.a["trend"], self.a0["trend"])
+        self.assertEqual({k: v for k, v in self.a["score"].items() if k != "forward"},
+                         {k: v for k, v in self.a0["score"].items() if k != "forward"})
+        for k in ("modis", "viirs", "pred", "lo", "hi"):
+            self.assertEqual(self.s["monthly"][k][:self.NM], self.s0["monthly"][k][:self.NM], k)
+            self.assertEqual(self.s["weekly"][k][:self.NW], self.s0["weekly"][k][:self.NW], k)
+        for k in ("modis",):   # MODIS: the S-NPP-end week and month only hold the days up to 2 Nov
+            self.assertEqual(self.s["weekly"][k][self.NW], self.s0["weekly"][k][self.NW])
+        c, c0 = self.s["calendar"], self.s0["calendar"]
+        self.assertEqual(c["month_median"], c0["month_median"])
+        self.assertEqual(c["anomaly"][:self.NM], c0["anomaly"])
+
+    def test_record_runs_to_the_noaa_end(self):
+        a, m, w = self.a, self.s["monthly"], self.s["weekly"]
+        self.assertEqual((a["data_through"], a["forward_through"]), (self.THROUGH, self.FWD))
+        self.assertEqual(len(m["pred"]), self.NM + 1)            # + November 2025 to date
+        self.assertEqual(m["last_month_days"], 20)
+        self.assertEqual(len(w["pred"]), self.NW + 4)            # + weeks 43 (mixed) .. 46 (19-20 Nov)
+        self.assertEqual(w["last_week_days"], 2)
+        self.assertEqual(len(self.s["calendar"]["anomaly"]), self.NM + 1)
+        self.assertIsNone(self.s["calendar"]["anomaly"][-1])     # partial month is never compared
+        self.assertEqual(self.s["calendar"]["flag"][-1], 0)
+
+    def test_source(self):
+        a, m, w = self.a, self.s["monthly"], self.s["weekly"]
+        self.assertEqual(a["source"], ["backcast"] * 11 + ["observed"] * 13 + ["forward"])
+        self.assertEqual(m["source"][self.NM - 1:], ["observed", "forward"])
+        self.assertEqual(w["source"][self.NW - 1:], ["observed"] + ["forward"] * 4)
+        for d in (m, w):
+            self.assertEqual([v for v, s in zip(d["viirs"], d["source"]) if s == "forward"], [None] * (
+                d["source"].count("forward")))
+            self.assertEqual(d["source"][:133], ["backcast"] * 133)   # to January 2012
+
+    def test_forward_adds_to_pred(self):
+        a, m, w = self.a, self.s["monthly"], self.s["weekly"]
+        self.assertGreater(w["pred"][self.NW], self.s0["weekly"]["pred"][self.NW])   # mixed week gains 3-4 Nov
+        self.assertTrue(all(p > 0 for p in w["pred"][self.NW:self.NW + 3]))
+        self.assertEqual(w["pred"][-1], 0)   # 19-20 Nov: no NOAA detections -> no S-NPP equivalent
+        self.assertTrue(all(lo <= p <= hi or hi - lo < 1 for lo, p, hi in
+                            zip(w["lo"][self.NW:], w["pred"][self.NW:], w["hi"][self.NW:])))
+        # annual 2025 = weekly pred sum; harmonized = observed weeks + model for the forward weeks
+        wk = w["pred"][24 * 52:]
+        self.assertAlmostEqual(a["pred"][-1], sum(wk), delta=53 * 0.05)
+        har = sum(v if s == "observed" else p for v, p, s in
+                  zip(w["viirs"][24 * 52:], wk, w["source"][24 * 52:]))
+        self.assertAlmostEqual(a["harmonized"][-1], har, delta=53 * 0.05)
+        self.assertAlmostEqual(sum(m["pred"][24 * 12:]), a["pred"][-1], delta=12 * 0.05 + 0.5)
+
+    def test_forward_score(self):
+        f = self.a["score"]["forward"]
+        self.assertEqual(f["sensors"], ["noaa20", "noaa21"])
+        self.assertEqual((f["hold"], f["forward"]), (["2024-01-01", self.THROUGH], ["2025-11-03", self.FWD]))
+        self.assertAlmostEqual(f["ratio_day"], 0.95, delta=0.05)     # S-NPP ~ 0.95 x NOAA-20 by construction
+        self.assertAlmostEqual(f["n21_scale_day"], 1.1, delta=0.08)
+        self.assertEqual(f["n_year"], 1)                              # 2024; 2025 is cut at 2 Nov
+        self.assertLess(f["mape_year"], 10)
+        for k in ("mape_month", "mape_ratio_month", "alpha", "sigma_month"):
+            self.assertTrue(f[k] is None or np.isfinite(f[k]), k)
 
 
 if __name__ == "__main__":

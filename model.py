@@ -2,13 +2,16 @@
 for 2001-2011, validate on held-out 2020-2025. Usage: python model.py [region_id ...] [--nboot N]
 Writes site/public/data/<region_id>/annual.json and series.json (monthly + weekly series with 5-95% bands,
 plus the burn-calendar block from calendar_stats.calendar_block);
-run() also returns per-week sums and bootstrap draw sums."""
+run() also returns per-week sums and bootstrap draw sums.
+After the S-NPP end (`archive_through`) the record continues with S-NPP-equivalent counts from NOAA-20/21
+(forward_link.py, ML-017); every period carries `source`: backcast | observed | forward."""
 import argparse, gc, json, os, time
 import numpy as np, pandas as pd
 import statsmodels.api as sm
 from patsy import dmatrix
 from calendar_stats import calendar_block
 from trend_stats import trend_block
+from forward_link import run_forward
 try:
     import resource   # not on Windows
 except ImportError:
@@ -30,6 +33,17 @@ def week_end(yr, wk):
 
 def week_start(yr, wk):
     return pd.Timestamp(yr, 1, 1) + pd.Timedelta(days=7 * wk)
+
+def forward_through(sensors, archive_through):
+    """Last day of the forward record: the earliest NOAA-20/21 `data_through` in the manifest, or None if there is
+    no NOAA data past `archive_through`."""
+    ends = [pd.Timestamp(sensors[s]["data_through"]) for s in ("n20", "n21") if s in sensors]
+    end = min(ends) if ends else None
+    return end if end is not None and end > pd.Timestamp(archive_through) else None
+
+def source_of(has_fwd, viirs):
+    """Per period: forward (any day after the S-NPP end), observed (S-NPP value), else backcast."""
+    return ["forward" if f else "backcast" if v is None else "observed" for f, v in zip(has_fwd, viirs)]
 
 def load_json(path):
     with open(path, encoding="utf-8") as f:
@@ -80,35 +94,60 @@ def covered_end(yr, wk, through):
     """Last day of week wk that has data: the week's end, or `through` for a partial last week."""
     return min(week_end(yr, wk), pd.Timestamp(through))
 
-def series_bundle(region_id, weeks, wk, draws, through=None):
+def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
     """series.json content from per-week sums. Monthly: each week's value split over calendar months by its days with
     data in each (one share matrix for modis/viirs/pred/draws); ends at the last month whose last day is on or before
-    `through` (default: end of the last kept week). weekly.last_week_days = days with data in the last week."""
+    `through` (default: end of the last kept week). weekly.last_week_days = days with data in the last week.
+    fwd (ML-017): forward days after `through` from forward_link.run_forward (`dates`, `pred`, `draws` per day);
+    `weeks` then runs to the last forward day and `wk`/`draws` hold zeros there. Forward days add to `pred`/`lo`/`hi`
+    by their own day and month; `viirs` is null for any period with a forward day; the monthly arrays then end with
+    the partial month to date (monthly.last_month_days), whose calendar statistics are left out."""
     through = week_end(*weeks[-1]) if through is None else pd.Timestamp(through)
+    end = fwd["dates"][-1] if fwd else through
     nw = len(weeks)
-    nm = (through.year - 2001) * 12 + through.month - (0 if through.is_month_end else 1)
+    nm = (end.year - 2001) * 12 + end.month - (0 if end.is_month_end or fwd else 1)
     S = np.zeros((nw, nm))
     for k, (yr, wkn) in enumerate(weeks):
         days = pd.date_range(week_start(yr, wkn), covered_end(yr, wkn, through))
         for dt in days:
             if (i := (dt.year - 2001) * 12 + dt.month - 1) < nm:
                 S[k, i] += 1 / len(days)
+    mstarts = [pd.Timestamp(2001 + i // 12, i % 12 + 1, 1) for i in range(nm)]
+    wstarts = [week_start(yr, wkn) for yr, wkn in weeks]
+    Fm = Fw = None
+    if fwd:   # forward day -> month and -> week (exact, no day share needed)
+        nd = len(fwd["dates"])
+        wi = {k: i for i, k in enumerate(weeks)}
+        Fm, Fw = np.zeros((nd, nm)), np.zeros((nd, nw))
+        Fm[np.arange(nd), [(t.year - 2001) * 12 + t.month - 1 for t in fwd["dates"]]] = 1
+        Fw[np.arange(nd), [wi[(t.year, min((t.dayofyear - 1) // 7, 51))] for t in fwd["dates"]]] = 1
     r = lambda a: [float(v) for v in np.round(a, 1)]
-    def block(M, starts):
+    def block(M, F, starts, ends):
         d = {"start_year": 2001}
         d.update({"bucketing": "calendar-month-day-share"} if M is not None else {"weeks_per_year": 52})
+        has_fwd = [min(e, end) > through for e in ends]
         for k in ("modis", "viirs", "pred"):
-            v = r(wk[k] @ M if M is not None else wk[k])
-            # viirs is null for any month or week that starts before VIIRS_START (incl. January 2012)
-            d[k] = [None if k == "viirs" and s < VIIRS_START else x for s, x in zip(starts, v)]
-        lo, hi = np.percentile(draws @ M if M is not None else draws, [5, 95], axis=0)
+            a = wk[k] @ M if M is not None else wk[k]
+            if k == "pred" and F is not None:
+                a = a + fwd["pred"] @ F
+            # viirs is null for a month or week that starts before VIIRS_START (incl. January 2012) or has forward days
+            d[k] = [None if k == "viirs" and (s < VIIRS_START or f) else x for s, f, x in zip(starts, has_fwd, r(a))]
+        dr = draws @ M if M is not None else draws
+        if F is not None:
+            dr = dr + fwd["draws"] @ F
+        lo, hi = np.percentile(dr, [5, 95], axis=0)
         d["lo"], d["hi"] = r(lo), r(hi)
+        d["source"] = source_of(has_fwd, d["viirs"])
         return d
-    monthly = block(S, [pd.Timestamp(2001 + i // 12, i % 12 + 1, 1) for i in range(nm)])
-    # burn calendar (ML-005): stats on the published harmonized record = observed VIIRS where it exists, else the model
+    monthly = block(S, Fm, mstarts, [m + pd.offsets.MonthEnd(0) for m in mstarts])
+    monthly["last_month_days"] = (min(mstarts[-1] + pd.offsets.MonthEnd(0), end) - mstarts[-1]).days + 1
+    # burn calendar (ML-005): stats on the published harmonized record = observed VIIRS where it exists, else the model;
+    # a partial last month (forward, to date) is left out so it is never compared with whole months
     harmonized = [p if v is None else v for v, p in zip(monthly["viirs"], monthly["pred"])]
-    weekly = block(None, [week_start(yr, wkn) for yr, wkn in weeks])
-    weekly["last_week_days"] = (covered_end(*weeks[-1], through) - week_start(*weeks[-1])).days + 1
+    if monthly["last_month_days"] < (mstarts[-1] + pd.offsets.MonthEnd(0)).day:
+        harmonized[-1] = None
+    weekly = block(None, Fw, wstarts, [week_end(yr, wkn) for yr, wkn in weeks])
+    weekly["last_week_days"] = (covered_end(*weeks[-1], end) - week_start(*weeks[-1])).days + 1
     return {"schema": 1, "region": region_id, "monthly": monthly, "weekly": weekly,
             "calendar": calendar_block(harmonized, monthly["start_year"])}
 
@@ -118,9 +157,18 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     points_dir (default <out_dir>/<region_id>/points, written by build.py) feeds only the overpass fields."""
     t0 = time.time()
     rng = np.random.default_rng(0)   # per region, so output doesn't depend on which other regions ran
-    through = load_json(os.path.join(grid_dir, "manifest.json"))[region_id]["archive_through"]
+    man = load_json(os.path.join(grid_dir, "manifest.json"))[region_id]
+    through = man["archive_through"]
     weeks = kept_weeks(through)
     d = pd.read_csv(os.path.join(grid_dir, f"fire_grid_daily_{region_id}.csv"), parse_dates=["date"])
+    # forward link (ML-017): its own random stream, so the back-cast below is byte-identical with or without it
+    fend = forward_through(man.get("sensors", {}), through)
+    # fend comes from the manifest build.py writes with the grid; not clipped to the last grid row, because the grid is
+    # sparse (a day with no fire anywhere has no row) and clipping would drop real zero days
+    fwd = None
+    if fend is not None and {"n20_n", "n21_n"} <= set(d.columns):
+        fwd = run_forward(d[["date", "daynight", "viirs_n", "n20_n", "n21_n"]], through, fend, nboot,
+                          np.random.default_rng(1))
     d["year"] = d.date.dt.year
     d["week"] = np.minimum((d.date.dt.day_of_year - 1) // 7, 51)
     for s in ("terra", "aqua"):
@@ -197,19 +245,34 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     wk_modis = np.bincount(widx, weights=w.modis_n.values, minlength=nw)
     wk_viirs = np.bincount(widx, weights=y, minlength=nw)
     wk_pred = np.bincount(widx, weights=mu, minlength=nw)
+    # forward link (ML-017): weeks run on to the last NOAA day; the back-cast arrays get zeros there (wk_bc, draws: what
+    # series_bundle splits over months), the forward days are added per week for the annual totals (wk_pred, draws_all)
+    end = fwd["dates"][-1] if fwd else pd.Timestamp(through)
+    wk_bc, draws_all = wk_pred, draws
+    wk_fwd = np.zeros(nw, bool)                                         # week has days after the S-NPP end
+    if fwd:
+        weeks = kept_weeks(end)
+        pad = lambda a: np.concatenate([a, np.zeros(a.shape[:-1] + (len(weeks) - nw,), a.dtype)], axis=-1)
+        wk_modis, wk_viirs, wk_bc, draws, wk_nov = map(pad, (wk_modis, wk_viirs, wk_pred, draws, wk_nov))
+        wi = {k: i for i, k in enumerate(weeks)}
+        Fw = np.zeros((len(fwd["dates"]), len(weeks)))
+        Fw[np.arange(len(fwd["dates"])), [wi[(t.year, min((t.dayofyear - 1) // 7, 51))] for t in fwd["dates"]]] = 1
+        wk_pred, draws_all = wk_bc + fwd["pred"] @ Fw, draws + fwd["draws"] @ Fw
+        wk_fwd = np.array([covered_end(*k, end) > pd.Timestamp(through) for k in weeks])
     wyear = np.array([yr for yr, _ in weeks])
     years = sorted(set(wyear.tolist()))
     ysum = lambda a: np.stack([a[..., wyear == yr].sum(axis=-1) for yr in years], axis=-1)   # weeks -> years
     ann = pd.DataFrame({"modis_n": ysum(wk_modis), "viirs_n": ysum(wk_viirs), "mu": ysum(wk_pred)},
                        index=pd.Index(years, name="year"))
-    ann["lo"], ann["hi"] = np.percentile(ysum(draws), [5, 95], axis=0)
+    ann["lo"], ann["hi"] = np.percentile(ysum(draws_all), [5, 95], axis=0)
     # harmonized (ML-009): observed VIIRS for weeks starting on/after VIIRS_START, model mean for earlier weeks, so a
     # year VIIRS only partly covers (2012: from 20 Jan) isn't published as a fake dip. Other years: viirs ?? pred.
-    ann["harmonized"] = ysum(np.where(wk_nov, wk_pred, wk_viirs))
+    # Weeks with forward days (ML-017) take the model too: back-cast to the S-NPP end, forward link after it.
+    ann["harmonized"] = ysum(np.where(wk_nov | wk_fwd, wk_pred, wk_viirs))
     ann["viirs_partial"] = (ysum(wk_nov.astype(int)) > 0) & (ysum((~wk_nov).astype(int)) > 0)   # 1 = blended year
     # obs_over_pred (ML-016): observed VIIRS / model mean over the weeks VIIRS covers (2012: from 20 Jan), so it
     # shows where the fitted MODIS -> VIIRS link stops holding (orbit drift). None before 2012.
-    ov_viirs, ov_pred = ysum(np.where(wk_nov, 0, wk_viirs)), ysum(np.where(wk_nov, 0, wk_pred))
+    ov_viirs, ov_pred = ysum(np.where(wk_nov, 0, wk_viirs)), ysum(np.where(wk_nov, 0, wk_bc))
     obs_over_pred = [round(float(v / p), 4) if n and p > 0 else None
                      for v, p, n in zip(ov_viirs, ov_pred, ysum((~wk_nov).astype(int)))]
     points_dir = points_dir or os.path.join(out_dir, region_id, "points")
@@ -218,7 +281,7 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     overpass, drifted = overpass_block(points_dir, years)
     ann.loc[ann.index < 2012, "viirs_n"] = np.nan
     # a year is complete when its data reach Dec 31 (52 kept weeks is not enough: the last one may be partial)
-    complete = {yr: week_end(yr, 51) <= pd.Timestamp(through) for yr in years}
+    complete = {yr: week_end(yr, 51) <= end for yr in years}
 
     train = w[istrain]
     hy = [yr for yr in HOLD if yr in years and complete[yr]]   # complete hold-out years only
@@ -233,19 +296,24 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         "coverage": int(((h.viirs_n >= h.lo) & (h.viirs_n <= h.hi)).sum()), "n_hold": len(h),
         "ratio": float(ratio), "alpha": a_full,
         "weekly_r": float(np.corrcoef(wk_pred[hm], wk_viirs[hm])[0, 1]), "sigma_year": sigma_year,
+        "forward": fwd["score"] if fwd else None,   # ML-017: NOAA-20/21 -> S-NPP link, hold-out 2024 -> S-NPP end
     }
+    yfwd = [bool(wk_fwd[wyear == yr].any()) for yr in years]
     out = {"years": [int(v) for v in ann.index], "modis": [float(v) for v in ann.modis_n],
            "viirs": [None if np.isnan(v) else float(v) for v in ann.viirs_n],
            "pred": [float(v) for v in ann.mu.round(1)], "lo": [float(v) for v in ann.lo],
            "hi": [float(v) for v in ann.hi], "score": score,
            "partial": [int(not complete[yr]) for yr in years],
-           "data_through": covered_end(*weeks[-1], through).strftime("%Y-%m-%d"),
+           # data_through stays the S-NPP end (the annual viirs/modis stop there); forward_through = NOAA end or None
+           "data_through": pd.Timestamp(through).strftime("%Y-%m-%d"),
            "harmonized": [float(v) for v in ann.harmonized.round(1)],
            "viirs_partial": [int(v) for v in ann.viirs_partial],
-           "overpass": overpass, "obs_over_pred": obs_over_pred, "drifted": drifted}
+           "overpass": overpass, "obs_over_pred": obs_over_pred, "drifted": drifted,
+           "forward_through": end.strftime("%Y-%m-%d") if fwd else None,   # last forward (NOAA) day (ML-017)
+           "source": source_of(yfwd, [None if yr < 2012 else 1 for yr in years])}
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
-    bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws, through)
+    bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_bc}, draws, through, fwd)
     # trend (ML-020, F-7): naive stitched record (raw MODIS for weeks before VIIRS_START, raw VIIRS after, so 2012
     # has no fake dip; same rule as the monthly viirs ?? modis) vs harmonized, complete years only. The bootstrap range
     # puts each draw in place of the model mean in the back-cast weeks (observed VIIRS fixed).
@@ -267,7 +335,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss   # bytes on macOS, KB on Linux
         mem = f", peak memory {rss / (1 << 20 if os.uname().sysname == 'Darwin' else 1 << 10):.0f} MB"
     print(f"== {region_id} ==\n{ann.round(0).to_string()}\n{score}\nrun time {time.time() - t0:.0f} s{mem}", flush=True)
-    return {"weeks": weeks, "modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred, "draws": draws, "ann": ann, "score": score}
+    return {"weeks": weeks, "modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred, "draws": draws_all, "ann": ann,
+            "score": score}
 
 def main():
     ids = [r["id"] for r in load_json("regions.json")]
