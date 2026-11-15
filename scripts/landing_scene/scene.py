@@ -580,9 +580,10 @@ def build_world():
     n.link(wide, add.inputs["Fac"])
     n.link(sky.outputs["Color"], add.inputs["Color1"])
     add.inputs["Color2"].default_value = (1.0, 0.40, 0.13, 1)
+    sky_with_clouds, cover = clouds(n, xyz, up, c, add.outputs["Color"])
     add2 = n.new("ShaderNodeMixRGB", blend_type="ADD")  # sky + halo x sun colour (halo can exceed 1: no clamping)
-    add2.inputs["Fac"].default_value = 1.0
-    n.link(add.outputs["Color"], add2.inputs["Color1"])
+    n.link(n.math("SUBTRACT", 1.0, n.math("MULTIPLY", cover, 0.85)), add2.inputs["Fac"])  # thin cloud dims the sun
+    n.link(sky_with_clouds, add2.inputs["Color1"])
     sun_col = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="sun_colour")  # Color1 keyed in apply()
     sun_col.inputs["Fac"].default_value = 1.0
     comb = n.new("ShaderNodeCombineXYZ")
@@ -597,6 +598,71 @@ def build_world():
     n.link(bg.outputs["Background"], out.inputs["Surface"])
     bpy.context.scene.world = w
     return w
+
+
+def clouds(n, xyz, up, c, sky):
+    """
+    Scattered fair-weather cloud on the sky dome for the daylight frames: two noise fields on a flat layer seen from
+    below (direction / height, so cloud shrinks and thins towards the horizon into the haze), grey-blue in their
+    thick cores, white-gold on their edges and warmest towards the sun, kept off the sun's disc so the sunset stays
+    visible. Values `clouds` (amount) and `cloud_light` are keyed per frame in apply(); the tint is `cloud_tint`.
+    Returns (sky colour with the clouds over it, cloud cover 0..1).
+    """
+    lift = n.math("ADD", n.math("MAXIMUM", xyz.outputs["Z"], 0.0), 0.10)
+    drift = n.new("ShaderNodeValue", label="cloud drift", name="cloud_drift")
+    plane = n.new("ShaderNodeCombineXYZ")
+    n.link(n.math("ADD", n.math("DIVIDE", xyz.outputs["X"], lift), drift.outputs[0]), plane.inputs["X"])
+    n.link(n.math("DIVIDE", xyz.outputs["Y"], lift), plane.inputs["Y"])
+    plane.inputs["Z"].default_value = 3.7
+    fine = n.new("ShaderNodeTexNoise")
+    for k, v in (("Scale", 1.25), ("Detail", 8.0), ("Roughness", 0.6), ("Lacunarity", 2.1)):
+        fine.inputs[k].default_value = v
+    n.link(plane.outputs[0], fine.inputs["Vector"])
+    broad = n.new("ShaderNodeTexNoise")
+    for k, v in (("Scale", 0.32), ("Detail", 2.0)):
+        broad.inputs[k].default_value = v
+    n.link(plane.outputs[0], broad.inputs["Vector"])
+    field = n.math("ADD", fine.outputs["Fac"], n.math("MULTIPLY", n.math("SUBTRACT", broad.outputs["Fac"], 0.5), 0.7))
+
+    def band(a, b):
+        m = n.new("ShaderNodeMapRange", interpolation_type="SMOOTHSTEP", clamp=True)
+        m.inputs["From Min"].default_value, m.inputs["From Max"].default_value = a, b
+        n.link(field, m.inputs["Value"])
+        return m.outputs["Result"]
+
+    above = n.math("MULTIPLY", n.math("DIVIDE", n.math("SUBTRACT", xyz.outputs["Z"], 0.02), 0.16, clamp=True), 1.0, clamp=True)
+    clear_sun = n.math("SUBTRACT", 1.0, n.math("POWER", c, 300.0), clamp=True)
+    amount = n.new("ShaderNodeValue", label="clouds", name="clouds")
+    amount.outputs[0].default_value = 1.0
+    cover = n.math("MULTIPLY", n.math("MULTIPLY", n.math("MULTIPLY", band(0.52, 0.66), above), clear_sun), amount.outputs[0])
+    core = band(0.60, 0.86)
+    body = n.new("ShaderNodeMixRGB", blend_type="MIX")
+    n.link(core, body.inputs["Fac"])
+    body.inputs["Color1"].default_value = (0.92, 0.88, 0.84, 1)
+    body.inputs["Color2"].default_value = (0.42, 0.45, 0.55, 1)
+    tint = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="cloud_tint")  # Color2 keyed: white to sunset orange
+    tint.inputs["Fac"].default_value = 1.0
+    n.link(body.outputs["Color"], tint.inputs["Color1"])
+    # edges facing the sun light up (silver lining)
+    rim = n.math("MULTIPLY", n.math("MULTIPLY", n.math("POWER", c, 6.0), n.math("SUBTRACT", 1.0, core)), 1.6)
+    lit = n.new("ShaderNodeMixRGB", blend_type="ADD")
+    n.link(rim, lit.inputs["Fac"])
+    n.link(tint.outputs["Color"], lit.inputs["Color1"])
+    lit.inputs["Color2"].default_value = (1.0, 0.62, 0.32, 1)
+    light = n.new("ShaderNodeValue", label="cloud light", name="cloud_light")
+    light.outputs[0].default_value = 1.0
+    dim = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY")
+    dim.inputs["Fac"].default_value = 1.0
+    n.link(lit.outputs["Color"], dim.inputs["Color1"])
+    grey = n.new("ShaderNodeCombineXYZ")
+    for k in range(3):
+        n.link(light.outputs[0], grey.inputs[k])
+    n.link(grey.outputs[0], dim.inputs["Color2"])
+    over = n.new("ShaderNodeMixRGB", blend_type="MIX")
+    n.link(cover, over.inputs["Fac"])
+    n.link(sky, over.inputs["Color1"])
+    n.link(dim.outputs["Color"], over.inputs["Color2"])
+    return over.outputs["Color"], cover
 
 
 def build_lights():
@@ -706,17 +772,210 @@ def build_satellite(name, wings):
     return root
 
 
-def build_scan_line(name, color, width):
-    v, f = box(0, 0, 0, 900.0, width, 0.02)
+def glow_material(name, color):
+    """Light with nothing behind it: an emission added to a fully see-through surface, so it only brightens."""
+    m, n = material(name)
+    out = n.new("ShaderNodeOutputMaterial")
+    clear = n.new("ShaderNodeBsdfTransparent")
+    em = n.new("ShaderNodeEmission")
+    em.inputs["Color"].default_value = (*color, 1)
+    add = n.new("ShaderNodeAddShader")
+    n.link(clear.outputs[0], add.inputs[0])
+    n.link(em.outputs[0], add.inputs[1])
+    n.link(add.outputs[0], out.inputs["Surface"])
+    try:
+        m.surface_render_method = "BLENDED"
+    except (AttributeError, TypeError):
+        m.blend_method = "BLEND"
+    return m, n, em
+
+
+SCAN_HALF = 90.0  # km either side of the satellite's nadir the ground line is drawn (past the picture's edges)
+SCAN_N = 721      # samples along it (every 250 m), so it lies on the terrain
+FAN_N = 120       # slices of the fan from the instrument down to the line
+
+
+def build_scan(name, color, width):
+    """
+    One satellite's scan: the line on the ground it is imaging right now (one pixel wide, draped over the terrain)
+    and a faint fan of light from its instrument down to that line, so the line visibly hangs from the satellite and
+    moves with it. Both meshes keep their topology; place_scan() moves their vertices each frame.
+    """
+    k = SCAN_N
+    i = np.arange(k - 1)
+    line_me = new_mesh(name, np.zeros((2 * k, 3)), np.stack([i, i + 1, k + i + 1, k + i], axis=1), smooth_shading=False)
     m, n = material(name)
     out = n.new("ShaderNodeOutputMaterial")
     em = n.new("ShaderNodeEmission")
     em.inputs["Color"].default_value = (*color, 1)
-    em.inputs["Strength"].default_value = 2.5
+    em.inputs["Strength"].default_value = 3.0
     n.link(em.outputs["Emission"], out.inputs["Surface"])
-    ob = add_object(name, new_mesh(name, v, f, smooth_shading=False), m)
-    ob.visible_shadow = False
-    return ob
+    line = add_object(name, line_me, m)
+    line.visible_shadow = False
+
+    fan_me = new_mesh(f"{name} fan", np.zeros((3 * FAN_N, 3)), np.arange(3 * FAN_N).reshape(-1, 3), smooth_shading=False)
+    float_attr(fan_me, "down", np.tile(np.array([0.0, 1.0, 1.0], dtype=np.float32), FAN_N))
+    m, n, em = glow_material(f"{name} fan", color)
+    # brightest where it meets the ground line and straight under the satellite, gone at the fan's two edges
+    centre = n.math("POWER", n.math("SUBTRACT", 1.0, n.math("POWER", n.attr("edge"), 2.0), clamp=True), 2.0)
+    down = n.math("ADD", n.math("MULTIPLY", n.math("POWER", n.attr("down"), 2.0), 0.75), 0.25)
+    gain = n.new("ShaderNodeValue", label="fan", name="fan")
+    gain.outputs[0].default_value = 0.35
+    n.link(n.math("MULTIPLY", n.math("MULTIPLY", centre, down), gain.outputs[0]), em.inputs["Strength"])
+    fan = add_object(f"{name} fan", fan_me, m)
+    fan.visible_shadow = False
+    return line, fan, width
+
+
+def place_scan(S, scan, s, c_sat, apex):
+    """Puts the ground line at `s` km along the track (centred under the satellite, `c_sat` km across) and the fan
+    between it and the instrument at `apex`."""
+    line, fan, width = scan
+    dem = S["dem"]
+    bx, by = L.TRACK[0] * s, L.TRACK[1] * s
+
+    def ground(c):
+        x, y = bx + L.CROSS[0] * c, by + L.CROSS[1] * c
+        return x, y, L.surface_km(dem, x, y) + 0.22  # clear of the ridges it crosses, seen from the side
+
+    x, y, z = ground(c_sat + np.linspace(-SCAN_HALF, SCAN_HALF, SCAN_N))
+    hw = width / 2
+    co = np.concatenate([np.stack([x - L.TRACK[0] * hw, y - L.TRACK[1] * hw, z], 1),
+                         np.stack([x + L.TRACK[0] * hw, y + L.TRACK[1] * hw, z], 1)])
+    line.data.vertices.foreach_set("co", co.astype(np.float32).ravel())
+    line.data.update()
+
+    half = min(1.3 * (apex.z - float(L.surface_km(dem, apex.x, apex.y))), SCAN_HALF)  # about MODIS's +-55 degrees
+    c = c_sat + np.linspace(-half, half, FAN_N + 1)
+    gx, gy, gz = ground(c)
+    tri = np.zeros((FAN_N, 3, 3))
+    tri[:, 0] = (apex.x, apex.y, apex.z)
+    tri[:, 1] = np.stack([gx[:-1], gy[:-1], gz[:-1]], 1)
+    tri[:, 2] = np.stack([gx[1:], gy[1:], gz[1:]], 1)
+    fan.data.vertices.foreach_set("co", tri.astype(np.float32).ravel())
+    e = np.abs(np.linspace(-1, 1, FAN_N + 1))
+    float_attr(fan.data, "edge", np.stack([(e[:-1] + e[1:]) / 2, e[:-1], e[1:]], 1).ravel())
+    fan.data.update()
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# embers
+# ---------------------------------------------------------------------------------------------------------------
+
+def build_embers(dem, p, burning):
+    """
+    Glowing embers in the air, as small camera-facing discs rebuilt each frame (ember_state, update_embers):
+      plume  rising off the squares burning when the story opens, spiralling up to 0.3-3.5 km while they cool and
+             drifting east-north-east with height, like the smoke (build_smoke)
+      drift  carried on the wind across the hills between the fire and the opening viewpoint, scattered around the
+             camera's path up out of the forest (each one near where the camera is at some moment of story time
+             24 to 44, over the smoke, at a distance in proportion to its height above the ground then, glowing for a few units
+             either side of that moment), so the camera flies through them on the way up
+    Decoration, not data: no ember is a detection. Real embers are 1-5 cm; these are 4-50 cm (so a few stay in sight) and drawn at least ~2 pixels wide
+    and dimmed in proportion when that is larger than they are, so far ones read as sparks, not blobs.
+    """
+    r = np.random.default_rng(618)
+    E = {}
+    # plume
+    na = 4500
+    src = r.choice(np.where(burning)[0], na)
+    sx, sy = p["x"][src] + r.normal(0, 0.2, na), p["y"][src] + r.normal(0, 0.2, na)
+    a = {
+        "x": sx, "y": sy, "z": L.surface_km(dem, sx, sy) + 0.02,
+        "period": r.uniform(8.0, 20.0, na), "phase": r.uniform(0, 1, na),
+        "rise": 0.3 + 3.2 * r.uniform(0, 1, na) ** 1.7,
+        "swirl": r.uniform(0.04, 0.35, na), "spin": r.choice([-1, 1], na) * r.uniform(0.3, 1.0, na),
+        "angle": r.uniform(0, 2 * np.pi, na), "size": r.uniform(0.00015, 0.0005, na),
+    }
+    # drift: anchors on the camera path
+    nb = 3600
+    grid = np.linspace(24.0, 44.0, 81)  # only once the camera is up over the smoke and the burning hills
+    cams = [L.camera(dem, max(g, 0.0)) for g in grid]
+    eyes = np.array([c["eye"] for c in cams])
+    fwds = np.array([c["target"] for c in cams]) - eyes
+    fwds /= np.linalg.norm(fwds, axis=1)[:, None]
+    above = eyes[:, 2] - L.surface_km(dem, eyes[:, 0], eyes[:, 1])
+    k = r.integers(0, len(grid), nb)
+    rnd = r.normal(size=(nb, 3))
+    rnd /= np.linalg.norm(rnd, axis=1)[:, None]
+    way = fwds[k] * r.uniform(0.5, 1.6, nb)[:, None] + rnd
+    way /= np.linalg.norm(way, axis=1)[:, None]
+    d = (above[k] + 0.008) * np.exp(r.uniform(np.log(0.5), np.log(3.5), nb))
+    pos = eyes[k] + way * d[:, None]
+    ground = L.surface_km(dem, pos[:, 0], pos[:, 1])
+    pos[:, 2] = np.clip(pos[:, 2], ground + 0.002, ground + 4.5)
+    wind = np.array([0.020, 0.007, 0.012]) + r.normal(0, 0.006, (nb, 3))  # east-north-east and up, per story unit
+    b = {
+        "pos": pos, "t": grid[k], "vel": wind * d[:, None],
+        "swirl": d * r.uniform(0.01, 0.05, nb), "spin": r.choice([-1, 1], nb) * r.uniform(0.3, 1.2, nb),
+        "angle": r.uniform(0, 2 * np.pi, nb), "size": r.uniform(0.00004, 0.0001, nb),
+        "flicker": r.uniform(0.5, 2.0, nb),
+    }
+    E["plume"], E["drift"] = a, b
+    n = na + nb
+    E["hot"] = r.beta(2.0, 1.4, n)
+    E["seed"] = r.uniform(0, 2 * np.pi, n)
+
+    quad = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=np.float32)
+    me = new_mesh("Embers", np.zeros((4 * n, 3)), np.arange(4 * n).reshape(-1, 4), smooth_shading=False)
+    float_attr(me, "u", np.tile(quad[:, 0], n))
+    float_attr(me, "v", np.tile(quad[:, 1], n))
+    float_attr(me, "hot", np.repeat(E["hot"], 4))
+    float_attr(me, "bright", np.zeros(4 * n))
+    m, nd, em = glow_material("Ember", (1.0, 0.4, 0.06))
+    nd.link(nd.color_ramp(nd.attr("hot"), [(0.0, (0.60, 0.05, 0.004)), (0.55, (1.0, 0.22, 0.015)), (1.0, (1.0, 0.48, 0.08))]),
+            em.inputs["Color"])
+    r2 = nd.math("ADD", nd.math("MULTIPLY", nd.attr("u"), nd.attr("u")), nd.math("MULTIPLY", nd.attr("v"), nd.attr("v")))
+    disc = nd.math("POWER", nd.math("SUBTRACT", 1.0, r2, clamp=True), 2.0)  # a soft round spark in the square
+    gain = nd.new("ShaderNodeValue", label="embers", name="embers")
+    gain.outputs[0].default_value = 1.0
+    nd.link(nd.math("MULTIPLY", nd.math("MULTIPLY", disc, nd.attr("bright")), gain.outputs[0]), em.inputs["Strength"])
+    E["object"] = add_object("Embers", me, m)
+    E["object"].visible_shadow = False
+    return E
+
+
+def ember_state(E, t):
+    """Position (n x 3), true size (km) and glow (0..1) of every ember at story time t."""
+    a, b = E["plume"], E["drift"]
+    age = (a["phase"] + t / a["period"]) % 1.0
+    up = a["rise"] * age ** 0.75
+    wob = a["swirl"] * (0.25 + age)
+    ang = a["angle"] + a["spin"] * t
+    pa = np.stack([a["x"] + up * 2.2 + wob * np.cos(ang), a["y"] + up * 0.8 + wob * np.sin(ang), a["z"] + up], 1)
+    ga = np.clip(age / 0.04, 0, 1) * (1 - age) ** 1.3  # flares as it leaves the fire, cools as it climbs
+
+    dt = t - b["t"]
+    ang = b["angle"] + b["spin"] * t
+    pb = b["pos"] + b["vel"] * dt[:, None]
+    pb[:, 0] += b["swirl"] * np.cos(ang)
+    pb[:, 1] += b["swirl"] * np.sin(ang)
+    pb[:, 2] += b["swirl"] * 0.5 * np.sin(ang * 1.3)
+    gb = 0.9 * np.exp(-(dt / 6.0) ** 2)  # each one glows while the camera is near where it was placed
+
+    pos = np.concatenate([pa, pb])
+    flick = 0.65 + 0.35 * np.sin(E["seed"] + t * 2.3 * np.concatenate([np.ones(len(pa)), b["flicker"]]))
+    return pos, np.concatenate([a["size"], b["size"]]), np.concatenate([ga, gb]) * flick
+
+
+def update_embers(E, t, eye, right, up, lens, gain):
+    ob = E["object"]
+    ob.hide_render = gain <= 0
+    if ob.hide_render:
+        return
+    pos, size, glow = ember_state(E, t)
+    dist = np.linalg.norm(pos - np.array(eye), axis=1)
+    per_px = 2 * math.atan(18.0 / lens) / 1600.0  # radians per pixel across the 1600-pixel frame
+    drawn = np.maximum(size, dist * per_px * 1.8)
+    bright = glow * np.clip(size / drawn, 0.02, 1.0) ** 0.5
+    quad = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=np.float64)
+    R, U = np.array(right), np.array(up)
+    off = (quad[:, 0, None] * R + quad[:, 1, None] * U)[None, :, :] * drawn[:, None, None]
+    me = ob.data
+    me.vertices.foreach_set("co", (pos[:, None, :] + off).astype(np.float32).ravel())
+    float_attr(me, "bright", np.repeat(bright, 4))
+    me.update()
+    value(ob.data.materials[0], "embers").default_value = gain
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -781,8 +1040,9 @@ def build(scale=100):
     S["sky_light"], S["sun"], S["fire_lights"] = build_lights()
     S["air"] = build_smoke()
     S["sats"] = {"Aqua": build_satellite("Aqua", (-1,)), "SNPP": build_satellite("Suomi NPP", (1,))}
-    S["lines"] = {"Aqua": build_scan_line("Scan line MODIS", (0.35, 0.6, 1.0), L.PIXEL_KM["modis"]),
-                  "SNPP": build_scan_line("Scan line VIIRS", (1.0, 0.93, 0.8), L.PIXEL_KM["viirs"])}
+    S["scans"] = {"Aqua": build_scan("Scan line MODIS", (0.35, 0.6, 1.0), L.PIXEL_KM["modis"]),
+                  "SNPP": build_scan("Scan line VIIRS", (1.0, 0.93, 0.8), L.PIXEL_KM["viirs"])}
+    S["embers"] = build_embers(dem, p, burning)
     S["axis"], S["axis_emission"] = build_axis()
 
     cam = bpy.data.cameras.new("Camera")
@@ -887,6 +1147,12 @@ def apply(S, frame):
     value(world, "glow").default_value = ramp(t, [(0, 0.5), (12, 1.4), (22, 2.0), (30, 1.0), (40, 0.36)])
     value(world, "sun").default_value = ramp(t, [(0, 1.0), (22, 1.0), (27, 0.0)])
     value(world, "sky").default_value = ramp(t, [(0, 1.0), (40, 1.0), (60, 0.5)])
+    # clouds through the daylight and the sunset, darkening with the sky, gone by night
+    value(world, "clouds").default_value = ramp(t, [(0, 1.0), (20, 1.0), (30, 0.4), (36, 0.0)])
+    value(world, "cloud_light").default_value = ramp(t, [(0, 1.0), (10, 0.9), (18, 0.6), (24, 0.32), (30, 0.12), (36, 0.05)])
+    value(world, "cloud_drift").default_value = t * 0.004
+    world.node_tree.nodes["cloud_tint"].inputs["Color2"].default_value = (
+        1.0, ramp(t, [(0, 0.97), (14, 0.82), (24, 0.6)]), ramp(t, [(0, 0.93), (14, 0.66), (24, 0.4)]), 1.0)
     # glow only from what is hotter than the day sky
     S["glare"].inputs["Threshold"].default_value = ramp(t, [(0, 1.6), (22, 1.6), (34, 0.7)])
     # night light: lighter than the first cut on the way up (trees and hills stay readable), clearest from high up,
@@ -928,24 +1194,29 @@ def apply(S, frame):
         else:
             ob.hide_render = True
 
-    # satellites: each one rides above its scan line
+    # satellites: each flies straight above the line it is scanning, and its fan of light reaches down to that line,
+    # so line and satellite move together; it sits a little to one side of the fire so it does not hide it
     line = L.scan_line(t)
+    fire_c = L.FIRE[0] * L.CROSS[0] + L.FIRE[1] * L.CROSS[1]
     for key in S["sats"]:
-        sat, strip = S["sats"][key], S["lines"][key]
+        sat, scan = S["sats"][key], S["scans"][key]
         active = line is not None and line[0]["satellite"] == key
-        for ob in (strip, sat, *sat.children):
+        for ob in (scan[0], scan[1], sat, *sat.children):
             ob.hide_render = not active
         if not active:
             continue
         s = line[1]
         side = -1.0 if key == "Aqua" else 1.0
-        base = Vector((L.TRACK[0] * s, L.TRACK[1] * s, 0.0))
-        strip.location = (base.x, base.y, 6.5)
-        strip.rotation_euler = (0, 0, math.radians(-L.TRACK_AZ))
         z = eye.z * 0.42
-        sat.location = (base.x + L.FIRE[0] + side * 0.20 * (eye.z - z), base.y, z)
+        c_sat = fire_c + side * 0.3 * z
+        scale = eye.z * 0.012
+        sat.location = (L.TRACK[0] * s + L.CROSS[0] * c_sat, L.TRACK[1] * s + L.CROSS[1] * c_sat, z)
         sat.rotation_euler = (0, 0, math.radians(-L.TRACK_AZ))
-        sat.scale = (eye.z * 0.016,) * 3
+        sat.scale = (scale,) * 3
+        place_scan(S, scan, s, c_sat, Vector(sat.location) - Vector((0, 0, 0.75 * scale)))
+
+    # embers: none under the clear opening sky, only once the camera rises over the fire and its smoke, gone once the camera is far above the smoke
+    update_embers(S["embers"], t, eye, right, up, cam.lens, ramp(t, [(0, 0.0), (22, 0.0), (28, 10.0), (34, 14.0), (44, 14.0), (52, 0.0)]))
 
     S["axis_emission"].inputs["Strength"].default_value = ramp(t, [(112, 0.0), (130, 1.6), (150, 1.6), (166, 0.0)])
     S["axis"].hide_render = not 112 < t < 166

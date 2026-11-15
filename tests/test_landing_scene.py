@@ -179,8 +179,8 @@ class Detections(unittest.TestCase):
             self.assertGreater(int(sel.sum()), 30, ps["satellite"])
             self.assertTrue(np.all((on[sel] >= ps["frames"][0]) & (on[sel] <= ps["frames"][1])), ps["satellite"])
             along = L.along_track(p["x"][sel], p["y"][sel])
-            self.assertGreater(float(along.min()), L.PASS_SPAN[0], "the scan line starts south of every detection")
-            self.assertLess(float(along.max()), L.PASS_SPAN[1], "and ends north of every one")
+            self.assertGreater(float(along.min()), ps["track"][0][1], "the scan line starts south of every detection")
+            self.assertLess(float(along.max()), ps["track"][-1][1], "and ends north of every one")
             in_pass |= sel
         self.assertTrue(np.all(np.diff(on[~in_pass]) >= 0), "outside the two scan-line passes, later means later")
         before = p["t"] < L.CLOCK[0][1]
@@ -195,7 +195,16 @@ class Detections(unittest.TestCase):
             f0, f1 = ps["frames"]
             got = L.scan_line((f0 + f1) / 2)
             self.assertIs(got[0], ps)
-            self.assertAlmostEqual(got[1], sum(L.PASS_SPAN) / 2)
+            kf, km = zip(*ps["track"])
+            self.assertEqual((kf[0], kf[-1]), (f0, f1))
+            self.assertTrue(np.all(np.diff(kf) > 0) and np.all(np.diff(km) > 0), "northbound, never backing up")
+            self.assertAlmostEqual(L.scan_line(f0)[1], km[0])
+            self.assertAlmostEqual(L.scan_line(f1)[1], km[-1])
+            # slowest over the fire: km per frame there is a fraction of the speed it enters and leaves at
+            speed = np.diff(km) / np.diff(kf)
+            fire = float(L.along_track(*L.FIRE))
+            self.assertTrue(km[1] < fire < km[2])
+            self.assertLess(speed[1] * 3, min(speed[0], speed[2]), ps["satellite"])
             sel = np.array([s == ps["satellite"] for s in self.p["satellite"]]) & (self.on >= f0) & (self.on <= f1) \
                 & (self.p["t"] >= L._m(L.STORY_DAY, ps["from"])) & (self.p["t"] <= L._m(L.STORY_DAY, ps["to"]))
             for i in np.where(sel)[0][::17]:
@@ -205,7 +214,10 @@ class Detections(unittest.TestCase):
         a, b = L.PASSES
         self.assertEqual((a["satellite"], b["satellite"]), ("Aqua", "SNPP"))
         self.assertLess(a["frames"][1], b["frames"][0])
-        self.assertLessEqual(b["frames"][1], L.ANCHORS[2])
+        self.assertLessEqual(b["frames"][1], L.STORY_ANCHORS[2])
+        # the 375 m re-scan crosses the fire more slowly than Aqua's 1 km scan
+        crawl = lambda ps: (ps["track"][2][0] - ps["track"][1][0]) / (ps["track"][2][1] - ps["track"][1][1])  # noqa: E731
+        self.assertGreater(crawl(b), crawl(a) * 1.5)
         self.assertIsNone(L.scan_line((a["frames"][1] + b["frames"][0]) / 2))
 
     def test_heat_is_zero_until_on_and_between_0_and_1_after(self):
