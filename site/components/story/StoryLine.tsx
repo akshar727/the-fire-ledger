@@ -82,7 +82,7 @@ export function StoryLegend({ mode }: { mode: "raw" | "harmonized" }) {
           { color: "var(--modis)", text: "raw MODIS (dashed)", dash: true },
         ];
   return (
-    <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+    <ul className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11.5px] tracking-[0.06em] text-muted-foreground uppercase">
       {items.map((it) => (
         <li key={it.text} className="flex items-center gap-2">
           <svg width="20" height="10" aria-hidden>

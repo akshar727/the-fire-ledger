@@ -45,7 +45,7 @@ export function DownloadCsv() {
   const box = !country && urlBox && boxesOverlap(urlBox, rbox) ? urlBox : null;
 
   return (
-    <section aria-labelledby="download-heading" className="grid gap-8 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
+    <section aria-labelledby="download-heading" className="grid gap-8 panel p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <h2 id="download-heading" className="text-xl font-semibold tracking-tight">

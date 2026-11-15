@@ -162,7 +162,7 @@ Website (`site/`, versions pinned in `site/package-lock.json`)
 - class-variance-authority: component variants. https://cva.style . Apache-2.0
 - tw-animate-css: animation utilities used by shadcn/ui. https://github.com/Wombosvideo/tw-animate-css . MIT
 - Phosphor Icons (`@phosphor-icons/react`): icons. https://phosphoricons.com . MIT
-- Geist and Geist Mono typefaces (via `next/font/google`): page typography. https://vercel.com/font . SIL Open Font License 1.1
+- Work Sans (https://fonts.google.com/specimen/Work+Sans) and IBM Plex Mono (https://fonts.google.com/specimen/IBM+Plex+Mono) typefaces (via `next/font/google`): page typography for the red "Thermal console" theme (design from Mission Control `reference/Ideas_2026-11-15.md` §4, scheme A). SIL Open Font License 1.1
 - ESLint, eslint-config-next, babel-plugin-react-compiler: linting and build tooling. https://eslint.org , https://react.dev/learn/react-compiler . MIT
 
 Code

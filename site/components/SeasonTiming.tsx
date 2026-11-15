@@ -75,7 +75,7 @@ export function SeasonTiming({ o, regionId, region }: { o: Outlook; regionId: Re
   };
 
   return (
-    <section aria-labelledby="timing-heading" className="flex flex-col gap-5 rounded-xl border bg-card p-4 sm:p-6">
+    <section aria-labelledby="timing-heading" className="flex flex-col gap-5 panel p-4 sm:p-6">
       <div className="flex max-w-[70ch] flex-col gap-2">
         <h2 id="timing-heading" className="text-2xl font-semibold tracking-tight">
           When each season burns

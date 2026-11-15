@@ -9,7 +9,7 @@
 // cell's bottom edge, named in the legend, readout and picture; the latest-month card compares a partial month with
 // the same days of past years (monthToDate) instead of whole months.
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, GlobeHemisphereWestIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,18 +55,9 @@ const PLAYING =
   "data-playing:relative data-playing:z-10 data-playing:ring-[3px]! data-playing:ring-foreground! data-playing:ring-offset-2! data-playing:ring-offset-card! data-playing:motion-safe:scale-110 scroll-mt-32";
 
 type Mode = "light" | "dark";
-const darkQuery = "(prefers-color-scheme: dark)";
-const subscribe = (cb: () => void) => {
-  const mq = window.matchMedia(darkQuery);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-};
+/** The site is dark only (red Thermal console theme), so the calendar always uses the dark ramp. */
 function useColorMode(): Mode {
-  return useSyncExternalStore(
-    subscribe,
-    () => (window.matchMedia(darkQuery).matches ? "dark" : "light"),
-    () => "dark",
-  );
+  return "dark";
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
@@ -294,7 +285,7 @@ function CalendarView({
         />
       </div>
 
-      <section aria-labelledby="calendar-heading" className="rounded-xl border bg-card p-4 sm:p-6">
+      <section aria-labelledby="calendar-heading" className="panel p-4 sm:p-6">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <h2 id="calendar-heading" className="text-sm font-medium">
             Harmonized detections by year and {unit}
@@ -313,7 +304,7 @@ function CalendarView({
                 <ToggleGroupItem
                   key={v}
                   value={v}
-                  className="h-8 px-3 capitalize data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]"
+                  className="h-8 px-3 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]"
                 >
                   {v}
                 </ToggleGroupItem>
@@ -514,7 +505,7 @@ function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; 
   ];
   const pct = (a: number, b: number) => (b > 0 ? ` (${Math.round((100 * a) / b)}%)` : "");
   return (
-    <section aria-labelledby="weather-heading" className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:p-6">
+    <section aria-labelledby="weather-heading" className="flex flex-col gap-4 panel p-4 sm:p-6">
       <div className="flex max-w-[65ch] flex-col gap-2">
         <h3 id="weather-heading" className="text-lg font-semibold tracking-tight">
           Was it the weather?
@@ -640,7 +631,7 @@ function LatestCard({
   const isRecent = cell.year * 12 + cell.month - 1 >= lastComplete;
   const Mark = cell.flag === 1 ? CaretUpIcon : CaretDownIcon;
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-accent p-5">
+    <div className="flex flex-col gap-3 border-l-2 border-primary bg-accent p-5">
       <p className="text-sm text-muted-foreground">
         {isRecent ? "Last month" : "Latest complete month in the record"}: {monthName(cell)}
       </p>
@@ -701,7 +692,7 @@ function MonthToDateCard({
   const [today] = useState(() => new Date());
   const isNow = today.getUTCFullYear() === mtd.year && today.getUTCMonth() + 1 === mtd.month;
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-accent p-5">
+    <div className="flex flex-col gap-3 border-l-2 border-primary bg-accent p-5">
       <p className="text-sm text-muted-foreground">
         {isNow ? "This month so far" : "Latest month, still incomplete"}: {days} {mtd.year}
       </p>
@@ -829,7 +820,7 @@ export function CalendarSkeleton() {
         <div className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
         <div className="h-16 animate-pulse self-end rounded-md bg-muted motion-reduce:animate-none xl:self-stretch" />
       </div>
-      <div className="grid grid-cols-[5rem_repeat(12,minmax(0,1fr))] gap-[3px] rounded-xl border bg-card p-4 sm:p-6">
+      <div className="grid grid-cols-[5rem_repeat(12,minmax(0,1fr))] gap-[3px] panel p-4 sm:p-6">
         {Array.from({ length: 13 * 10 }, (_, i) => (
           <div key={i} className="h-8 animate-pulse rounded-sm bg-muted motion-reduce:animate-none" />
         ))}

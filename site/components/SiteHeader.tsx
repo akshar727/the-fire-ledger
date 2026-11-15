@@ -5,10 +5,13 @@ import { NavLinks, SiteNav } from "@/components/SiteNav";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <FlameIcon weight="fill" className="size-5 text-primary" aria-hidden />
+    <header className="sticky top-0 z-20 border-b bg-background">
+      <div className="flex h-9 items-stretch justify-between">
+        <Link
+          href="/"
+          className="flex items-center gap-2 border-r px-3 font-mono text-[10px] font-semibold tracking-[0.06em] whitespace-nowrap uppercase sm:gap-2.5 sm:px-4 sm:text-[11px] sm:tracking-[0.14em]"
+        >
+          <FlameIcon weight="fill" className="size-4 text-primary drop-shadow-[0_0_6px_var(--primary)]" aria-hidden />
           One Fire Record
         </Link>
         <Suspense fallback={<NavLinks />}>
