@@ -1,6 +1,7 @@
 // Series bundle (site/public/data/<region>/series.json, registry §3 "Series bundle"): types, a strict parser,
 // and the year x month or year x week grid the burn calendar draws (FE-016: week view). Pure functions with relative imports only, so `node --test`
 // can run them without the Next.js toolchain.
+import { kendallP, SIGNIFICANT_P, theilSen } from "./trend.ts";
 
 export type Flag = -1 | 0 | 1;
 
@@ -435,3 +436,122 @@ export const MONTHS_LONG = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ] as const;
+
+// FE-017: season timing. When in each fire season the running total reaches 10%, 50% and 90% of that season's total,
+// from the weekly cumulative sums `outlook.seasons()` builds (lib/outlook.ts imports this file, so seasons come in as a
+// plain shape here), and whether those dates drift over the years (Theil-Sen + Mann-Kendall, as the record trend).
+
+/** The fields of an outlook `Season` this needs: running total after each of its 52 weeks, first week `startWeek`. */
+export type SeasonCum = { year: number; label: string; start: string; cum: number[] };
+
+export const TIMING_SHARES = [0.1, 0.5, 0.9] as const;
+
+/**
+ * Days into the season (fractional; 0 = start of its first day) at which the running total reaches `share` of the
+ * season total, spreading each week's detections evenly over its days. Season week k is calendar week
+ * `(startWeek + k) % 52`, so week 51's 8 or 9 days count in full. null for a season with no fire.
+ */
+export function dayAtShare(cum: number[], startYear: number, startWeek: number, share: number): number | null {
+  const total = cum.at(-1) ?? 0;
+  if (!(total > 0)) return null;
+  const target = share * total;
+  let days = 0, prev = 0;
+  for (let k = 0; k < cum.length; k++) {
+    const c = startWeek + k, len = weekSpan(startYear + Math.floor(c / 52), c % 52).length;
+    // tolerance: 0.1 * 30 is 3.0000000000000004, which must still be reached by a running total of exactly 3
+    if (cum[k] >= target - 1e-9 * total) return days + (len * Math.max(0, target - prev)) / (cum[k] - prev);
+    days += len;
+    prev = cum[k];
+  }
+  return days;
+}
+
+export type SeasonTiming = {
+  year: number;
+  label: string;
+  start: string;
+  total: number;
+  /** day of the season (0-based) during which 10%, 50% and 90% are reached */
+  days: [number, number, number];
+  /** the same days as dates, YYYY-MM-DD */
+  dates: [string, string, string];
+};
+
+/**
+ * 10% / 50% / 90% dates of every whole season. Pass complete seasons only (outlook's `past`: 52 whole weeks), so the
+ * partial current season and a partial first or last year never enter; seasons without 52 weeks or without fire are
+ * dropped here too.
+ */
+export function seasonTiming(seasons: SeasonCum[], startWeek: number): SeasonTiming[] {
+  return seasons.flatMap((s) => {
+    if (s.cum.length !== 52) return [];
+    const f = TIMING_SHARES.map((q) => dayAtShare(s.cum, s.year, startWeek, q));
+    if (f.some((d) => d == null)) return [];
+    // ceil less a hair: a share reached exactly at the end of day 21 (d = 21 + float noise) belongs to day index 20
+    const days = f.map((d) => Math.max(0, Math.ceil(d! - 1e-9) - 1)) as [number, number, number];
+    const t0 = Date.parse(`${s.start}T00:00:00Z`);
+    return [{
+      year: s.year,
+      label: s.label,
+      start: s.start,
+      total: s.cum[51],
+      days,
+      dates: days.map((d) => isoDay(t0 + d * DAY_MS)) as [string, string, string],
+    }];
+  });
+}
+
+export type TimingDrift = {
+  /** 0, 1, 2 for the 10%, 50%, 90% date */
+  which: number;
+  /** Theil-Sen slope in days per decade (positive = later in the season), with its 90% interval */
+  perDecade: number;
+  lo: number;
+  hi: number;
+  /** two-sided Mann-Kendall p; NaN when the dates never change */
+  p: number;
+  n: number;
+};
+
+/** Drift of the `which` date (0 = 10%, 1 = 50%, 2 = 90%) across seasons; null with fewer than 5 seasons. */
+export function timingDrift(rows: SeasonTiming[], which: number): TimingDrift | null {
+  if (rows.length < 5) return null;
+  const x = rows.map((r) => r.year), y = rows.map((r) => r.days[which]);
+  const { slope, lo, hi } = theilSen(x, y);
+  return { which, perDecade: 10 * slope, lo: 10 * lo, hi: 10 * hi, p: kendallP(x, y), n: rows.length };
+}
+
+/** "6 days later", "2.5 days earlier", "no change": a drift in days per decade. */
+export function driftDays(perDecade: number): string {
+  const a = Math.abs(perDecade);
+  if (a < 0.05) return "no change";
+  const v = a < 10 ? a.toFixed(1).replace(/\.0$/, "") : String(Math.round(a));
+  return `${v} day${v === "1" ? "" : "s"} ${perDecade > 0 ? "later" : "earlier"}`;
+}
+
+const TIMING_NAMES = ["first 10%", "halfway point", "90% point"] as const;
+
+/**
+ * One sentence on whether onset (the 10% date) is drifting, with the halfway date as a second reading. "Drifting" =
+ * Mann-Kendall p < SIGNIFICANT_P and a 90% interval that excludes 0, the same bar as the record trend sentence.
+ */
+export function timingSentence(rows: SeasonTiming[], region: string): string {
+  const on = timingDrift(rows, 0), mid = timingDrift(rows, 1);
+  if (!on || !mid) return `Too few whole fire seasons in ${region} to tell whether the season's timing is drifting.`;
+  const real = (d: TimingDrift) => d.p < SIGNIFICANT_P && (d.lo > 0 || d.hi < 0);
+  const span = `${rows[0].label} to ${rows.at(-1)!.label}`;
+  const read = (d: TimingDrift, verb: string) => {
+    const days = driftDays(d.perDecade);
+    if (real(d)) return `${verb} ${days} per decade (90% interval ${signedDays(d.lo)} to ${signedDays(d.hi)}), a consistent shift`;
+    if (Number.isNaN(d.p)) return "falls on the same day of the season every year";
+    if (days === "no change") return `shows no drift (p = ${fmtP(d.p)})`;
+    return `${verb} ${days} per decade, within the year-to-year scatter (p = ${fmtP(d.p)})`;
+  };
+  const lead = real(on)
+    ? `Onset is drifting in ${region}: across ${rows.length} whole seasons (${span}) the ${TIMING_NAMES[0]} of the season's fire ${read(on, "arrives")}`
+    : `Onset is not clearly drifting in ${region}: across ${rows.length} whole seasons (${span}) the ${TIMING_NAMES[0]} ${read(on, "arrives")}`;
+  return `${lead}; the ${TIMING_NAMES[1]} ${read(mid, "moves")}.`;
+}
+
+const signedDays = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v) < 10 ? Math.abs(v).toFixed(1).replace(/\.0$/, "") : Math.round(Math.abs(v))}`;
+const fmtP = (p: number) => (Number.isNaN(p) ? "n/a" : p < 0.001 ? "< 0.001" : p.toFixed(p < 0.01 ? 3 : 2));
