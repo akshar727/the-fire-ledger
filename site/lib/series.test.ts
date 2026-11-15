@@ -6,6 +6,7 @@ import {
   buildGrid,
   compact,
   monthSpan,
+  monthToDate,
   parseSeries,
   periodLabel,
   rampColor,
@@ -15,6 +16,7 @@ import {
   sliceGrid,
   times,
   weekMonthGroups,
+  weeklyWindow,
   weekSpan,
 } from "./series.ts";
 
@@ -254,6 +256,91 @@ test("parser checks monthly.source, weekly.source and monthly.last_month_days wh
   assert.throws(bad((b) => (b.monthly.last_month_days = 32)), SeriesFormatError);
 });
 
+// FE-009: a bundle that ends with November 2004 to day 14. Weekly: 7 detections every week (1 a day, weeks 0-50), so
+// days 1-14 of any November hold 14; the 2004 month to date holds 28 (twice the usual).
+const forwardBundle = (opts: { lastDays?: number; weekly?: boolean; calendar?: boolean } = {}) => {
+  const { lastDays = 14, weekly = true, calendar = false } = opts;
+  const nm = 12 * 3 + 11, nw = 52 * 3 + 46; // to November 2004; weeks to 12-18 Nov 2004 (week 45)
+  const src = (n: number, fwd: number) => Array.from({ length: n }, (_, i) => (i < 5 ? "backcast" : i >= n - fwd ? "forward" : "observed"));
+  const b: Record<string, unknown> = {
+    schema: 1,
+    region: "test",
+    monthly: {
+      start_year: 2001,
+      bucketing: "calendar-month-day-share",
+      modis: Array.from({ length: nm }, () => 1),
+      viirs: Array.from({ length: nm }, (_, i) => (i < 5 || i === nm - 1 ? null : 30)),
+      pred: Array.from({ length: nm }, (_, i) => (i === nm - 1 ? 28 : 31)),
+      lo: Array.from({ length: nm }, () => 1),
+      hi: Array.from({ length: nm }, () => 99),
+      source: src(nm, 1),
+      last_month_days: lastDays,
+    },
+  };
+  if (weekly)
+    b.weekly = {
+      start_year: 2001,
+      weeks_per_year: 52,
+      modis: Array.from({ length: nw }, () => 1),
+      viirs: Array.from({ length: nw }, () => null),
+      pred: Array.from({ length: nw }, (_, i) => (i % 52 === 51 ? 8 : 7)),
+      lo: Array.from({ length: nw }, () => 1),
+      hi: Array.from({ length: nw }, () => 99),
+      source: src(nw, 2),
+      last_week_days: 3,
+    };
+  if (calendar)
+    b.calendar = {
+      baseline_years: [2002, 2003],
+      month_median: Array(12).fill(30),
+      month_p25: Array(12).fill(20),
+      month_p75: Array(12).fill(40),
+      anomaly: Array.from({ length: nm }, (_, i) => (i === nm - 1 ? null : 1)),
+      flag: Array(nm).fill(0),
+    };
+  return parseSeries(b);
+};
+
+test("cells carry their source; firstForward is the first forward period (FE-009)", () => {
+  const g = buildGrid(forwardBundle());
+  assert.deepEqual([g.rows[0][0].source, g.rows[0][5].source, g.latest!.source], ["backcast", "observed", "forward"]);
+  assert.equal(g.firstForward, g.latest);
+  assert.equal(g.firstForward?.month, 11);
+  const wk = buildGrid(forwardBundle(), "week");
+  assert.equal(wk.firstForward?.week, 44);
+  // without `source` (bundles before ML-017) the source follows `observed` and nothing is forward
+  const old = buildGrid(parseSeries(fixture));
+  assert.equal(old.firstForward, null);
+  assert.ok(old.rows.flat().every((c) => c.value == null || c.source === (c.observed ? "observed" : "backcast")));
+});
+
+test("weeklyWindow sums the weeks by the share of their days in the window", () => {
+  const w = forwardBundle().weekly!;
+  assert.equal(weeklyWindow(w, 2002, 11, 1, 14), 14);
+  assert.equal(weeklyWindow(w, 2002, 11, 1, 30), 30);
+  assert.equal(weeklyWindow(w, 2002, 12, 1, 31), 31); // week 51 holds 8 days of 1 a day
+  assert.equal(weeklyWindow(w, 2004, 11, 1, 30), null); // the weekly series stops in week 45 of 2004
+  // a week straddling the window edge counts by its days inside: week 43 of 2002 (29 Oct-4 Nov) = 70 -> 4/7 in November
+  const s = structuredClone(forwardBundle());
+  s.weekly!.pred[52 + 43] = 70;
+  assert.equal(weeklyWindow(s.weekly!, 2002, 11, 1, 14), 40 + 7 + 3);
+  assert.equal(weeklyWindow(s.weekly!, 2002, 10, 1, 31), 28 + 30); // Oct: weeks 39-42 fully (4 x 7), 3/7 of week 43
+});
+
+test("monthToDate: this month so far against the same days in past years (FE-009)", () => {
+  const r = monthToDate(forwardBundle())!;
+  assert.deepEqual(
+    { year: r.year, month: r.month, days: r.days, value: r.value, median: r.median, ratio: r.ratio, years: r.years, n: r.n },
+    { year: 2004, month: 11, days: 14, value: 28, median: 14, ratio: 2, years: [2001, 2003], n: 3 },
+  );
+  assert.deepEqual([r.p25, r.p75], [14, 14]);
+  assert.deepEqual(r.recent, [2001, 2002, 2003].map((year) => ({ year, value: 14 })));
+  assert.deepEqual(monthToDate(forwardBundle({ calendar: true }))!.years, [2002, 2003]); // the calendar baseline
+  assert.equal(monthToDate(forwardBundle({ lastDays: 30 })), null); // a whole last month: the calendar compares it
+  assert.equal(monthToDate(forwardBundle({ weekly: false })), null);
+  assert.equal(monthToDate(parseSeries(fixture)), null);
+});
+
 test("week grid needs the weekly series", () => {
   assert.throws(() => buildGrid(parseSeries(fixture), "week"), SeriesFormatError);
 });
@@ -322,6 +409,24 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(latest.index, n - 1);
     assert.equal(latest.days, Math.min(m.last_month_days ?? latest.length, latest.length));
     if (m.source[n - 1] === "forward") assert.equal(b.calendar?.anomaly[n - 1] ?? null, null);
+  });
+  test(`published ${region}: weekly day shares give the monthly values back; month to date (FE-009)`, { skip: !existsSync(url) }, () => {
+    const b = parseSeries(JSON.parse(readFileSync(url, "utf8")));
+    const m = b.monthly, w = b.weekly!;
+    // whole months before ML-017's forward month: same day-share rule as model.py (weekly values are rounded to 0.1)
+    for (const i of [24, 100, 150, 200, 250, 300]) {
+      const y = m.start_year + Math.floor(i / 12), mo = (i % 12) + 1;
+      const v = weeklyWindow(w, y, mo, 1, monthSpan(y, mo).length)!;
+      const want = m.viirs[i] ?? m.pred[i];
+      assert.ok(Math.abs(v - want) <= 0.5 + want * 0.001, `${y}-${mo}: ${v} vs ${want}`);
+    }
+    const r = monthToDate(b);
+    if (m.last_month_days == null || !m.source || m.source.at(-1) !== "forward") return;
+    assert.ok(r, "a partial forward month gets a month-to-date comparison");
+    assert.equal(r.days, m.last_month_days);
+    assert.equal(r.value, m.viirs.at(-1) ?? m.pred.at(-1));
+    assert.ok(r.median > 0 && r.p25 <= r.median && r.median <= r.p75);
+    assert.equal(r.n, r.years[1] - r.years[0] + 1);
   });
 }
 

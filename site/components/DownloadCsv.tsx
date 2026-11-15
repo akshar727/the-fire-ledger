@@ -102,7 +102,8 @@ export function DownloadCsv() {
           </p>
         )}
         <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-          Analytics: monthly MODIS, VIIRS and harmonized counts with the 5-95% band for the same months (also as{" "}
+          Analytics: monthly MODIS, VIIRS and harmonized counts with the 5-95% band for the same months, and where each
+          value comes from (back-cast, observed, or forward link from NOAA-20/21) (also as{" "}
           <a className="underline underline-offset-2 hover:text-foreground" href={`/data/${sel.region}/series.json`}>
             JSON
           </a>

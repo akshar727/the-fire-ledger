@@ -5,6 +5,9 @@ import { readFileSync } from "node:fs";
 import {
   completeEnd,
   dayLabel,
+  forwardFrom,
+  harmonizedLabel,
+  isForward,
   eraMeans,
   HOLD_FROM,
   holdoutYears,
@@ -98,5 +101,34 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     const e = eraMeans(D);
     const complete = D.harmonized.filter((_, i) => D.years[i] >= VIIRS_FROM && i < end);
     assert.equal(e.viirs, complete.reduce((p, c) => p + c, 0) / complete.length);
+  });
+}
+
+test("forward year helpers (FE-009)", () => {
+  const D = sample();
+  assert.equal(isForward(D, 11), false);
+  assert.equal(harmonizedLabel(D, 11), "2021 to 4 Mar");
+  assert.equal(forwardFrom(D), null);
+  const F: Annual = { ...D, source: D.years.map((y) => (y < VIIRS_FROM ? "backcast" : y === 2021 ? "forward" : "observed")), forward_through: "2021-03-16" };
+  assert.equal(isForward(F, 11), true);
+  assert.equal(isForward(F, 10), false);
+  assert.equal(harmonizedLabel(F, 11), "2021 to 16 Mar");
+  assert.equal(partialLabel(F, 11), "2021 to 4 Mar"); // the raw value still stops at data_through
+  assert.equal(forwardFrom(F), "5 Mar");
+  assert.equal(isForward({ ...F, forward_through: null }, 11), false);
+});
+
+for (const region of ["portugal", "ghana", "punjab"]) {
+  test(`published ${region}/annual.json: forward link fields (ML-017)`, () => {
+    const D: Annual = JSON.parse(readFileSync(new URL(`../public/data/${region}/annual.json`, import.meta.url), "utf8"));
+    if (!D.source) return; // before ML-017
+    assert.equal(D.source.length, D.years.length);
+    const fwd = D.years.flatMap((_, i) => (isForward(D, i) ? [i] : []));
+    if (!D.forward_through) return assert.deepEqual(fwd, []);
+    assert.deepEqual(fwd, [D.years.length - 1]);
+    assert.ok(D.forward_through > D.data_through);
+    const s = D.score.forward!;
+    assert.deepEqual(s.forward[1], D.forward_through);
+    assert.ok(s.n_month > 0 && s.coverage_month <= s.n_month && s.coverage_year <= s.n_year);
   });
 }

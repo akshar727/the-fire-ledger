@@ -134,3 +134,14 @@ test("calendarBody week view (FE-016): 52 unlabelled cells per row, month header
   assert.equal((body.body.match(/stroke-dasharray/g) ?? []).length, 1);
   assert.equal(body.width, 78 + 52 * 16);
 });
+
+test("calendar picture: a bar along the bottom of forward-link periods only (FE-009)", () => {
+  const b = structuredClone(fixture);
+  const n = b.monthly.modis.length;
+  b.monthly.source = Array.from({ length: n }, (_, i) => (i >= n - 2 ? "forward" : b.monthly.viirs[i] == null ? "backcast" : "observed"));
+  const body = calendarBody(buildGrid(b), undefined, { theme, cell: () => ({ bg: "#ff8800", ink: "#123456" }) });
+  // the bar is the only element drawn in the ink colour as a 2-px-high rect
+  assert.equal((body.body.match(/height="2" rx="1" fill="#123456"/g) ?? []).length, 2);
+  const none = calendarBody(buildGrid(fixture), undefined, { theme, cell: () => ({ bg: "#ff8800", ink: "#123456" }) });
+  assert.equal((none.body.match(/height="2" rx="1"/g) ?? []).length, 0);
+});

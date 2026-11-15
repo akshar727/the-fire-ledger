@@ -6,7 +6,10 @@ import { ApiError, csvHeaders, errorResponse, fetchJson, parseRegion } from "@/l
 type Num = (number | null)[];
 // harmonized: annual.json only (ML-009; 2012 blends model weeks before VIIRS started). series.json blocks have none:
 // their viirs is already null before 20 Jan 2012, so viirs ?? pred is the harmonized value there.
-type Block = { start_year: number; modis?: Num; viirs?: Num; pred?: Num; lo?: Num; hi?: Num; harmonized?: Num };
+// source (ML-017, FE-009): backcast | observed | forward per period, in annual.json and both series.json blocks
+type Block = { start_year: number; modis?: Num; viirs?: Num; pred?: Num; lo?: Num; hi?: Num; harmonized?: Num; source?: unknown[] };
+
+const SOURCES = new Set(["backcast", "observed", "forward"]);
 
 /**
  * from/to accepted formats: annual -> YYYY; monthly -> YYYY-MM; weekly -> YYYY
@@ -74,7 +77,8 @@ export async function GET(request: Request) {
     }
 
     // String-compare the period prefix of the same length as each bound.
-    const lines = ["period,modis,viirs,pred,lo,hi,harmonized"];
+    // `source` is the last column so readers of the older 7-column file keep their column positions
+    const lines = ["period,modis,viirs,pred,lo,hi,harmonized,source"];
     periods.forEach((p, i) => {
       if (from !== null && p.slice(0, from.length) < from) return;
       if (to !== null && p.slice(0, to.length) > to) return;
@@ -82,7 +86,9 @@ export async function GET(request: Request) {
       const pred = cell(b.pred, i);
       const harmonized = cell(b.harmonized, i) ?? viirs ?? pred;
       const vals = [cell(b.modis, i), viirs, pred, cell(b.lo, i), cell(b.hi, i), harmonized];
-      lines.push([p, ...vals.map((v) => (v === null ? "" : String(v)))].join(","));
+      const src = b.source?.[i];
+      const source = typeof src === "string" && SOURCES.has(src) ? src : "";
+      lines.push([p, ...vals.map((v) => (v === null ? "" : String(v))), source].join(","));
     });
     return new Response(lines.join("\n") + "\n", {
       headers: csvHeaders(`series_${region}_${res}.csv`),

@@ -153,7 +153,8 @@ const YEAR_W = 78, HEAD_H = 22;
  * The burn calendar as SVG: one row per year, 12 month cells with the compact value, ▲/▼ for flagged months, a hatch
  * for months with no data, dimmed months outside the selected dates, and the median / middle-half rows when the
  * calendar statistics exist. Week view (FE-016): 52 narrow cells without labels, month names over the weeks that start
- * in them, a dashed outline on the partial last week, no statistics rows. Returns the body for composePicture.
+ * in them, a dashed outline on the partial last week, no statistics rows. A bar along the bottom of forward-link
+ * periods (FE-009). Returns the body for composePicture.
  */
 export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefined, colors: CalendarColors) {
   const t = colors.theme;
@@ -196,6 +197,9 @@ export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefine
       out.push(`<rect x="${x}" y="${y}" width="${CELL_W}" height="${CELL_H}" rx="2" fill="${esc(bg)}"/>`);
       if (cell.partial)
         out.push(`<rect x="${x + 0.75}" y="${y + 0.75}" width="${CELL_W - 1.5}" height="${CELL_H - 1.5}" rx="2" fill="none" stroke="${esc(t.fg)}" stroke-width="1.5" stroke-dasharray="2 1.5"/>`);
+      // FE-009: forward-link period (S-NPP ended; NOAA-20/21 after): a bar along the cell's bottom edge, as on the page
+      if (cell.source === "forward")
+        out.push(`<rect x="${x + 3}" y="${y + CELL_H - 4}" width="${CELL_W - 6}" height="2" rx="1" fill="${esc(ink)}"/>`);
       if (!week) out.push(cellText(x, y, compact(cell.value), ink));
       if (cell.flag === 1) out.push(`<path d="M${x + CELL_W - 6} ${y + 2}L${x + CELL_W - 2.5} ${y + 7}L${x + CELL_W - 9.5} ${y + 7}Z" fill="${esc(ink)}"/>`);
       if (cell.flag === -1) out.push(`<path d="M${x + CELL_W - 9.5} ${y + 2}L${x + CELL_W - 2.5} ${y + 2}L${x + CELL_W - 6} ${y + 7}Z" fill="${esc(ink)}"/>`);

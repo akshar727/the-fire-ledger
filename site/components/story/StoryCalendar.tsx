@@ -33,7 +33,7 @@ export function StoryCalendar({ grid, label }: { grid: CalendarGrid; label: stri
               const style = { "--cl": rampColor(t, "light").bg, "--cd": rampColor(t, "dark").bg } as React.CSSProperties;
               return (
                 <rect key={c.month} x={x} y={yy} width={CW} height={CH} rx={2} className="story-cell" style={style}>
-                  <title>{`${MONTHS[c.month - 1]} ${c.year}: ${compact(c.value)}${c.observed ? "" : " (back-cast)"}`}</title>
+                  <title>{`${MONTHS[c.month - 1]} ${c.year}: ${compact(c.value)}${c.source === "forward" ? " (to date, incl. NOAA-20/21 forward link)" : c.source === "backcast" ? " (back-cast)" : ""}`}</title>
                 </rect>
               );
             })}
