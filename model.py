@@ -41,9 +41,10 @@ def write_json(path, obj):
     os.replace(path + ".part", path)
 
 def kept_weeks(through):
-    """(year, week) pairs from 2001 whose last day is on or before `through`."""
+    """(year, week) pairs from 2001 that start on or before `through`. The last one is partial when it ends after
+    `through` (ML-010: dropping it cut the record, and the last whole month, short of the data)."""
     through = pd.Timestamp(through)
-    return [(yr, wk) for yr in range(2001, through.year + 1) for wk in range(52) if week_end(yr, wk) <= through]
+    return [(yr, wk) for yr in range(2001, through.year + 1) for wk in range(52) if week_start(yr, wk) <= through]
 
 def overpass_hours(path):
     """Median daytime local solar time (hours) per satellite in one points/<year>.csv: time_utc (HHMM, UTC) + lon/15.
@@ -74,14 +75,20 @@ def overpass_block(points_dir, years):
             drifted = [int(f or (v is not None and abs(v - ref) > DRIFT_LIMIT)) for f, v in zip(drifted, ov[k])]
     return {k: [None if v is None else round(v, 3) for v in a] for k, a in ov.items()}, drifted
 
-def series_bundle(region_id, weeks, wk, draws):
-    """series.json content from per-week sums. Monthly: each week's value split over calendar months by its days in
-    each (one share matrix for modis/viirs/pred/draws); ends at the last month fully covered by the kept weeks."""
-    nw, end = len(weeks), week_end(*weeks[-1])
-    nm = (end.year - 2001) * 12 + end.month - (0 if end.is_month_end else 1)
+def covered_end(yr, wk, through):
+    """Last day of week wk that has data: the week's end, or `through` for a partial last week."""
+    return min(week_end(yr, wk), pd.Timestamp(through))
+
+def series_bundle(region_id, weeks, wk, draws, through=None):
+    """series.json content from per-week sums. Monthly: each week's value split over calendar months by its days with
+    data in each (one share matrix for modis/viirs/pred/draws); ends at the last month whose last day is on or before
+    `through` (default: end of the last kept week). weekly.last_week_days = days with data in the last week."""
+    through = week_end(*weeks[-1]) if through is None else pd.Timestamp(through)
+    nw = len(weeks)
+    nm = (through.year - 2001) * 12 + through.month - (0 if through.is_month_end else 1)
     S = np.zeros((nw, nm))
     for k, (yr, wkn) in enumerate(weeks):
-        days = pd.date_range(week_start(yr, wkn), week_end(yr, wkn))
+        days = pd.date_range(week_start(yr, wkn), covered_end(yr, wkn, through))
         for dt in days:
             if (i := (dt.year - 2001) * 12 + dt.month - 1) < nm:
                 S[k, i] += 1 / len(days)
@@ -99,8 +106,9 @@ def series_bundle(region_id, weeks, wk, draws):
     monthly = block(S, [pd.Timestamp(2001 + i // 12, i % 12 + 1, 1) for i in range(nm)])
     # burn calendar (ML-005): stats on the published harmonized record = observed VIIRS where it exists, else the model
     harmonized = [p if v is None else v for v, p in zip(monthly["viirs"], monthly["pred"])]
-    return {"schema": 1, "region": region_id, "monthly": monthly,
-            "weekly": block(None, [week_start(yr, wkn) for yr, wkn in weeks]),
+    weekly = block(None, [week_start(yr, wkn) for yr, wkn in weeks])
+    weekly["last_week_days"] = (covered_end(*weeks[-1], through) - week_start(*weeks[-1])).days + 1
+    return {"schema": 1, "region": region_id, "monthly": monthly, "weekly": weekly,
             "calendar": calendar_block(harmonized, monthly["start_year"])}
 
 def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None):
@@ -208,10 +216,11 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         print(f"{region_id}: no {points_dir} (run build.py first?): overpass null, drifted 0", flush=True)
     overpass, drifted = overpass_block(points_dir, years)
     ann.loc[ann.index < 2012, "viirs_n"] = np.nan
-    nweeks = np.array([(wyear == yr).sum() for yr in years])
+    # a year is complete when its data reach Dec 31 (52 kept weeks is not enough: the last one may be partial)
+    complete = {yr: week_end(yr, 51) <= pd.Timestamp(through) for yr in years}
 
     train = w[istrain]
-    hy = [yr for yr in HOLD if yr in years and nweeks[years.index(yr)] == 52]   # complete hold-out years only
+    hy = [yr for yr in HOLD if yr in years and complete[yr]]   # complete hold-out years only
     if not hy:
         raise SystemExit(f"{region_id}: no complete hold-out year {HOLD.start}-{HOLD.stop - 1} (archive_through {through})")
     h = ann.loc[hy]
@@ -228,13 +237,14 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
            "viirs": [None if np.isnan(v) else float(v) for v in ann.viirs_n],
            "pred": [float(v) for v in ann.mu.round(1)], "lo": [float(v) for v in ann.lo],
            "hi": [float(v) for v in ann.hi], "score": score,
-           "partial": [int(n < 52) for n in nweeks], "data_through": week_end(*weeks[-1]).strftime("%Y-%m-%d"),
+           "partial": [int(not complete[yr]) for yr in years],
+           "data_through": covered_end(*weeks[-1], through).strftime("%Y-%m-%d"),
            "harmonized": [float(v) for v in ann.harmonized.round(1)],
            "viirs_partial": [int(v) for v in ann.viirs_partial],
            "overpass": overpass, "obs_over_pred": obs_over_pred, "drifted": drifted}
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
-    bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws)
+    bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws, through)
     write_json(os.path.join(out_dir, region_id, "annual.json"), out)
     write_json(os.path.join(out_dir, region_id, "series.json"), bundle)
 
