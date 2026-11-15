@@ -5,7 +5,27 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { regionBounds } from "@/lib/data";
 import type { RegionId } from "@/lib/regions";
-import { parseSelection, withSelection, type Bounds, type Selection } from "@/lib/selection";
+import {
+  parseSelection,
+  parseView,
+  withSelection,
+  withView,
+  type Bounds,
+  type CalendarView,
+  type Selection,
+} from "@/lib/selection";
+
+/** The burn calendar's Month / Week view from ?view= (FE-016), written back the same way as the selection. */
+export function useCalendarView(): [CalendarView, (view: CalendarView) => void] {
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const set = (view: CalendarView) => {
+    const qs = withView(new URLSearchParams(params), view).toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+  return [parseView(new URLSearchParams(params)), set];
+}
 
 export function useSelection(): {
   sel: Selection;
