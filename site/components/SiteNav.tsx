@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Record" },
+  { href: "/record", label: "Record" },
   { href: "/calendar", label: "Calendar" },
   { href: "/method", label: "Method" },
 ] as const;

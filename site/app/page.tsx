@@ -1,45 +1,273 @@
+// Landing story (FE-018): six chapters that end in the data. Every number and figure comes from the published files
+// (lib/story-data.ts, read while the page is prerendered), so `/` is static HTML that reads in full without
+// JavaScript. StoryMotion only adds reveal and count-up effects. The tool itself lives at /record.
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
-import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
-import { JumpStat, RecordExplorer, RecordSkeleton } from "@/components/RecordExplorer";
+import { ArrowDownIcon, ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { FireFootprints, SAT } from "@/components/story/FireFootprints";
+import { StoryCalendar } from "@/components/story/StoryCalendar";
+import { StoryLegend, StoryLine } from "@/components/story/StoryLine";
+import { StoryMotion } from "@/components/story/StoryMotion";
+import { dayLabel, HOLD_FROM, VIIRS_FROM } from "@/lib/annual";
 import { recordSpan } from "@/lib/data";
+import { FIRE_SEASON } from "@/lib/regions";
+import { rampColor } from "@/lib/series";
+import { bigCount, jumpVerb, PIXEL_M, STORY_FIRE } from "@/lib/story";
+import { loadStory } from "@/lib/story-data";
+import { cn } from "@/lib/utils";
 
-export default function RecordPage() {
-  const { first, lastComplete } = recordSpan();
+export const metadata: Metadata = { title: { absolute: "One Fire Record" } };
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const longDay = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d} ${MONTH_NAMES[m - 1]} ${y}`;
+};
+const monthYear = (iso: string) => `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+
+const primaryLink =
+  "inline-flex h-11 shrink-0 items-center gap-2 rounded-md bg-primary px-5 text-sm font-medium whitespace-nowrap text-primary-foreground transition-transform hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.98]";
+const quietLink =
+  "inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
+
+/** Fewer-to-more key under the story calendar: the same ramp, light and dark colours picked by CSS. */
+function CalendarKey() {
+  const steps = [0, 0.25, 0.5, 0.75, 1];
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-4 pt-12 pb-20 sm:px-6 md:pt-16">
-      <section className="grid items-end gap-8 md:grid-cols-12">
-        <div className="flex flex-col gap-4 md:col-span-8">
-          <h1 className="max-w-[18ch] text-4xl leading-[1.05] font-semibold tracking-tighter text-balance md:text-5xl lg:text-6xl">
-            Two satellites, one fire record.
-          </h1>
-          <p className="max-w-[60ch] text-lg leading-relaxed text-muted-foreground">
-            MODIS and VIIRS count fire differently. We convert the MODIS years into VIIRS terms so every year from{" "}
-            {first} to {lastComplete} compares fairly.
-          </p>
-        </div>
-        {/* region-specific parts read ?region=&from=&to=; Suspense keeps the page statically rendered */}
-        <Suspense fallback={<div className="h-28 md:col-span-4" />}>
-          <JumpStat />
-        </Suspense>
-      </section>
+    <p className="mx-auto flex items-center gap-2 text-sm text-muted-foreground">
+      fewer
+      <svg width="110" height="12" aria-hidden>
+        {steps.map((t, i) => (
+          <rect
+            key={t}
+            x={i * 22}
+            width={20}
+            height={12}
+            rx={2}
+            className="story-cell"
+            style={{ "--cl": rampColor(t, "light").bg, "--cd": rampColor(t, "dark").bg } as React.CSSProperties}
+          />
+        ))}
+      </svg>
+      more detections (log scale)
+    </p>
+  );
+}
 
-      <Suspense fallback={<RecordSkeleton />}>
-        <RecordExplorer />
-      </Suspense>
-
-      <section className="flex flex-col items-start justify-between gap-4 rounded-xl bg-accent px-6 py-8 sm:flex-row sm:items-center">
-        <p className="max-w-[55ch] text-lg leading-relaxed">
-          How the conversion works, what the hold-out proves, and where it is still weak.
+function Chapter({
+  id, n, kicker, title, children, figure, className,
+}: {
+  id: string; n: number; kicker: string; title: React.ReactNode; children: React.ReactNode; figure?: React.ReactNode; className?: string;
+}) {
+  return (
+    <section
+      id={id}
+      data-chapter
+      aria-labelledby={`${id}-h`}
+      className={cn("grid min-h-[85svh] scroll-mt-16 content-center gap-10 border-t py-20 md:grid-cols-12 md:gap-12", className)}
+    >
+      <div className="story-reveal flex flex-col gap-5 md:col-span-5">
+        <p className="font-mono text-xs tracking-[0.16em] text-primary uppercase">
+          {String(n).padStart(2, "0")} · {kicker}
         </p>
-        <Link
-          href="/method"
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md bg-primary px-5 text-sm font-medium whitespace-nowrap text-primary-foreground transition-transform hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.98]"
-        >
-          Read the method
-          <ArrowRightIcon className="size-4" aria-hidden />
-        </Link>
+        <h2 id={`${id}-h`} className="max-w-[20ch] text-3xl leading-[1.08] font-semibold tracking-tighter text-balance md:text-4xl">
+          {title}
+        </h2>
+        <div className="flex max-w-[52ch] flex-col gap-4 text-lg leading-relaxed text-muted-foreground">{children}</div>
+      </div>
+      {figure && <div className="story-reveal md:col-span-7">{figure}</div>}
+    </section>
+  );
+}
+
+export default function StoryPage() {
+  const s = loadStory();
+  const span = recordSpan();
+  const { modis, viirs, gapMinutes, ratio, frame } = s.fire;
+  const area = (PIXEL_M.modis / PIXEL_M.viirs) ** 2;
+  const total = s.counts.reduce((a, c) => a + c.rows, 0);
+  const top = [...s.counts].sort((a, b) => b.rows - a.rows)[0];
+  const [h0, h1] = s.holdout;
+  const record = `/record?region=${s.region.id}`;
+  const terraSince = s.counts.map((c) => c.since).sort()[0];
+  const sat = (p: { satellite: string }) => SAT[p.satellite] ?? p.satellite;
+
+  return (
+    <main data-story className="mx-auto flex w-full max-w-6xl flex-col px-4 sm:px-6">
+      <StoryMotion />
+
+      {/* 1 · title */}
+      <section data-chapter aria-labelledby="story-title" className="flex min-h-[calc(100svh-4rem)] flex-col justify-center gap-8 py-16">
+        <div className="story-reveal flex flex-col gap-6">
+          <p className="font-mono text-xs tracking-[0.16em] text-primary uppercase">
+            01 · NASA satellite fire detections, {span.first} to {dayLabel(span.through)}
+          </p>
+          <h1 id="story-title" className="max-w-[16ch] text-5xl leading-[1.02] font-semibold tracking-tighter text-balance md:text-7xl">
+            Fire belongs here. What changes is how much, and when.
+          </h1>
+          <p className="max-w-[58ch] text-xl leading-relaxed text-muted-foreground">
+            NASA&apos;s MODIS instruments have watched for fire from orbit since {monthYear(terraSince)}, and VIIRS since{" "}
+            {VIIRS_FROM}. They count it differently, so the record breaks in {VIIRS_FROM}. One Fire Record mends it for{" "}
+            {span.regions}.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/record" className={primaryLink}>
+              Skip to the data
+              <ArrowRightIcon className="size-4" aria-hidden />
+            </Link>
+            <a href="#counts" className={quietLink}>
+              Read the story
+              <ArrowDownIcon className="size-4" aria-hidden />
+            </a>
+          </div>
+        </div>
       </section>
+
+      {/* 2 · counts */}
+      <Chapter
+        id="counts"
+        n={2}
+        kicker="What the satellites saw"
+        title={
+          <>
+            {bigCount(top.rows)} fire detections in {top.name} alone since {monthYear(top.since)}.
+          </>
+        }
+        figure={
+          <dl className="grid gap-px overflow-hidden rounded-xl border bg-border">
+            {s.counts.map((c) => (
+              <div key={c.id} className="flex items-baseline justify-between gap-4 bg-background px-5 py-5">
+                <dt className="text-base">{c.name}</dt>
+                <dd className="font-mono text-3xl font-semibold tracking-tight tabular-nums md:text-4xl">
+                  <span aria-hidden data-count={c.rows}>{c.rows.toLocaleString("en-US")}</span>
+                  <span className="sr-only">{c.rows.toLocaleString("en-US")}</span>
+                </dd>
+              </div>
+            ))}
+            <div className="flex items-baseline justify-between gap-4 bg-muted px-5 py-4 text-sm text-muted-foreground">
+              <dt>All three, to {dayLabel(top.through)}</dt>
+              <dd className="font-mono tabular-nums">{total.toLocaleString("en-US")}</dd>
+            </div>
+          </dl>
+        }
+      >
+        <p>
+          Each detection is one hot pixel seen from orbit: a satellite passing overhead found a spot burning hotter than
+          the ground around it. NASA FIRMS keeps every one.
+        </p>
+      </Chapter>
+
+      {/* 3 · same fire, two answers */}
+      <Chapter
+        id="two-answers"
+        n={3}
+        kicker={`${STORY_FIRE.place}, ${longDay(STORY_FIRE.date)}`}
+        title="Same fire, two answers."
+        figure={<FireFootprints modis={modis} viirs={viirs} frame={frame} />}
+      >
+        <p>
+          The day after the Pedrógão Grande fire started, {sat(modis)} passed over the fires around it and counted{" "}
+          <strong className="font-semibold text-foreground">{modis.points.length}</strong> hot pixels. {gapMinutes} minutes
+          later, {sat(viirs)} counted <strong className="font-semibold text-foreground">{viirs.points.length}</strong>.
+        </p>
+        <p>
+          Nothing burned {ratio.toFixed(1)} times faster in between. A VIIRS pixel is {PIXEL_M.viirs} m across, a MODIS
+          pixel 1 km, so one MODIS square covers about {Math.round(area)} VIIRS squares, and VIIRS also catches smaller
+          fires. That mostly explains the gap. Every square in the panels is a real detection, drawn at its nominal size.
+        </p>
+      </Chapter>
+
+      {/* 4 · raw line */}
+      <Chapter
+        id="the-leap"
+        n={4}
+        kicker={`${s.region.name}, yearly detections`}
+        title={
+          <>
+            Fire did not {jumpVerb(s.region.jump)}. The instrument changed.
+          </>
+        }
+        figure={
+          <div className="flex flex-col gap-3">
+            <StoryLine
+              lines={s.lines}
+              mode="raw"
+              label={`${s.region.name}, detections per year, ${s.lines.years[0]} to ${s.lines.years.at(-1)}, MODIS then VIIRS: the yearly count averages about ×${s.region.jump.toFixed(1)} higher from ${VIIRS_FROM} than before it.`}
+            />
+            <StoryLegend mode="raw" />
+          </div>
+        }
+      >
+        <p>
+          Glue the MODIS years to the VIIRS years and {s.region.name}&apos;s yearly count averages about ×
+          {s.region.jump.toFixed(1)} higher from {VIIRS_FROM}, the year VIIRS starts, than before it. Any chart that
+          stitches the two records shows fire getting worse, and part of that rise is the sensor, not the fire.
+        </p>
+      </Chapter>
+
+      {/* 5 · harmonized */}
+      <Chapter
+        id="one-record"
+        n={5}
+        kicker="Harmonized"
+        title="One record, with honest error bars."
+        figure={
+          <div className="flex flex-col gap-3">
+            <StoryLine
+              lines={s.lines}
+              mode="harmonized"
+              label={`${s.region.name}, detections per year in VIIRS terms, ${s.lines.years[0]} to ${s.lines.years.at(-1)}, with a 5-95% band on the years before ${VIIRS_FROM}: no jump.`}
+            />
+            <StoryLegend mode="harmonized" />
+          </div>
+        }
+      >
+        <p>
+          We learned how MODIS maps to VIIRS in the years both flew, {VIIRS_FROM} to {HOLD_FROM - 1}, then translated
+          every MODIS year into VIIRS terms, with a 5-95% band.
+        </p>
+        <p>
+          Tested on {h0} to {h1}, years the model never saw, it missed by{" "}
+          <strong className="font-semibold text-foreground">{s.score.mape_model.toFixed(1)}%</strong> a year on average,
+          against {s.score.mape_ratio.toFixed(1)}% for one constant factor; {s.score.coverage} of {s.score.n_hold} years
+          fell inside the band.
+        </p>
+      </Chapter>
+
+      {/* 6 · calendar, hand-off */}
+      <Chapter
+        id="calendar"
+        n={6}
+        kicker={`${s.region.name}, every month`}
+        title={`Every month since ${s.grid.years[0]}, on one scale.`}
+        className="border-b-0"
+        figure={
+          <div className="flex flex-col gap-3">
+          <StoryCalendar
+            grid={s.grid}
+            label={`${s.region.name} burn calendar: harmonized detections per month, one row per year from ${s.grid.years[0]} to ${s.grid.years.at(-1)}, darker or brighter cells for more fire.`}
+          />
+          <CalendarKey />
+          </div>
+        }
+      >
+        <p>
+          {FIRE_SEASON[s.region.id]} With the break mended, this month can be held up against every month before it, and
+          the busiest years stand out for what burned, not for which satellite looked.
+        </p>
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          <Link href={record} className={primaryLink}>
+            Open the record
+            <ArrowRightIcon className="size-4" aria-hidden />
+          </Link>
+          <Link href={`/calendar?region=${s.region.id}`} className={quietLink}>
+            Open the calendar
+          </Link>
+          <Link href="/method" className={quietLink}>
+            How it works
+          </Link>
+        </div>
+      </Chapter>
     </main>
   );
 }

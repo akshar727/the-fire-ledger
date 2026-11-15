@@ -158,3 +158,28 @@
 @media (prefers-reduced-motion: reduce) {
   .chart-draw, .chart-fade { animation: none; }
 }
+
+/* Landing story (FE-018). Static by default: nothing is hidden unless StoryMotion sets [data-motion] (JavaScript on,
+   motion allowed), and then only chapters not yet scrolled to ([data-chapter]:not([data-in])). */
+.story-cell { fill: var(--cl); }
+@media (prefers-color-scheme: dark) {
+  .story-cell { fill: var(--cd); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-motion] [data-chapter] .story-reveal,
+  [data-motion] [data-chapter] .story-pixels rect,
+  [data-motion] [data-chapter] .story-row,
+  [data-motion] [data-chapter] .story-fade {
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-motion] [data-chapter] .story-draw {
+    stroke-dasharray: 1;
+    transition: stroke-dashoffset 1.4s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  [data-motion] [data-chapter] .story-late { transition-delay: 1.1s; }
+  [data-motion] [data-chapter]:not([data-in]) .story-reveal { opacity: 0; transform: translateY(14px); }
+  [data-motion] [data-chapter]:not([data-in]) .story-pixels rect,
+  [data-motion] [data-chapter]:not([data-in]) .story-row,
+  [data-motion] [data-chapter]:not([data-in]) .story-fade { opacity: 0; }
+  [data-motion] [data-chapter]:not([data-in]) .story-draw { stroke-dashoffset: 1; }
+}
