@@ -329,13 +329,22 @@ def write_index(regions, manifest, points=None):
             continue
         sens = {s: {k: v.get(k) for k in ("first_date", "last_date", "data_through")} for s, v in m["sensors"].items()}
         prev = old.get(r["id"], {})
+        e = {"id": r["id"], "name": r["name"]}
+        if r.get("short_name"):
+            e["short_name"] = r["short_name"]
+        e.update({"bbox": r["bbox"], "fire_type": r["fire_type"], "tier": r.get("tier", "region")})
+        for k in ("season", "caveat"):  # DP-009: one-line page copy the site shows under the region switcher
+            if r.get(k):
+                e[k] = r[k]
         entries.append({
-            "id": r["id"], "name": r["name"], "bbox": r["bbox"], "fire_type": r["fire_type"],
+            **e,
             "data_through": m.get("archive_through"),  # None for an entry written before this field existed
             "sensors": sens,
             "point_years": list(points[r["id"]][0]) if r["id"] in points else prev.get("point_years", []),
             "point_rows": points[r["id"]][1] if r["id"] in points else prev.get("point_rows", 0),
         })
+    # DP-009: whole countries are added by site_bundle.py (not in regions.json); keep them, after the cell regions
+    entries += [e for e in old.values() if e.get("tier") == "country" and e["id"] not in {x["id"] for x in entries}]
     os.makedirs(os.path.dirname(INDEX), exist_ok=True)
     write_json(INDEX, {"schema": 1, "regions": entries})
 
@@ -347,6 +356,8 @@ def check_regions(regions):
         missing = [k for k in ("id", "name", "country", "bbox", "fire_type") if k not in r]
         if missing:
             raise SystemExit(f"regions.json: region {r.get('id', '?')} is missing {missing}")
+        if r.get("tier", "region") != "region":
+            raise SystemExit(f"regions.json: {r['id']}: tier must be \"region\" (whole countries go in countries.json)")
         if not re.fullmatch(r"[a-z0-9-]+", r["id"]) or r["id"] in ids:
             raise SystemExit(f"regions.json: bad or duplicate id {r['id']!r} (use lowercase letters, digits, '-')")
         w, s, e, n = r["bbox"]

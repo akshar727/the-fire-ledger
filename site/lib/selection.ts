@@ -1,6 +1,6 @@
 // Region and date selection shared by every data view, kept in the URL as ?region=&from=&to= (FE-001 decision) so a
 // demo link can open on a prepared view. Pure functions with relative imports only, so `node --test` can run them.
-import { isRegionId, type RegionId } from "./regions.ts";
+import { DEFAULT_REGION, isRegionId, type RegionId } from "./regions.ts";
 
 /** Longest /api/hotspots request, in days, both ends included. lib/server-data.ts enforces the same value. */
 export const MAX_SPAN_DAYS = 366;
@@ -34,7 +34,7 @@ const clamp = (v: string, { min, max }: Bounds) => (v < min ? min : v > max ? ma
 export function parseSelection(
   params: URLSearchParams,
   boundsOf: (region: RegionId) => Bounds,
-  fallback: RegionId = "portugal",
+  fallback: RegionId = DEFAULT_REGION,
 ): Selection {
   const q = params.get("region");
   const region = isRegionId(q) ? q : fallback;

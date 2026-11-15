@@ -12,6 +12,7 @@ from patsy import dmatrix
 from calendar_stats import calendar_block
 from trend_stats import trend_block
 from forward_link import run_forward
+import site_bundle
 try:
     import resource   # not on Windows
 except ImportError:
@@ -358,6 +359,7 @@ def main():
         ap.error(f"unknown region_id {bad}; choose from {ids}")
     for r in a.regions or ids:
         run(r, a.nboot)
+    site_bundle.main()  # DP-009: refresh index.json countries and annual-all.json from the files just written
 
 if __name__ == "__main__":
     main()
