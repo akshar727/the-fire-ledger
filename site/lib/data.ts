@@ -1,8 +1,13 @@
 // The only module that loads pipeline outputs from site/public/data/ (written by model.py, never hand-edited).
 // annual.json is imported at build time; series.json is fetched by the browser (it may not exist yet). No fs reads,
 // so both work on Vercel.
+import ghanaAnnual from "@/public/data/ghana/annual.json";
 import portugalAnnual from "@/public/data/portugal/annual.json";
+import punjabAnnual from "@/public/data/punjab/annual.json";
+import type { RegionId } from "@/lib/regions";
 import { parseSeries, SeriesFormatError, type SeriesBundle } from "@/lib/series";
+
+export { REGIONS, type RegionId } from "@/lib/regions";
 
 /** Hold-out scores for 2020-2025 (see the "DATA" row in SHARED_VARIABLES_AND_FUNCTIONS.md §3). */
 export type Score = {
@@ -26,10 +31,11 @@ export type Annual = {
   score: Score;
 };
 
-export const REGIONS = { portugal: "Mainland Portugal" } as const;
-export type RegionId = keyof typeof REGIONS;
-
-const ANNUAL: Record<RegionId, Annual> = { portugal: portugalAnnual as Annual };
+const ANNUAL: Record<RegionId, Annual> = {
+  portugal: portugalAnnual as Annual,
+  ghana: ghanaAnnual as Annual,
+  punjab: punjabAnnual as Annual,
+};
 
 export function loadAnnual(region: RegionId): Annual {
   return ANNUAL[region];

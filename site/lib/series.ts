@@ -86,6 +86,7 @@ export type CalendarGrid = {
   max: number;
   partialYears: number[]; // years with at least one month missing
   latest: CalendarCell | null; // last month that has a value
+  firstObserved: CalendarCell | null; // first month whose value is a VIIRS observation (earlier months are back-cast)
 };
 
 /** Lays the monthly series out as year rows x 12 months. Months after the end of the series have value null. */
@@ -93,7 +94,7 @@ export function buildGrid(b: SeriesBundle): CalendarGrid {
   const m = b.monthly, n = m.modis.length;
   const nYears = Math.ceil(n / 12);
   const years: number[] = [], rows: CalendarCell[][] = [], partialYears: number[] = [];
-  let max = 0, latest: CalendarCell | null = null;
+  let max = 0, latest: CalendarCell | null = null, firstObserved: CalendarCell | null = null;
   for (let y = 0; y < nYears; y++) {
     const year = m.start_year + y, row: CalendarCell[] = [];
     for (let mo = 0; mo < 12; mo++) {
@@ -112,6 +113,7 @@ export function buildGrid(b: SeriesBundle): CalendarGrid {
       if (value != null) {
         max = Math.max(max, value);
         latest = cell;
+        if (cell.observed && !firstObserved) firstObserved = cell;
       }
       row.push(cell);
     }
@@ -119,7 +121,7 @@ export function buildGrid(b: SeriesBundle): CalendarGrid {
     years.push(year);
     rows.push(row);
   }
-  return { years, rows, max, partialYears, latest };
+  return { years, rows, max, partialYears, latest, firstObserved };
 }
 
 /** Position on the colour ramp, 0-1, on a log scale (monthly fire counts span three orders of magnitude). */
@@ -186,6 +188,11 @@ export function compact(v: number): string {
   if (v < 1000) return String(Math.round(v));
   if (v < 10000) return `${(v / 1000).toFixed(1).replace(/\.0$/, "")}k`;
   return `${Math.round(v / 1000)}k`;
+}
+
+/** Ratio to the month median: 0.18×, 2.4×, 12×. Two decimals below 1 so low months don't all read "0.1×". */
+export function times(r: number): string {
+  return `${r < 1 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : Math.round(r)}×`;
 }
 
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
