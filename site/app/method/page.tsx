@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { dayLabel, HOLD_FROM, holdoutYears, isPartial, VIIRS_FROM, type Annual } from "@/lib/annual";
-import { loadAnnual, recordSpan, REGION_LIST, REGIONS } from "@/lib/data";
+import { loadAnnual, loadReferee, recordSpan, REGION_LIST, REGIONS } from "@/lib/data";
+import { backcastOffset, nearLevel, stepLabel, stepRange } from "@/lib/referee";
 
 export const metadata: Metadata = { title: "Method" };
 
@@ -8,6 +9,7 @@ const SECTIONS = [
   { id: "problem", title: "The problem" },
   { id: "harmonization", title: "How the conversion works" },
   { id: "holdout", title: "What the hold-out shows" },
+  { id: "referee", title: "An independent check" },
   { id: "caveats", title: "Known limits" },
   { id: "sources", title: "Sources" },
 ] as const;
@@ -18,6 +20,7 @@ const AREA_API_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/";
 // Every region, in index.json order, with its annual record (scores, years) and display name.
 const RECORDS = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id) }));
 const SPAN = recordSpan();
+const REF = loadReferee();
 // End of the downloaded record (index.json archive_through, the same for every region), e.g. 2026-11-02.
 const THROUGH = REGION_LIST.map((r) => r.data_through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
@@ -42,10 +45,15 @@ const DATA_SOURCES = [
     name: `NASA FIRMS area API, VIIRS Suomi NPP (VIIRS_SNPP_SP, then VIIRS_SNPP_NRT), 1 Jan to ${dayLabel(THROUGH)}, each region's box`,
     url: AREA_API_URL,
   },
+  {
+    name: `MODIS burned area, ${REF.product_short}, 0.25° monthly (University of Maryland), for the independent check`,
+    url: "https://doi.org/10.5067/MODIS/MCD64A1.006",
+  },
 ];
 
 const SOFTWARE = [
   ["numpy, pandas, statsmodels, patsy, scipy", "Gridding, model fitting and bootstrap (Python)"],
+  ["pyhdf", "Reading the burned-area files (Python, one-off extract)"],
   ["Next.js, React", "This website"],
   ["Tailwind CSS, shadcn/ui, Radix UI", "Styling and interface components"],
   ["Phosphor Icons, Geist", "Icons and typeface"],
@@ -212,7 +220,98 @@ export default function MethodPage() {
           )}
           <p>
             This is a forward test: it shows whether the model carries over to later years. It cannot directly prove
-            accuracy for {SPAN.first}-{VIIRS_FROM - 1}, because no VIIRS data exists then to check against.
+            accuracy for {SPAN.first}-{VIIRS_FROM - 1}, because no VIIRS data exists then to check against; the next
+            section checks those years against a different satellite product instead.
+          </p>
+        </section>
+
+        <section id="referee">
+          <h2>An independent check</h2>
+          <p>
+            The hold-out cannot test {SPAN.first}-{VIIRS_FROM - 1} directly. MODIS burned area (MCD64) can help: it
+            maps the land that burned each month from 2000 on with one method throughout, so it has no {VIIRS_FROM}{" "}
+            sensor switch. If the harmonized record is right, fire detections per square kilometre burned should stay
+            about level across {VIIRS_FROM}; the stitched record (MODIS counts, then VIIRS counts) should jump. We sum
+            burned area over exactly the grid cells the model uses and compare {REF.before[0]}-{REF.before[1]} with{" "}
+            {REF.after[0]}-{REF.after[1]}.
+          </p>
+          <div className="overflow-x-auto rounded-xl border">
+            <table className="w-full min-w-[34rem] text-sm">
+              <caption className="sr-only">
+                Detections per 1,000 km² burned, {REF.after[0]}-{REF.after[1]} divided by {REF.before[0]}-
+                {REF.before[1]}
+              </caption>
+              <thead className="bg-muted/50 text-left">
+                <tr>
+                  <th scope="col" className="px-3 py-2 font-medium">
+                    After / before {VIIRS_FROM}
+                  </th>
+                  {RECORDS.map((r) => (
+                    <th key={r.id} scope="col" className="px-3 py-2 font-medium">
+                      {r.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y text-muted-foreground tabular-nums">
+                <tr>
+                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+                    Stitched record
+                  </th>
+                  {RECORDS.map((r) => (
+                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                      {stepLabel(REF.regions[r.id]?.stitched.step ?? null)}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+                    Harmonized record
+                  </th>
+                  {RECORDS.map((r) => (
+                    <td key={r.id} className="px-3 py-2 font-medium whitespace-nowrap text-foreground">
+                      {stepLabel(REF.regions[r.id]?.harmonized.step ?? null)}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+                    Monthly correlation with burned area, harmonized (before / after)
+                  </th>
+                  {RECORDS.map((r) => {
+                    const h = REF.regions[r.id]?.harmonized;
+                    return (
+                      <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                        {h?.monthly_r_before?.toFixed(2) ?? "n/a"} / {h?.monthly_r_after?.toFixed(2) ?? "n/a"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Across {VIIRS_FROM}, detections per area burned jump{" "}
+            {stepRange(RECORDS.map((r) => REF.regions[r.id]?.stitched.step ?? null))} in the stitched record and move{" "}
+            {stepRange(RECORDS.map((r) => REF.regions[r.id]?.harmonized.step ?? null))} in the harmonized record.{" "}
+            {RECORDS.every((r) => REF.regions[r.id] && nearLevel(REF.regions[r.id]))
+              ? "In every region the harmonized record stays within 25% of level and much closer to it than the stitched record, which is consistent with the back-cast removing the sensor jump."
+              : "Not every region's harmonized record stays within 25% of level, so this check only partly supports the back-cast."}
+          </p>
+          <p>
+            Detections per area burned in the back-cast years compared with the observed VIIRS years:{" "}
+            {RECORDS.map((r) => `${r.name} ${backcastOffset(REF.regions[r.id]?.harmonized.step ?? null) ?? "n/a"}`).join(
+              ", ",
+            )}
+            . A plus means the back-cast may run that much high, a minus that much low; part of it can also be real, as
+            fires can change in size or type over two decades.
+          </p>
+          <p>
+            Limits: burned area is mapped partly with the help of MODIS active fires, so it is independent of VIIRS and
+            of our model but not entirely of MODIS. It misses many small fires, especially crop-residue burns, so
+            absolute values per area are rough; the before/after ratio is fairer because the same product is used on
+            both sides. Some months could not be fully mapped (clouds, smoke, missing passes), which lowers burned area in those months. The monthly correlation in the table compares the back-cast with a product that also uses MODIS, so it shows consistency, not proof. The available burned-area files end in{" "}
+            {REF.after[1]}.
           </p>
         </section>
 

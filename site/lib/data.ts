@@ -5,7 +5,9 @@ import ghanaAnnual from "@/public/data/ghana/annual.json";
 import regionIndex from "@/public/data/index.json";
 import portugalAnnual from "@/public/data/portugal/annual.json";
 import punjabAnnual from "@/public/data/punjab/annual.json";
+import refereeData from "@/public/data/referee.json";
 import { spanOf, type Annual } from "@/lib/annual";
+import type { Referee } from "@/lib/referee";
 import { isRegionId, REGIONS, type RegionId } from "@/lib/regions";
 import type { Bounds } from "@/lib/selection";
 import { parseSeries, SeriesFormatError, type SeriesBundle } from "@/lib/series";
@@ -21,6 +23,11 @@ const ANNUAL: Record<RegionId, Annual> = {
 
 export function loadAnnual(region: RegionId): Annual {
   return ANNUAL[region];
+}
+
+/** Burned-area referee (ML-019): site/public/data/referee.json, written by referee.py. */
+export function loadReferee(): Referee {
+  return refereeData as Referee;
 }
 
 /** One entry of site/public/data/index.json (registry §3 "Region index"), the fields the site uses. */

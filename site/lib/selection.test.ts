@@ -8,6 +8,8 @@ import {
   isDate,
   MAX_SPAN_DAYS,
   moveEnd,
+  parseView,
+  withView,
   parseSelection,
   pointFileUrl,
   seriesUrl,
@@ -93,4 +95,17 @@ test("moveEnd: an end that crosses the other one pulls it along", () => {
 test("yearsBefore: point files older than the selectable record", () => {
   assert.deepEqual(yearsBefore(B, [2003, 2000, 2001, 2002]), [2000]);
   assert.deepEqual(yearsBefore(B, [2001, 2002]), []);
+});
+
+test("calendar view: ?view=week, anything else is month; month drops the parameter (FE-016)", () => {
+  assert.equal(parseView(new URLSearchParams("")), "month");
+  assert.equal(parseView(new URLSearchParams("view=week")), "week");
+  assert.equal(parseView(new URLSearchParams("view=WEEK")), "month");
+  assert.equal(parseView(new URLSearchParams("view=day")), "month");
+  const q = new URLSearchParams("region=ghana&from=2017-01-01");
+  assert.equal(withView(q, "week").toString(), "region=ghana&from=2017-01-01&view=week");
+  assert.equal(withView(new URLSearchParams("region=ghana&view=week"), "month").toString(), "region=ghana");
+  assert.equal(q.toString(), "region=ghana&from=2017-01-01", "input is not mutated");
+  // the selection helpers keep the view
+  assert.equal(withSelection(new URLSearchParams("view=week"), { region: "punjab" }, B).get("view"), "week");
 });

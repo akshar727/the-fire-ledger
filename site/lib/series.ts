@@ -1,5 +1,5 @@
 // Series bundle (site/public/data/<region>/series.json, registry §3 "Series bundle"): types, a strict parser,
-// and the year x month grid the burn calendar draws. Pure functions with relative imports only, so `node --test`
+// and the year x month or year x week grid the burn calendar draws (FE-016: week view). Pure functions with relative imports only, so `node --test`
 // can run them without the Next.js toolchain.
 
 export type Flag = -1 | 0 | 1;
@@ -12,6 +12,18 @@ export type Monthly = {
   pred: number[]; // VIIRS-equivalent model mean
   lo: number[];
   hi: number[];
+};
+
+/** Weekly series: week `w` of a year = day-of-year 7w+1..7w+7, week 51 runs to 31 Dec (8 or 9 days). */
+export type Weekly = {
+  start_year: number;
+  weeks_per_year: 52;
+  modis: number[];
+  viirs: (number | null)[]; // null for weeks starting before 2012-01-20
+  pred: number[];
+  lo: number[];
+  hi: number[];
+  last_week_days: number; // days with data in the last week (it may be partial)
 };
 
 /** Per-month statistics from ML-005; optional until ML-005 lands. */
@@ -28,6 +40,7 @@ export type SeriesBundle = {
   schema: 1;
   region: string;
   monthly: Monthly;
+  weekly?: Weekly;
   calendar?: CalendarStats;
 };
 
@@ -58,6 +71,20 @@ export function parseSeries(raw: unknown): SeriesBundle {
   if (n === 0) throw new SeriesFormatError("monthly series is empty");
   numArray(m.viirs, "monthly.viirs", n, true);
   for (const k of ["pred", "lo", "hi"]) numArray(m[k], `monthly.${k}`, n);
+  const w = b.weekly as Record<string, unknown> | undefined;
+  if (w != null) {
+    if (typeof w !== "object") throw new SeriesFormatError("weekly is not an object");
+    if (!Number.isInteger(w.start_year)) throw new SeriesFormatError("weekly.start_year is not an integer");
+    if (w.weeks_per_year !== 52) throw new SeriesFormatError(`weekly.weeks_per_year is ${String(w.weeks_per_year)}, expected 52`);
+    numArray(w.modis, "weekly.modis");
+    const nw = (w.modis as number[]).length;
+    if (nw === 0) throw new SeriesFormatError("weekly series is empty");
+    numArray(w.viirs, "weekly.viirs", nw, true);
+    for (const k of ["pred", "lo", "hi"]) numArray(w[k], `weekly.${k}`, nw);
+    const d = w.last_week_days;
+    if (!Number.isInteger(d) || (d as number) < 1 || (d as number) > 9)
+      throw new SeriesFormatError("weekly.last_week_days must be an integer from 1 to 9");
+  }
   const c = b.calendar as Record<string, unknown> | undefined;
   if (c != null) {
     for (const k of ["month_median", "month_p25", "month_p75"]) numArray(c[k], `calendar.${k}`, 12);
@@ -70,10 +97,20 @@ export function parseSeries(raw: unknown): SeriesBundle {
   return raw as SeriesBundle;
 }
 
+export type GridView = "month" | "week";
+
 export type CalendarCell = {
-  index: number; // monthly index
+  index: number; // monthly or weekly index, depending on the grid's view
   year: number;
-  month: number; // 1-12
+  col: number; // column in the grid, 0-based (month - 1, or the week of the year)
+  month: number; // 1-12; in the week view, the month the week starts in
+  week: number | null; // 0-51 in the week view, null in the month view
+  start: string; // first day of the period, YYYY-MM-DD
+  end: string; // last day of the period, YYYY-MM-DD
+  length: number; // days in the period
+  days: number; // days with data; less than `length` only for a partial last period
+  through: string; // last day with data, YYYY-MM-DD (= end unless partial; = start - 1 day when there is no data)
+  partial: boolean; // the period has a value but the data stop before its last day
   value: number | null; // harmonized = viirs ?? pred; null = no data for this month
   observed: boolean; // true when the value is a VIIRS observation, false when it is the model's back-cast
   flag: Flag;
@@ -82,34 +119,94 @@ export type CalendarCell = {
 };
 
 export type CalendarGrid = {
+  view: GridView;
+  cols: number; // 12 months or 52 weeks
   years: number[];
-  rows: CalendarCell[][]; // one row per year, 12 cells each
+  rows: CalendarCell[][]; // one row per year, `cols` cells each
   max: number;
   partialYears: number[]; // years with at least one month missing
-  latest: CalendarCell | null; // last month that has a value
-  firstObserved: CalendarCell | null; // first month whose value is a VIIRS observation (earlier months are back-cast)
+  latest: CalendarCell | null; // last period that has a value
+  firstObserved: CalendarCell | null; // first period whose value is a VIIRS observation (earlier ones are back-cast)
 };
 
-/** Lays the monthly series out as year rows x 12 months. Months after the end of the series have value null. */
-export function buildGrid(b: SeriesBundle): CalendarGrid {
-  const m = b.monthly, n = m.modis.length;
-  const nYears = Math.ceil(n / 12);
+const DAY_MS = 86_400_000;
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+/** First day, last day and length of week `w` (0-51) of `year`, as the Series bundle defines weeks. */
+export function weekSpan(year: number, w: number): { start: string; end: string; length: number } {
+  const jan1 = Date.UTC(year, 0, 1);
+  const length = w < 51 ? 7 : (isLeap(year) ? 366 : 365) - 7 * 51;
+  return { start: isoDay(jan1 + 7 * w * DAY_MS), end: isoDay(jan1 + (7 * w + length - 1) * DAY_MS), length };
+}
+
+/** First day, last day and length of `month` (1-12) of `year`. */
+export function monthSpan(year: number, month: number): { start: string; end: string; length: number } {
+  const length = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const mm = String(month).padStart(2, "0");
+  return { start: `${year}-${mm}-01`, end: `${year}-${mm}-${String(length).padStart(2, "0")}`, length };
+}
+
+/**
+ * Month header groups for the week view: for each month, the first week column that starts in it and how many weeks
+ * start in it, using a common (non-leap) year. In a leap year a week can start one day earlier in the calendar (week 39
+ * starts 30 Sep instead of 1 Oct), so the header is a guide; each cell's own dates are exact.
+ */
+export function weekMonthGroups(): { month: number; first: number; span: number }[] {
+  const starts = Array.from({ length: 52 }, (_, w) => Number(weekSpan(2001, w).start.slice(5, 7)));
+  return Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    first: starts.indexOf(i + 1),
+    span: starts.filter((m) => m === i + 1).length,
+  }));
+}
+
+/**
+ * Column in the `to` view that matches column `col` of the other view: a month goes to the first week that starts in
+ * it; a week goes to the month whose header group holds it (weekMonthGroups).
+ */
+export function remapColumn(col: number, to: GridView): number {
+  const groups = weekMonthGroups();
+  if (to === "week") return groups[Math.max(0, Math.min(11, col))].first;
+  return groups.filter((g) => g.first <= col).length - 1;
+}
+
+/**
+ * Lays the series out as year rows x 12 months (`view` "month", the default) or year rows x 52 weeks ("week", from
+ * `weekly`; throws SeriesFormatError if the bundle has none). Periods after the end of the series have value null. The
+ * calendar statistics are per month, so in the week view every flag is 0 and every anomaly null.
+ */
+export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGrid {
+  const week = view === "week";
+  if (week && !b.weekly) throw new SeriesFormatError("weekly series is missing");
+  const s = week ? b.weekly! : b.monthly;
+  const cols = week ? 52 : 12, n = s.modis.length;
+  const nYears = Math.ceil(n / cols);
   const years: number[] = [], rows: CalendarCell[][] = [], partialYears: number[] = [];
   let max = 0, latest: CalendarCell | null = null, firstObserved: CalendarCell | null = null;
   for (let y = 0; y < nYears; y++) {
-    const year = m.start_year + y, row: CalendarCell[] = [];
-    for (let mo = 0; mo < 12; mo++) {
-      const i = y * 12 + mo;
-      const v = i < n ? m.viirs[i] : null;
-      const value = i < n ? (v ?? m.pred[i]) : null;
+    const year = s.start_year + y, row: CalendarCell[] = [];
+    for (let col = 0; col < cols; col++) {
+      const i = y * cols + col;
+      const v = i < n ? s.viirs[i] : null;
+      const value = i < n ? (v ?? s.pred[i]) : null;
+      const span = week ? weekSpan(year, col) : monthSpan(year, col + 1);
+      // monthly arrays hold complete months only; the last week can stop early (weekly.last_week_days)
+      const days = i >= n ? 0 : week && i === n - 1 ? Math.min(b.weekly!.last_week_days, span.length) : span.length;
       const cell: CalendarCell = {
         index: i,
         year,
-        month: mo + 1,
+        col,
+        month: week ? Number(span.start.slice(5, 7)) : col + 1,
+        week: week ? col : null,
+        ...span,
+        days,
+        through: isoDay(Date.parse(`${span.start}T00:00:00Z`) + (days - 1) * DAY_MS),
+        partial: value != null && days < span.length,
         value,
         observed: v != null,
-        flag: (i < n && b.calendar?.flag[i]) || 0,
-        anomaly: i < n && b.calendar ? b.calendar.anomaly[i] : null,
+        flag: (!week && i < n && b.calendar?.flag[i]) || 0,
+        anomaly: !week && i < n && b.calendar ? b.calendar.anomaly[i] : null,
         inRange: true,
       };
       if (value != null) {
@@ -119,28 +216,35 @@ export function buildGrid(b: SeriesBundle): CalendarGrid {
       }
       row.push(cell);
     }
-    if (row.some((c) => c.value == null)) partialYears.push(year);
+    if (row.some((c) => c.value == null || c.partial)) partialYears.push(year);
     years.push(year);
     rows.push(row);
   }
-  return { years, rows, max, partialYears, latest, firstObserved };
+  return { view, cols, years, rows, max, partialYears, latest, firstObserved };
 }
 
 /**
  * Keeps the year rows that the selected dates touch and marks months outside them (`inRange: false`). Takes
- * `YYYY-MM-DD` dates; a month counts as inside if any of its days is. `max`, `latest` and `firstObserved` still describe
+ * `YYYY-MM-DD` dates; a month or week counts as inside if any of its days is. `max`, `latest` and `firstObserved` still describe
  * the whole record, so colours and the latest-month card don't change with the filter.
  */
 export function sliceGrid(g: CalendarGrid, from: string, to: string): CalendarGrid {
-  const f = from.slice(0, 7), t = to.slice(0, 7);
   const keep = g.years.map((y) => y >= Number(from.slice(0, 4)) && y <= Number(to.slice(0, 4)));
-  const ym = (c: CalendarCell) => `${c.year}-${String(c.month).padStart(2, "0")}`;
   return {
     ...g,
     years: g.years.filter((_, r) => keep[r]),
-    rows: g.rows.filter((_, r) => keep[r]).map((row) => row.map((c) => ({ ...c, inRange: ym(c) >= f && ym(c) <= t }))),
+    rows: g.rows.filter((_, r) => keep[r]).map((row) => row.map((c) => ({ ...c, inRange: c.end >= from && c.start <= to }))),
     partialYears: g.partialYears.filter((y) => keep[g.years.indexOf(y)]),
   };
+}
+
+/** "29 Oct" from YYYY-MM-DD. */
+export const dayMonth = (d: string) => `${Number(d.slice(8, 10))} ${MONTHS[Number(d.slice(5, 7)) - 1]}`;
+
+/** "29 Oct to 4 Nov 2026" for a week, "October 2026" for a month. */
+export function periodLabel(cell: CalendarCell): string {
+  if (cell.week == null) return `${MONTHS_LONG[cell.month - 1]} ${cell.year}`;
+  return `${dayMonth(cell.start)} to ${dayMonth(cell.end)} ${cell.year}`;
 }
 
 /** Position on the colour ramp, 0-1, on a log scale (monthly fire counts span three orders of magnitude). */
