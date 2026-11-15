@@ -22,7 +22,7 @@ import { fetchSeries, fetchWeather, regionInfo, type RegionId, type SeriesResult
 import { SEASON_DRIVER, summarySentence, weatherSentence, weatherSummary, type Weather, type WeatherSummary } from "@/lib/weather";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
-import { REGIONS } from "@/lib/regions";
+import { isCountry, REGIONS } from "@/lib/regions";
 import { rawValues } from "@/lib/sonify";
 import type { CalendarView as View } from "@/lib/selection";
 import {
@@ -162,6 +162,8 @@ function CalendarView({
 }) {
   const mode = useColorMode();
   const week = grid.view === "week";
+  // DP-009: a whole country has no peaks.json, so it gets no "see it from space" (the button would open nothing)
+  const noSpace = week || isCountry(label.region);
   const stats = week ? undefined : monthStats; // medians and flags are per month
   const unit = week ? "week" : "month";
   const [active, setActive] = useState<CalendarCell | null>(null);
@@ -173,7 +175,7 @@ function CalendarView({
   const [space, setSpace] = useState<{ year: number; month: number; opened: number } | null>(null);
   const spaceTrigger = useRef<HTMLElement | null>(null);
   const openSpace = (cell: CalendarCell) => {
-    if (week || cell.value == null) return;
+    if (noSpace || cell.value == null) return;
     spaceTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setSpace((s) => ({ year: cell.year, month: cell.month, opened: (s?.opened ?? 0) + 1 }));
   };
@@ -240,7 +242,7 @@ function CalendarView({
 
   const onKey = (e: KeyboardEvent<HTMLTableElement>) => {
     const [r, c] = focus;
-    if (e.key === "Enter" && !week && (e.target as HTMLElement).closest("[data-cell]")) {
+    if (e.key === "Enter" && !noSpace && (e.target as HTMLElement).closest("[data-cell]")) {
       e.preventDefault();
       openSpace(grid.rows[r][c]);
       return;
@@ -275,10 +277,10 @@ function CalendarView({
               mtd={mtd}
               snppEnd={snppEnd}
               weather={weather}
-              onSpace={week ? undefined : () => openSpace(latestMonth)}
+              onSpace={noSpace ? undefined : () => openSpace(latestMonth)}
             />
           ) : (
-            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={week ? undefined : () => openSpace(latestMonth)} />
+            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={noSpace ? undefined : () => openSpace(latestMonth)} />
           ))}
         <Legend
           max={grid.max}
@@ -323,7 +325,7 @@ function CalendarView({
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read it${week ? "." : "; click or press Enter to see it from space."}`}
+          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read it${noSpace ? "." : "; click or press Enter to see it from space."}`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -339,7 +341,7 @@ function CalendarView({
               Harmonized {week ? "weekly" : "monthly"} fire detections. Values are VIIRS observations from{" "}
               {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and model back-casts before.
               {shownForward && ` ${forwardSentence(snppEnd)}`}
-              {!week && " Press Enter on a month to see it from space."}
+              {!noSpace && " Press Enter on a month to see it from space."}
             </caption>
             {week && (
               // fixed layout + one <col> per week keeps all 52 columns the same width (the month headers span several)
@@ -420,7 +422,7 @@ function CalendarView({
                           setAnnounce(describe(cell, stats, snppEnd));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className={`relative ${week ? "h-5" : "h-8 cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
+                        className={`relative ${week ? "h-5" : "h-8"} ${noSpace ? "" : "cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                       >
                         {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
                         {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
@@ -485,7 +487,7 @@ function CalendarView({
         </div>
       </section>
       </div>
-      {!week && space && (
+      {!noSpace && space && (
         <SpaceView region={label.region} year={space.year} month={space.month} opened={space.opened} onClose={closeSpace} />
       )}
       {!week && summary && <WeatherSummaryBlock summary={summary} region={label.region} />}

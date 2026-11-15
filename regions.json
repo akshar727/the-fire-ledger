@@ -4,20 +4,28 @@
     "name": "Mainland Portugal",
     "country": "Portugal",
     "bbox": [-10.0, 36.9, -6.0, 42.2],
-    "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Oct)"
+    "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Oct)",
+    "tier": "region",
+    "season": "Forest and shrub wildfire, peaking July to October."
   },
   {
     "id": "ghana",
     "name": "Ghana",
     "country": "Ghana",
     "bbox": [-3.5, 4.5, 1.5, 11.5],
-    "fire_type": "West African savanna burning (peak Nov–Feb)"
+    "fire_type": "West African savanna burning (peak Nov–Feb)",
+    "tier": "region",
+    "season": "Savanna burning, peaking November to February."
   },
   {
     "id": "punjab",
     "name": "NW India (Punjab, N Haryana; India side only)",
+    "short_name": "NW India (Punjab, Haryana)",
     "country": "India",
     "bbox": [73.75, 28.75, 77.5, 32.5],
-    "fire_type": "Crop-residue burning (peaks Apr–May and Oct–Nov)"
+    "fire_type": "Crop-residue burning (peaks Apr–May and Oct–Nov)",
+    "tier": "region",
+    "season": "Crop-residue burning, peaking April to May and October to November.",
+    "caveat": "Before July 2002 only the Terra satellite was flying, and the back-cast for those months runs high here, so treat 2001 and early 2002 with caution."
   }
 ]

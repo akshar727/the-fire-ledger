@@ -22,12 +22,15 @@ const SECTIONS = [
 const ARCHIVE_URL = "https://firms.modaps.eosdis.nasa.gov/country/";
 const AREA_API_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/";
 
-// Every region, in index.json order, with its annual record (scores, years) and display name.
-const RECORDS = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id) }));
+// Every region, in index.json order, with its annual record (scores, years) and display name. DP-009: the cell regions
+// make up the main text and table; whole countries get their own table under the hold-out.
+const ALL = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id), through: r.data_through, tier: r.tier }));
+const RECORDS = ALL.filter((r) => r.tier === "region");
+const COUNTRY_RECORDS = ALL.filter((r) => r.tier === "country");
 const SPAN = recordSpan();
 const REF = loadReferee();
 // End of the downloaded record (index.json archive_through, the same for every region), e.g. 2026-11-02.
-const THROUGH = REGION_LIST.map((r) => r.data_through).sort().at(-1)!;
+const THROUGH = RECORDS.map((r) => r.through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
 
 // FE-019: the landing page's scroll scene, described from the same files it is drawn from
@@ -210,75 +213,7 @@ export default function MethodPage() {
             MODIS alone, and we compare that with what VIIRS actually saw. The baseline is the simplest possible
             conversion: one constant VIIRS-to-MODIS factor per region, taken from the same training years.
           </p>
-          <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[34rem] text-sm">
-              <caption className="sr-only">Hold-out scores per region, {h0}-{h1}</caption>
-              <thead className="bg-muted/50 text-left">
-                <tr>
-                  <th scope="col" className="px-3 py-2 font-medium">
-                    {h0}-{h1}
-                  </th>
-                  {RECORDS.map((r) => (
-                    <th key={r.id} scope="col" className="px-3 py-2 font-medium">
-                      {r.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y text-muted-foreground tabular-nums">
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Model, mean annual error
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {pct(r.D.score.mape_model)}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Constant factor, mean annual error
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {pct(r.D.score.mape_ratio)} (×{r.D.score.ratio.toFixed(2)})
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Smaller error
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 font-medium whitespace-nowrap text-foreground">
-                      {r.D.score.mape_model < r.D.score.mape_ratio ? "Model" : "Constant factor"}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Years inside the 5-95% band
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {coverageText(r.D)}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Weekly correlation r
-                  </th>
-                  {RECORDS.map((r) => (
-                    <td key={r.id} className="px-3 py-2 whitespace-nowrap">
-                      {r.D.score.weekly_r.toFixed(3)}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ScoreTable records={RECORDS} caption="Hold-out scores per region" />
           {losers.length > 0 && (
             <p>
               {losers.map((r, i) => (
@@ -291,6 +226,19 @@ export default function MethodPage() {
                 </span>
               ))}
             </p>
+          )}
+          {COUNTRY_RECORDS.length > 0 && (
+            <>
+              <h3 id="countries" className="text-base font-semibold text-foreground">
+                Whole countries: whole-country runs of the same model
+              </h3>
+              <p>
+                The same model and the same test, run on every fire in a whole country instead of a box. Country records
+                end with the FIRMS yearly archive ({dayLabel(COUNTRY_RECORDS[0].through)}), so they have no forward link,
+                no per-detection download, no weather and no burned-area check.
+              </p>
+              <ScoreTable records={COUNTRY_RECORDS} caption="Hold-out scores per whole country" />
+            </>
           )}
           {FORWARD.length > 0 && (
             <p id="forward-link">
@@ -503,5 +451,85 @@ export default function MethodPage() {
         </section>
       </article>
     </main>
+  );
+}
+
+type Rec = { id: string; name: string; D: Annual; through: string };
+
+/** Hold-out scores, one column per record (FE-007 table; DP-009 also draws it for whole countries). */
+function ScoreTable({ records, caption }: { records: Rec[]; caption: string }) {
+  const [h0, h1] = holdoutYears(records[0].D);
+  return (
+    <div className="overflow-x-auto rounded-xl border">
+      <table className="w-full min-w-[34rem] text-sm">
+        <caption className="sr-only">
+          {caption}, {h0}-{h1}
+        </caption>
+        <thead className="bg-muted/50 text-left">
+          <tr>
+            <th scope="col" className="px-3 py-2 font-medium">
+              {h0}-{h1}
+            </th>
+            {records.map((r) => (
+              <th key={r.id} scope="col" className="px-3 py-2 font-medium">
+                {r.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y text-muted-foreground tabular-nums">
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Model, mean annual error
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {pct(r.D.score.mape_model)}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Constant factor, mean annual error
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {pct(r.D.score.mape_ratio)} (×{r.D.score.ratio.toFixed(2)})
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Smaller error
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 font-medium whitespace-nowrap text-foreground">
+                {r.D.score.mape_model < r.D.score.mape_ratio ? "Model" : "Constant factor"}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Years inside the 5-95% band
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {coverageText(r.D)}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
+              Weekly correlation r
+            </th>
+            {records.map((r) => (
+              <td key={r.id} className="px-3 py-2 whitespace-nowrap">
+                {r.D.score.weekly_r.toFixed(3)}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }

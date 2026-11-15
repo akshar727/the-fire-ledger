@@ -1,14 +1,13 @@
-// The only module that loads pipeline outputs from site/public/data/ (written by model.py, never hand-edited).
-// annual.json and index.json are imported at build time; series.json is fetched by the browser (it may not exist yet). No fs reads,
-// so both work on Vercel.
-import ghanaAnnual from "@/public/data/ghana/annual.json";
+// The only module that loads pipeline outputs from site/public/data/ (written by the pipeline, never hand-edited).
+// annual-all.json (every region's annual.json, site_bundle.py) and index.json are imported at build time; series.json is
+// fetched by the browser (it may not exist yet). No fs reads, so both work on Vercel. DP-009: no region is named here;
+// the list is whatever index.json and annual-all.json hold (lib/regions.ts).
+import annualAll from "@/public/data/annual-all.json";
 import regionIndex from "@/public/data/index.json";
-import portugalAnnual from "@/public/data/portugal/annual.json";
-import punjabAnnual from "@/public/data/punjab/annual.json";
 import refereeData from "@/public/data/referee.json";
 import { spanOf, type Annual } from "@/lib/annual";
 import type { Referee } from "@/lib/referee";
-import { isRegionId, REGIONS, type RegionId } from "@/lib/regions";
+import { isRegionId, REGION_IDS, REGIONS, TIER, type RegionId, type Tier } from "@/lib/regions";
 import type { Bounds } from "@/lib/selection";
 import { parseSeries, SeriesFormatError, type SeriesBundle } from "@/lib/series";
 import { parseWeather, type Weather } from "@/lib/weather";
@@ -16,11 +15,7 @@ import { parseWeather, type Weather } from "@/lib/weather";
 export { REGIONS, type RegionId } from "@/lib/regions";
 export type { Annual, Score } from "@/lib/annual";
 
-const ANNUAL: Record<RegionId, Annual> = {
-  portugal: portugalAnnual as Annual,
-  ghana: ghanaAnnual as Annual,
-  punjab: punjabAnnual as Annual,
-};
+const ANNUAL = annualAll as unknown as Record<RegionId, Annual>;
 
 export function loadAnnual(region: RegionId): Annual {
   return ANNUAL[region];
@@ -35,19 +30,21 @@ export function loadReferee(): Referee {
 export type RegionInfo = {
   id: RegionId;
   name: string;
+  tier: Tier;
   data_through: string; // YYYY-MM-DD, end of the downloaded archive
-  point_years: number[]; // years with a points/<year>.csv file
+  point_years: number[]; // years with a points/<year>.csv file (none for a country)
   point_rows: number;
-  bbox: [number, number, number, number]; // [west, south, east, north] degrees, from regions.json
+  bbox: [number, number, number, number]; // [west, south, east, north] degrees, from regions.json / countries.json
 };
 
-/** Regions in index.json order (the DP-003 region list), limited to those this site has pages for. */
+/** Regions in index.json order (the DP-003 region list), limited to those with a record (lib/regions.ts). */
 export const REGION_LIST: RegionInfo[] = regionIndex.regions.flatMap((r) =>
   isRegionId(r.id)
     ? [
         {
           id: r.id,
           name: r.name,
+          tier: TIER[r.id],
           data_through: r.data_through,
           point_years: r.point_years,
           point_rows: r.point_rows,
@@ -56,14 +53,17 @@ export const REGION_LIST: RegionInfo[] = regionIndex.regions.flatMap((r) =>
       ]
     : [],
 );
+if (REGION_LIST.length !== REGION_IDS.length) throw new Error("index.json and lib/regions.ts disagree on the region list");
 
 export function regionInfo(region: RegionId): RegionInfo {
   return REGION_LIST.find((r) => r.id === region)!;
 }
 
-/** The whole published record across regions, for site-wide copy (`spanOf` in lib/annual.ts). */
+/** The whole published record across the cell regions, for site-wide copy (`spanOf` in lib/annual.ts). Whole countries
+ * (DP-009) are left out: they are listed apart, and their archive-only record would shorten every page's year range. */
 export function recordSpan() {
-  return spanOf(REGION_LIST.map((r) => ANNUAL[r.id]), REGION_LIST.map((r) => REGIONS[r.id]));
+  const cells = REGION_LIST.filter((r) => r.tier === "region");
+  return spanOf(cells.map((r) => ANNUAL[r.id]), cells.map((r) => REGIONS[r.id]));
 }
 
 /**
