@@ -120,9 +120,10 @@ class ModelRunTests(unittest.TestCase):
 
     def test_annual_keys_and_lengths(self):
         a = self.annual
-        self.assertEqual(list(a), ["years", "modis", "viirs", "pred", "lo", "hi", "score", "partial", "data_through"])
+        self.assertEqual(list(a), ["years", "modis", "viirs", "pred", "lo", "hi", "score", "partial", "data_through",
+                                   "harmonized", "viirs_partial"])
         self.assertEqual(a["years"], YEARS)
-        for k in ("modis", "viirs", "pred", "lo", "hi", "partial"):
+        for k in ("modis", "viirs", "pred", "lo", "hi", "partial", "harmonized", "viirs_partial"):
             self.assertEqual(len(a[k]), 25, k)
         self.assertEqual(list(a["score"]), ["mape_model", "mape_ratio", "coverage", "n_hold", "ratio", "alpha",
                                             "weekly_r", "sigma_year"])
@@ -137,6 +138,24 @@ class ModelRunTests(unittest.TestCase):
         m, w = self.series["monthly"], self.series["weekly"]
         self.assertEqual([i for i, v in enumerate(m["viirs"]) if v is None], list(range(133)))   # to Jan 2012
         self.assertEqual([i for i, v in enumerate(w["viirs"]) if v is None], list(range(11 * 52 + 3)))
+
+    def test_harmonized_blends_2012(self):
+        # ML-009: harmonized = pred before 2012, observed VIIRS weeks from 20 Jan 2012 + model weeks 0-2 in 2012,
+        # observed VIIRS after; only 2012 is flagged as blended
+        a, w = self.annual, self.series["weekly"]
+        i12 = YEARS.index(2012)
+        self.assertEqual(a["viirs_partial"], [int(y == 2012) for y in YEARS])
+        for i, yr in enumerate(YEARS):
+            want = a["pred"][i] if yr < 2012 else a["viirs"][i]
+            if yr != 2012:
+                self.assertAlmostEqual(a["harmonized"][i], want, delta=0.05 if yr < 2012 else 1e-9, msg=str(yr))
+        # weeks 0-2 start before 20 Jan: model for the whole week (week 2's 20-21 Jan observations are dropped on
+        # purpose, as in training and series.json); weekly viirs is null there, observed from week 3
+        wk = slice(i12 * 52, (i12 + 1) * 52)
+        self.assertEqual([i for i, v in enumerate(w["viirs"][wk]) if v is None], [0, 1, 2])
+        blended = sum(w["pred"][wk][:3]) + sum(w["viirs"][wk][3:])
+        self.assertAlmostEqual(a["harmonized"][i12], blended, delta=0.5)
+        self.assertNotAlmostEqual(a["harmonized"][i12], a["viirs"][i12], delta=1)   # 2012 is not the raw total
 
     def test_bands_ordered(self):
         for name, d in (("annual", self.annual), ("monthly", self.series["monthly"]),

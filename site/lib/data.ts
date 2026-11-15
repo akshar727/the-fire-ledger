@@ -23,7 +23,7 @@ export type Score = {
   sigma_year: number; // year-level error (RMS of log obs/pred, leave-one-year-out on 2012-2019); sizes the band
 };
 
-/** Annual series, one entry per year. `viirs` is null before 2012. */
+/** Annual series, one entry per year. `viirs` is null before 2012 and is the raw total (2012 starts 20 Jan). */
 export type Annual = {
   years: number[];
   modis: number[];
@@ -32,6 +32,9 @@ export type Annual = {
   lo: number[];
   hi: number[];
   score: Score;
+  // ML-009: published record = observed VIIRS weeks + model for weeks before VIIRS started (2012 weeks 0-2)
+  harmonized: number[];
+  viirs_partial: (0 | 1)[]; // 1 = blended year: observed VIIRS for part of it, model for the rest
 };
 
 const ANNUAL: Record<RegionId, Annual> = {

@@ -11,11 +11,12 @@ import { loadAnnual, type Annual } from "@/lib/data";
 import { FIRE_SEASON, REGION_CAVEAT, REGIONS } from "@/lib/regions";
 import { useSelection } from "@/lib/use-selection";
 
-/** Mean VIIRS year over mean MODIS year before 2012: the apparent jump the harmonization removes. */
+/** Mean VIIRS-era year (harmonized, so 2012 counts 1-19 January) over mean MODIS year before 2012: the apparent
+ * jump the harmonization removes. RecordChart's Raw sentence uses the same formula. */
 function jump(data: Annual): number {
   const i2012 = data.years.indexOf(2012);
   const modisMean = data.modis.slice(0, i2012).reduce((p, c) => p + c, 0) / i2012;
-  const viirs = data.viirs.filter((v): v is number => v != null);
+  const viirs = data.harmonized.slice(i2012);
   return viirs.reduce((p, c) => p + c, 0) / viirs.length / modisMean;
 }
 
