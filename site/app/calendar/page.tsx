@@ -7,11 +7,12 @@ export const metadata: Metadata = { title: "Burn calendar" };
 
 export default function CalendarPage() {
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-12 pb-20 sm:px-6 md:pt-16">
-      <header className="flex max-w-[65ch] flex-col gap-4">
-        <h1 className="text-4xl leading-[1.05] font-semibold tracking-tighter md:text-5xl">Burn calendar</h1>
-        <p className="text-lg leading-relaxed text-muted-foreground">
-          Which months burn, and which years broke the pattern. Every month is on the VIIRS scale.
+    // FE-025: compact header (as on the Record page) so the card, the controls and the calendar fit on a laptop's first screen
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 pt-6 pb-20 sm:px-6">
+      <header className="flex max-w-[65ch] flex-col gap-1.5">
+        <h1 className="text-3xl leading-tight font-semibold tracking-tighter md:text-4xl">Burn calendar</h1>
+        <p className="leading-relaxed text-muted-foreground">
+          Which months burn and which years broke the pattern, every month on the VIIRS scale.
         </p>
       </header>
       {/* useSearchParams needs a Suspense boundary to keep the page statically rendered */}
