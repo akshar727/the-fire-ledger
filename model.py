@@ -18,6 +18,9 @@ VIIRS_START = pd.Timestamp("2012-01-20")   # first VIIRS S-NPP day in FIRMS: ear
 COMMON = " + C(month) + daynight + C(band)"
 F_FULL = "viirs_n ~ la + lt + lf + lr + I(modis_n == 0)" + COMMON      # Terra + Aqua
 F_TERRA = "viirs_n ~ lt + lft + lrt + I(terra_n == 0)" + COMMON         # Terra only (before Aqua)
+# overpass drift (ML-016): satellite key in annual.json -> `satellite` value in points/<year>.csv
+OVERPASS_SATS = {"terra": "Terra", "aqua": "Aqua", "snpp": "SNPP"}
+DRIFT_BASE, DRIFT_LIMIT, DRIFT_SATS = range(2013, 2020), 0.5, ("terra", "aqua")   # stable-orbit years; hours
 
 def week_end(yr, wk):
     """Last day of week wk (covers day-of-year 7wk+1..7wk+7; week 51 runs to Dec 31)."""
@@ -41,6 +44,35 @@ def kept_weeks(through):
     """(year, week) pairs from 2001 whose last day is on or before `through`."""
     through = pd.Timestamp(through)
     return [(yr, wk) for yr in range(2001, through.year + 1) for wk in range(52) if week_end(yr, wk) <= through]
+
+def overpass_hours(path):
+    """Median daytime local solar time (hours) per satellite in one points/<year>.csv: time_utc (HHMM, UTC) + lon/15.
+    Median over detections, so it is the time the satellite saw this region's fires; it also moves with the
+    longitude mix of those fires (7.5 deg = 0.5 h), which matters only for very wide regions. {key: float or None}."""
+    d = pd.read_csv(path, usecols=["time_utc", "lon", "satellite", "daynight"], dtype={"time_utc": str})
+    d = d[d.daynight == "D"]
+    t = d.time_utc.str.strip().str.zfill(4)
+    lst = (t.str[:2].astype(int) + t.str[2:].astype(int) / 60 + d.lon / 15) % 24
+    med = lst.groupby(d.satellite).median()
+    return {k: (float(med[s]) if s in med.index else None) for k, s in OVERPASS_SATS.items()}
+
+def overpass_block(points_dir, years):
+    """Per year: median daytime overpass per satellite (None without a points file or detections), and drifted = 1
+    where Terra or Aqua is more than DRIFT_LIMIT hours from its own DRIFT_BASE median (median of the yearly medians;
+    a satellite with no base-year value is never flagged)."""
+    ov = {k: [] for k in OVERPASS_SATS}
+    for yr in years:
+        p = os.path.join(points_dir, f"{yr}.csv")
+        h = overpass_hours(p) if os.path.isfile(p) else {}
+        for k in OVERPASS_SATS:
+            ov[k].append(h.get(k))
+    drifted = [0] * len(years)
+    for k in DRIFT_SATS:
+        base = [v for yr, v in zip(years, ov[k]) if yr in DRIFT_BASE and v is not None]
+        if base:
+            ref = float(np.median(base))
+            drifted = [int(f or (v is not None and abs(v - ref) > DRIFT_LIMIT)) for f, v in zip(drifted, ov[k])]
+    return {k: [None if v is None else round(v, 3) for v in a] for k, a in ov.items()}, drifted
 
 def series_bundle(region_id, weeks, wk, draws):
     """series.json content from per-week sums. Monthly: each week's value split over calendar months by its days in
@@ -71,9 +103,10 @@ def series_bundle(region_id, weeks, wk, draws):
             "weekly": block(None, [week_start(yr, wkn) for yr, wkn in weeks]),
             "calendar": calendar_block(harmonized, monthly["start_year"])}
 
-def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"):
+def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None):
     """Fit one region and write annual.json + series.json. Returns dict: weeks (list of (year, week)), modis/viirs/pred
-    (per-week region totals, arrays), draws (nboot x n_weeks bootstrap draw sums), ann (annual DataFrame), score."""
+    (per-week region totals, arrays), draws (nboot x n_weeks bootstrap draw sums), ann (annual DataFrame), score.
+    points_dir (default <out_dir>/<region_id>/points, written by build.py) feeds only the overpass fields."""
     t0 = time.time()
     rng = np.random.default_rng(0)   # per region, so output doesn't depend on which other regions ran
     through = load_json(os.path.join(grid_dir, "manifest.json"))[region_id]["archive_through"]
@@ -165,6 +198,15 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     # year VIIRS only partly covers (2012: from 20 Jan) isn't published as a fake dip. Other years: viirs ?? pred.
     ann["harmonized"] = ysum(np.where(wk_nov, wk_pred, wk_viirs))
     ann["viirs_partial"] = (ysum(wk_nov.astype(int)) > 0) & (ysum((~wk_nov).astype(int)) > 0)   # 1 = blended year
+    # obs_over_pred (ML-016): observed VIIRS / model mean over the weeks VIIRS covers (2012: from 20 Jan), so it
+    # shows where the fitted MODIS -> VIIRS link stops holding (orbit drift). None before 2012.
+    ov_viirs, ov_pred = ysum(np.where(wk_nov, 0, wk_viirs)), ysum(np.where(wk_nov, 0, wk_pred))
+    obs_over_pred = [round(float(v / p), 4) if n and p > 0 else None
+                     for v, p, n in zip(ov_viirs, ov_pred, ysum((~wk_nov).astype(int)))]
+    points_dir = points_dir or os.path.join(out_dir, region_id, "points")
+    if not os.path.isdir(points_dir):
+        print(f"{region_id}: no {points_dir} (run build.py first?): overpass null, drifted 0", flush=True)
+    overpass, drifted = overpass_block(points_dir, years)
     ann.loc[ann.index < 2012, "viirs_n"] = np.nan
     nweeks = np.array([(wyear == yr).sum() for yr in years])
 
@@ -188,7 +230,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
            "hi": [float(v) for v in ann.hi], "score": score,
            "partial": [int(n < 52) for n in nweeks], "data_through": week_end(*weeks[-1]).strftime("%Y-%m-%d"),
            "harmonized": [float(v) for v in ann.harmonized.round(1)],
-           "viirs_partial": [int(v) for v in ann.viirs_partial]}
+           "viirs_partial": [int(v) for v in ann.viirs_partial],
+           "overpass": overpass, "obs_over_pred": obs_over_pred, "drifted": drifted}
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
     bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws)
