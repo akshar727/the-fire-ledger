@@ -1,17 +1,19 @@
 "use client";
 
-// The scroll scene behind the landing story (FE-019): 180 pre-rendered frames (public/scene/, made by
+// The scroll scene behind the landing story (FE-019): 360 pre-rendered frames (public/scene/, made by
 // scripts/landing_scene/scene.py from SRTM terrain and the 2017 detections) scrubbed on one <canvas> by scroll
 // position. Decoration only: the canvas is aria-hidden and every word and figure of the story is the HTML above it.
 // Loaded by StorySceneGate after first paint, on wide screens with motion allowed; nothing here runs otherwise.
 //
 // Frames arrive as blobs, coarse to fine (lib/scene.ts loadOrder), and only the few around the current position are
-// kept decoded (CACHE bitmaps, ~6 MB of pixels each), so memory stays flat and a draw is one drawImage call.
+// kept decoded (CACHE bitmaps, ~6 MB of pixels each), so memory stays flat. Between two frames the upper one is
+// faded over the lower one by the fraction (lib/scene.ts blendPair), and the glide towards the scroll position runs
+// on elapsed time, not on the display's refresh rate: the picture moves continuously instead of stepping.
 import { useEffect, useRef } from "react";
-import { FRAME_COUNT, FRAME_H, FRAME_W, follow, frameAt, frameUrl, loadOrder, nearest } from "@/lib/scene";
+import { blendPair, FRAME_COUNT, FRAME_H, FRAME_W, follow, frameAt, frameUrl, loadOrder, nearest, rateFor } from "@/lib/scene";
 
-const CACHE = 14; // decoded frames kept
-const AHEAD = 4; // frames decoded ahead of the scroll direction
+const CACHE = 20; // decoded frames kept
+const AHEAD = 6; // frames decoded ahead of the scroll direction
 const DECODES = 3; // decodes in flight at once: a jump to the far end must not queue a hundred of them
 const PARALLEL = 4; // downloads at once
 
@@ -30,7 +32,7 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
     const abort = new AbortController();
     let alive = true, ready = false;
     let centres: number[] = [];
-    let target = 0, shown = 0, drawn = -1, raf = 0;
+    let target = 0, shown = 0, drawn = -1, drawnOver = -1, drawnKey = "", raf = 0, last = 0;
 
     const schedule = () => {
       if (!raf && alive) raf = requestAnimationFrame(tick);
@@ -52,7 +54,7 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
         let far = -1, dist = -1;
         for (const k of bitmaps.keys()) {
           const d = Math.abs(k - shown);
-          if (k !== drawn && d > dist) [far, dist] = [k, d];
+          if (k !== drawn && k !== drawnOver && d > dist) [far, dist] = [k, d];
         }
         if (far < 0) return;
         bitmaps.get(far)!.close();
@@ -88,28 +90,39 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
       );
     };
 
-    function tick() {
+    function tick(now: number) {
       raf = 0;
-      shown = follow(shown, target);
+      shown = follow(shown, target, rateFor(last ? now - last : 1000 / 60));
       const want = best();
       if (want >= 0) {
         decode(want, true);
+        if (Math.ceil(shown) !== want) decode(Math.min(FRAME_COUNT - 1, Math.ceil(shown))); // the pair to blend
+        if (Math.floor(shown) !== want) decode(Math.floor(shown));
         const dir = target >= shown ? 1 : -1;
         for (let k = 1; k <= AHEAD; k++) {
           const i = want + dir * k;
           if (i >= 0 && i < FRAME_COUNT) decode(i);
         }
       }
-      const have = nearest(shown, FRAME_COUNT, (i) => bitmaps.has(i));
-      if (have >= 0 && have !== drawn) {
-        ctx!.drawImage(bitmaps.get(have)!, 0, 0, FRAME_W, FRAME_H);
-        drawn = have;
+      const pick = blendPair(shown, FRAME_COUNT, (i) => bitmaps.has(i));
+      const key = pick.over < 0 ? `${pick.base}` : `${pick.base}:${pick.over}:${pick.alpha.toFixed(3)}`;
+      if (pick.base >= 0 && key !== drawnKey) {
+        ctx!.globalAlpha = 1;
+        ctx!.drawImage(bitmaps.get(pick.base)!, 0, 0, FRAME_W, FRAME_H);
+        if (pick.over >= 0) {
+          ctx!.globalAlpha = pick.alpha;
+          ctx!.drawImage(bitmaps.get(pick.over)!, 0, 0, FRAME_W, FRAME_H);
+          ctx!.globalAlpha = 1;
+        }
+        [drawn, drawnOver, drawnKey] = [pick.base, pick.over, key];
         if (!ready) {
           ready = true;
           onReady();
         }
       }
+      // keep going while gliding; a blend partner that is still decoding calls schedule() when it lands
       if (shown !== target) schedule();
+      last = shown !== target ? now : 0;
     }
 
     measure();

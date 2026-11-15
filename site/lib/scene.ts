@@ -3,13 +3,13 @@
 // network live in components/story/StoryScene.tsx. The frames are rendered by scripts/landing_scene/scene.py, whose
 // layout.py holds the same FRAMES and ANCHORS (lib/scene.test.ts checks they agree).
 
-/** Frames f000.webp … f179.webp in public/scene/, 1600 x 900. */
-export const FRAME_COUNT = 180;
+/** Frames f000.webp … f359.webp in public/scene/, 1600 x 900. */
+export const FRAME_COUNT = 360;
 export const FRAME_W = 1600;
 export const FRAME_H = 900;
 
 /** The frame on screen when chapter k+1 is in the middle of the window (same numbers as layout.py ANCHORS). */
-export const ANCHORS = [0, 36, 72, 108, 144, 179] as const;
+export const ANCHORS = [0, 72, 144, 216, 288, 359] as const;
 
 export const frameUrl = (i: number) => `/scene/f${String(i).padStart(3, "0")}.webp`;
 
@@ -40,8 +40,8 @@ export function frameAt(centres: readonly number[], middle: number, anchors: rea
 }
 
 /**
- * Fetch order: the first frame, then every 16th, 8th, 4th, 2nd, then the rest. A fast scroll right after load still
- * finds a frame near every position, and the gaps fill in behind it.
+ * Fetch order: the first frame, then every 32nd (and the last), 16th, 8th, 4th, 2nd, then the rest. A fast scroll
+ * right after load still finds a frame near every position, and the gaps fill in behind it.
  */
 export function loadOrder(count: number = FRAME_COUNT): number[] {
   const seen = new Set<number>();
@@ -53,9 +53,9 @@ export function loadOrder(count: number = FRAME_COUNT): number[] {
     }
   };
   add(0);
-  for (let step = 16; step >= 1; step /= 2) {
+  for (let step = 32; step >= 1; step /= 2) {
     for (let i = 0; i < count; i += step) add(i);
-    if (step === 16) add(count - 1);
+    if (step === 32) add(count - 1);
   }
   return out;
 }
@@ -73,5 +73,25 @@ export function nearest(want: number, count: number, has: (i: number) => boolean
 /** One step of the eased follow: the shown frame moves a fraction of the way to the target, and snaps when close. */
 export function follow(shown: number, target: number, rate = 0.22): number {
   const d = target - shown;
-  return Math.abs(d) < 0.05 ? target : shown + d * rate;
+  return Math.abs(d) < 0.02 ? target : shown + d * rate;
+}
+
+/**
+ * The follow rate for a step of `dt` ms, so the glide takes the same time at 60 Hz and 120 Hz: the gap to the
+ * target shrinks by e every `tau` ms (about 0.17 per 60 Hz frame with the default). Clamped for long pauses.
+ */
+export function rateFor(dt: number, tau = 95): number {
+  return 1 - Math.exp(-Math.min(Math.max(dt, 0), 100) / tau);
+}
+
+/**
+ * What to draw for a fractional frame: the frame below it and, faded over it by the fraction, the frame above,
+ * when both are decoded. `has` says which frames are ready. Falls back to the nearest ready frame alone.
+ */
+export function blendPair(shown: number, count: number, has: (i: number) => boolean): { base: number; over: number; alpha: number } {
+  const lo = Math.min(count - 1, Math.max(0, Math.floor(shown)));
+  const hi = Math.min(count - 1, lo + 1);
+  const frac = Math.min(1, Math.max(0, shown - lo));
+  if (has(lo) && has(hi) && hi !== lo && frac > 0.01 && frac < 0.99) return { base: lo, over: hi, alpha: frac };
+  return { base: nearest(shown, count, has), over: -1, alpha: 0 };
 }

@@ -113,7 +113,7 @@ class Terrain(unittest.TestCase):
 
     def test_camera_stays_above_the_ground_and_ends_looking_straight_down(self):
         last = 0.0
-        for f in np.arange(0, L.FRAMES, 0.5):
+        for f in np.arange(0, L.STORY_ANCHORS[-1] + 1, 0.5):  # story time
             c = L.camera(self.dem, f)
             eye = c["eye"]
             self.assertTrue(all(np.isfinite(eye)) and all(np.isfinite(c["target"])), f)
@@ -124,6 +124,23 @@ class Terrain(unittest.TestCase):
         for f in (72, 108, 144, 179):
             c = L.camera(self.dem, f)
             self.assertLess(np.hypot(c["eye"][0] - c["target"][0], c["eye"][1] - c["target"][1]), 1.0)
+
+    def test_surface_is_the_drawn_mesh(self):
+        d = self.dem[::2, ::2]
+        for r, c in ((600, 700), (601, 699), (300, 950)):  # grid nodes: the vertex heights scene.py writes
+            x, y = L.project(srtm.LAT1 - r * 2 / 1200, srtm.LON0 + c * 2 / 1200)
+            self.assertAlmostEqual(float(L.surface_km(self.dem, x, y)), d[r, c] / 1000 * L.EXAG, places=6)
+        # inside a grid square: flat on each of its two triangles, which meet on the diagonal
+        r, c = 600, 700
+        z = d[r:r + 2, c:c + 2].astype(float) / 1000 * L.EXAG
+        at = lambda fr, fc: float(L.surface_km(self.dem, *L.project(srtm.LAT1 - (r + fr) * 2 / 1200, srtm.LON0 + (c + fc) * 2 / 1200)))  # noqa: E731
+        self.assertAlmostEqual(at(0.5, 0.5), (z[0, 0] + z[1, 1]) / 2, places=6)
+        self.assertAlmostEqual(at(0.75, 0.25), z[0, 0] + 0.75 * (z[1, 0] - z[0, 0]) + 0.25 * (z[1, 1] - z[1, 0]), places=6)
+        self.assertAlmostEqual(at(0.25, 0.75), z[0, 0] + 0.75 * (z[0, 1] - z[0, 0]) + 0.25 * (z[1, 1] - z[0, 1]), places=6)
+        self.assertEqual(float(L.surface_km(self.dem, 500.0, 0.0)), 0.0)
+        faces = L.mesh_faces(3, 4)
+        self.assertEqual(faces.shape, (2 * 2 * 3, 3))
+        self.assertTrue(any(list(f) == [0, 4, 5] for f in faces) and any(list(f) == [0, 5, 1] for f in faces))
 
     def test_the_opening_viewpoint_sees_the_fire(self):
         p = L.load_points(POINTS)
@@ -272,13 +289,19 @@ class Detections(unittest.TestCase):
         np.testing.assert_allclose(pos[:, 2], L.Z_PLANE, atol=1e-9)
         np.testing.assert_allclose(size, L.SIZE_GRID)
         self.assertTrue(np.all(np.isfinite(pos)))
-        for f in np.arange(0, L.FRAMES, 3.5):
+        for f in np.arange(0, L.STORY_ANCHORS[-1] + 1, 3.5):
             pos, size, heat = L.squares(p, z, on, st, sc, f)
             self.assertTrue(np.all(np.isfinite(pos)) and np.all(size > 0), f)
 
     def test_clock_and_frames(self):
-        self.assertEqual(L.FRAMES, 180)
-        self.assertEqual(L.ANCHORS, (0, 36, 72, 108, 144, 179))
+        self.assertEqual(L.FRAMES, 360)
+        self.assertEqual(L.ANCHORS, (0, 72, 144, 216, 288, 359))
+        self.assertEqual(L.ANCHORS[-1], L.FRAMES - 1)
+        for frame, t in zip(L.ANCHORS, L.STORY_ANCHORS):
+            self.assertEqual(L.story_time(frame), t)
+        self.assertEqual(L.story_time(36), 18)
+        ts = [L.story_time(f) for f in range(L.FRAMES)]
+        self.assertTrue(all(b > a for a, b in zip(ts, ts[1:])), "every rendered frame is a new moment")
         ts = [L.clock(f) for f in range(0, 180)]
         self.assertTrue(all(b >= a for a, b in zip(ts, ts[1:])))
         self.assertEqual(L.clock(150), L.clock(108))

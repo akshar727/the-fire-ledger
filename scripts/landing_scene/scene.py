@@ -2,7 +2,7 @@
 
     /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P scripts/landing_scene/scene.py -- --all
     blender -b --factory-startup -P scripts/landing_scene/scene.py -- --frames 0,36,72 --scale 50 --out /tmp/preview
-    blender --factory-startup -P scripts/landing_scene/scene.py   # opens the scene; scrub frames 0-179 in the timeline
+    blender --factory-startup -P scripts/landing_scene/scene.py   # opens the scene; scrub frames 0-359 in the timeline
 
 What is in it, and where it comes from:
   terrain   NASA SRTM GL3 elevation of central Portugal, 39-41 N, 9-7 W (srtm.py), heights x 2.5
@@ -11,10 +11,11 @@ What is in it, and where it comes from:
   timeline  the same squares stacked by day of 2017
   calendar  the same number of squares dealt over 26 x 12 cells in proportion to the harmonized monthly record in
             site/public/data/portugal/series.json
-  trees, smoke, satellites, sky: drawn by this script (no imported models, textures or images)
+  trees, grass, smoke, satellites, sky, sun: drawn by this script (no imported models, textures or images)
 
 All positions and timings are computed in layout.py (plain numpy, tested without Blender); this file only draws.
-Written for Blender 5.3 (EEVEE). Output: <out>/f000.webp ... f179.webp, 1600 x 900.
+Written for Blender 5.3 (EEVEE). Output: <out>/f000.webp ... f359.webp, 1600 x 900. Frame numbers are rendered
+frames; apply() turns each into story time (layout.story_time), which every key in this file uses.
 """
 import argparse
 import math
@@ -158,9 +159,7 @@ def build_terrain(dem):
     x, y = L.project(lat[:, None], lon[None, :])
     x, y = np.broadcast_to(x, d.shape), np.broadcast_to(y, d.shape)
     co = np.stack([x, y, d / 1000.0 * L.EXAG], axis=-1).reshape(-1, 3)
-    i = np.arange(rows * cols).reshape(rows, cols)
-    faces = np.stack([i[:-1, :-1], i[1:, :-1], i[1:, 1:], i[:-1, 1:]], axis=-1).reshape(-1, 4)
-    me = new_mesh("Terrain", co, faces)
+    me = new_mesh("Terrain", co, L.mesh_faces(rows, cols))  # triangles, so layout.surface_km is its exact height
 
     # how far inside the tiles a vertex is (0 at the edge): the land fades into the dark instead of ending in a cliff
     ex = np.minimum(np.arange(cols), np.arange(cols)[::-1])[None, :] / cols
@@ -225,7 +224,7 @@ def ground_glow(S, pos, size, heat, on_ground):
         r = np.clip(np.rint((srtm.LAT1 - (pos[sel, 1] / L.KM_LAT + L.LAT_C)) * per).astype(int), 0, rows - 1)
         np.add.at(g, (r, c), heat[sel] * size[sel] ** 2 * 26.0)
         g = blur(g, 3)
-    return np.clip(g, 0, 1).ravel()
+    return np.clip(g, 0, 1)
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -309,51 +308,245 @@ def pine(height, seed):
     return np.array(verts, dtype=np.float32), np.array(faces, dtype=np.int32)
 
 
-def build_forest(dem):
-    ex, ey = L.EYE
-    to_fire = np.array(L.FIRE) - np.array(L.EYE)
-    to_fire /= np.linalg.norm(to_fire)
-    n = 16000
-    rad = 1.6 * np.sqrt(RNG.uniform(0, 1, n)) ** 1.6 + 0.004  # denser near the eye
-    ang = RNG.uniform(0, 2 * np.pi, n)
-    x, y = ex + rad * np.cos(ang), ey + rad * np.sin(ang)
-    along = (x - ex) * to_fire[0] + (y - ey) * to_fire[1]
-    across = np.abs(-(x - ex) * to_fire[1] + (y - ey) * to_fire[0])
-    keep = ~((along > 0) & (along < 0.35) & (across < 0.012 + along * 0.22))  # a clearing towards the fire
-    keep &= rad > 0.014
-    x, y = x[keep], y[keep]
-    z = L.height_km(dem, x, y)
-    variants = [pine(1.0, s) for s in range(6)]
-    cos, faces, base = [], [], 0
+def far_pine(seed):
+    """A pine for the distant hills: two cones and no trunk (seen from a kilometre or more), base at the origin."""
+    r = np.random.default_rng(seed)
+    sides = 5
+    ang = np.linspace(0, 2 * np.pi, sides, endpoint=False) + r.uniform(0, 1)
+    verts, faces = [], []
+    for z0, z1, w in ((0.22, 0.78, 0.21), (0.52, 1.0, 0.14)):
+        base = len(verts)
+        lean = r.normal(0, 0.02, 2)
+        verts += [(w * r.uniform(0.85, 1.15) * math.cos(a) + lean[0], w * math.sin(a) + lean[1], z0) for a in ang]
+        verts.append((lean[0], lean[1], z1))
+        faces += [(base + k, base + (k + 1) % sides, base + sides) for k in range(sides)]
+    return np.array(verts, dtype=np.float32), np.array(faces, dtype=np.int32)
+
+
+def plant(variants, x, y, z, h):
+    """
+    Copies of the variant meshes at x, y (base height z), scaled to height h and turned at random: (vertices,
+    faces, tree index of each vertex, height of each vertex up its tree 0..1), in tree order.
+    """
     which = RNG.integers(0, len(variants), len(x))
-    h = RNG.uniform(0.016, 0.030, len(x)) * 1.4
     rot = RNG.uniform(0, 2 * np.pi, len(x))
+    cos, faces, owner, up, base = [], [], [], [], 0
     for k, (v, f) in enumerate(variants):
         sel = np.where(which == k)[0]
         c, s = np.cos(rot[sel])[:, None], np.sin(rot[sel])[:, None]
         vx = (v[None, :, 0] * c - v[None, :, 1] * s) * h[sel, None] + x[sel, None]
         vy = (v[None, :, 0] * s + v[None, :, 1] * c) * h[sel, None] + y[sel, None]
-        vz = v[None, :, 2] * h[sel, None] + z[sel, None] - 0.0005
+        vz = v[None, :, 2] * h[sel, None] + z[sel, None] - 0.0015 * h[sel, None] / 0.03
         cos.append(np.stack([vx, vy, vz], axis=-1).reshape(-1, 3))
         faces.append((f[None, :, :] + (np.arange(len(sel)) * len(v))[:, None, None] + base).reshape(-1, 3))
+        owner.append(np.repeat(sel, len(v)))
+        up.append(np.tile(v[:, 2] / v[:, 2].max(), len(sel)))
         base += len(sel) * len(v)
-    me = new_mesh("Forest", np.concatenate(cos), np.concatenate(faces), smooth_shading=False)
+    return np.concatenate(cos), np.concatenate(faces), np.concatenate(owner), np.concatenate(up)
+
+
+def tree_material():
+    """Pine needles in the evening sun and the night: dark green, varied per tree, lit orange from below near fire."""
     mat, nd = material("Pine")
     out = nd.new("ShaderNodeOutputMaterial")
     bsdf = nd.new("ShaderNodeBsdfPrincipled")
-    bsdf.inputs["Base Color"].default_value = (0.012, 0.018, 0.011, 1)
-    bsdf.inputs["Roughness"].default_value = 1.0
-    bsdf.inputs["Specular IOR Level"].default_value = 0.0
+    color = nd.color_ramp(nd.attr("tone"), [(0.0, (0.030, 0.048, 0.022)), (0.6, (0.050, 0.068, 0.030)), (1.0, (0.085, 0.080, 0.040))])
+    shade = nd.new("ShaderNodeMixRGB", blend_type="MULTIPLY")
+    shade.inputs["Fac"].default_value = 1.0
+    nd.link(color, shade.inputs["Color1"])
+    lift = nd.math("ADD", nd.math("MULTIPLY", nd.attr("up"), 0.55), 0.45)  # darker inside, low in the crown
+    comb = nd.new("ShaderNodeCombineXYZ")
+    for k in range(3):
+        nd.link(lift, comb.inputs[k])
+    nd.link(comb.outputs[0], shade.inputs["Color2"])
+    nd.link(shade.outputs["Color"], bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.9
+    bsdf.inputs["Specular IOR Level"].default_value = 0.1
+    glow = nd.color_ramp(nd.attr("glow"), [(0.0, (0, 0, 0)), (0.25, (0.6, 0.08, 0.0)), (1.0, (1.0, 0.45, 0.08))])
+    nd.link(glow, bsdf.inputs["Emission Color"])
+    strength = nd.new("ShaderNodeValue", label="glow strength", name="glow_strength")
+    strength.outputs[0].default_value = 1.0
+    low = nd.math("POWER", nd.math("SUBTRACT", 1.0, nd.attr("up"), clamp=True), 2.0)
+    nd.link(nd.math("MULTIPLY", nd.math("MULTIPLY", nd.attr("glow"), low), strength.outputs[0]), bsdf.inputs["Emission Strength"])
     nd.link(bsdf.outputs["BSDF"], out.inputs["Surface"])
-    return add_object("Forest", me, mat)
+    return mat
+
+
+def tree_object(name, variants, x, y, z, h, mat):
+    co, faces, owner, up = plant(variants, x, y, z, h)
+    me = new_mesh(name, co, faces, smooth_shading=False)
+    float_attr(me, "tone", RNG.uniform(0, 1, len(x))[owner])
+    float_attr(me, "up", up)
+    float_attr(me, "glow", np.zeros(len(co)))
+    return add_object(name, me, mat), owner
+
+
+def clear_view(x, y, top, eye, targets, bin_deg=0.2, margin=0.0015):
+    """
+    False for every tree whose top would stand in front of a burning square seen from `eye` (the opening viewpoint),
+    so the forest frames the fire instead of hiding it. Only squares the terrain itself leaves in view count.
+    """
+    ex, ey, ez = eye
+    tx, ty, tz = targets
+    s = np.linspace(0.02, 0.98, 48)[None, :]
+    seen = np.all(L.surface_km(DEM[0], ex + (tx[:, None] - ex) * s, ey + (ty[:, None] - ey) * s)
+                  < ez + (tz[:, None] - ez) * s, axis=1)
+    tx, ty, tz = tx[seen], ty[seen], tz[seen]
+    nb = int(round(360 / bin_deg))
+    bins = lambda ax, ay: (((np.degrees(np.arctan2(ay - ey, ax - ex)) + 180) / bin_deg).astype(int)) % nb  # noqa: E731
+    dt = np.hypot(tx - ex, ty - ey)
+    lowest, far = np.full(nb, np.inf), np.zeros(nb)
+    np.minimum.at(lowest, bins(tx, ty), (tz - ez) / dt)
+    np.maximum.at(far, bins(tx, ty), dt)
+    for _ in range(2):  # a bin either side
+        lowest = np.minimum(lowest, np.minimum(np.roll(lowest, 1), np.roll(lowest, -1)))
+        far = np.maximum(far, np.maximum(np.roll(far, 1), np.roll(far, -1)))
+    b, d = bins(x, y), np.hypot(x - ex, y - ey)
+    return ~((d < far[b]) & ((top - ez) / d > lowest[b] - margin))
+
+
+DEM = []  # the elevation grid, for clear_view (set in build)
+
+
+def build_forest(dem, eye, targets, mat):
+    """Detailed pines around the opening viewpoint, denser close to it, with a view to the fire left open."""
+    ex, ey = L.EYE
+    n = 16000
+    rad = 1.6 * np.sqrt(RNG.uniform(0, 1, n)) ** 1.6 + 0.004  # denser near the eye
+    ang = RNG.uniform(0, 2 * np.pi, n)
+    x, y = ex + rad * np.cos(ang), ey + rad * np.sin(ang)
+    h = RNG.uniform(0.016, 0.030, n) * 1.25
+    z = L.surface_km(dem, x, y)
+    to_fire = np.array(L.FIRE) - np.array(L.EYE)
+    to_fire /= np.linalg.norm(to_fire)
+    along = (x - ex) * to_fire[0] + (y - ey) * to_fire[1]
+    across = np.abs(-(x - ex) * to_fire[1] + (y - ey) * to_fire[0])
+    keep = ~((along > 0) & (along < 0.35) & (across < 0.012 + along * 0.22))  # a clearing towards the fire
+    keep &= (rad > 0.014) & clear_view(x, y, z + h, eye, targets)
+    variants = [pine(1.0, s) for s in range(6)]
+    ob, _ = tree_object("Forest", variants, x[keep], y[keep], z[keep], h[keep], mat)
+    return ob
+
+
+def build_far_forest(dem, eye, targets, mat, grid):
+    """
+    Pines over the hills between the opening viewpoint and the fire and all around the fire, in patches, thinning
+    on steep slopes and above 1,100 m. Returns the object and, per vertex, the terrain-grid cell under its tree (the
+    fire light on the ground is copied onto the trees each frame).
+    """
+    ex, ey, _ = eye
+    fx, fy = L.FIRE
+    d = np.array([fx - ex, fy - ey])
+    length = float(np.linalg.norm(d))
+    d /= length
+    n = 1_400_000
+    x = RNG.uniform(min(ex, fx) - 9.0, max(ex, fx) + 9.0, n)
+    y = RNG.uniform(min(ey, fy) - 9.0, max(ey, fy) + 9.0, n)
+    along = (x - ex) * d[0] + (y - ey) * d[1]
+    across = np.abs(-(x - ex) * d[1] + (y - ey) * d[0])
+    keep = (along > -2.5) & (along < length + 7.0) & (across < 8.0) & (np.hypot(x - ex, y - ey) > 1.2)
+    x, y = x[keep], y[keep]
+    z = L.surface_km(dem, x, y)
+    # patches: a smooth random field on a 250 m lattice
+    x0, y0, cell = x.min(), y.min(), 0.25
+    field = blur(RNG.normal(size=(int((y.max() - y0) / cell) + 2, int((x.max() - x0) / cell) + 2)).astype(np.float32), 3)
+    field = (field - field.mean()) / field.std()
+    f = field[((y - y0) / cell).astype(int), ((x - x0) / cell).astype(int)]
+    gx = (L.surface_km(dem, x + 0.06, y) - L.surface_km(dem, x - 0.06, y)) / 0.12
+    gy = (L.surface_km(dem, x, y + 0.06) - L.surface_km(dem, x, y - 0.06)) / 0.12
+    slope = np.hypot(gx, gy) / L.EXAG
+    chance = np.clip((f + 0.6) / 1.4, 0, 1) * np.clip(1 - (slope - 0.35) / 0.3, 0, 1)
+    chance *= (z > 0.05 * L.EXAG) & (z < 1.1 * L.EXAG)
+    keep = RNG.uniform(0, 1, len(x)) < chance * 0.42
+    x, y, z = x[keep], y[keep], z[keep]
+    h = RNG.uniform(0.020, 0.036, len(x))
+    keep = clear_view(x, y, z + h, eye, targets)
+    x, y, z, h = x[keep], y[keep], z[keep], h[keep]
+    ob, owner = tree_object("Far forest", [far_pine(s) for s in range(5)], x, y, z, h, mat)
+    rows, cols = grid
+    per = (srtm.SIZE - 1) / STEP
+    c = np.clip(np.rint((x / L.KM_LON + L.LON_C - srtm.LON0) * per).astype(int), 0, cols - 1)
+    r = np.clip(np.rint((srtm.LAT1 - (y / L.KM_LAT + L.LAT_C)) * per).astype(int), 0, rows - 1)
+    print(f"far forest: {len(x)} pines")
+    return ob, (r * cols + c)[owner]
+
+
+def build_grass(dem, eye):
+    """Grass blades in front of the opening viewpoint, dense close by: dry June grass with a little green left."""
+    ex, ey, _ = eye
+    face = math.atan2(L.FIRE[1] - ey, L.FIRE[0] - ex)
+    n = 420_000
+    ang = face + RNG.uniform(-0.95, 0.95, n)
+    rad = 0.0008 + 0.11 * RNG.uniform(0, 1, n) ** 2.0
+    x, y = ex + rad * np.cos(ang), ey + rad * np.sin(ang)
+    z = L.surface_km(dem, x, y) - 0.00005
+    clump = 0.55 + 0.9 * np.clip(blur(RNG.uniform(0, 1, (64, 64)).astype(np.float32), 2) * 2.2 - 0.6, 0, 1)
+    gi = np.clip(((rad * np.cos(ang - face)) / 0.111 * 63).astype(int), 0, 63)
+    gj = np.clip(((rad * np.sin(ang - face)) / 0.111 * 32 + 32).astype(int), 0, 63)
+    h = RNG.uniform(0.00022, 0.00065, n) * clump[gi, gj]
+    w = RNG.uniform(0.000012, 0.000026, n)
+    phi = RNG.uniform(0, 2 * np.pi, n)
+    px, py = np.cos(phi) * w / 2, np.sin(phi) * w / 2
+    lean = RNG.uniform(0.08, 0.45, n) * h
+    lx = np.cos(phi + np.pi / 2) * lean * 0.6 + lean * 0.4 * 0.7  # partly random, partly a breeze to the east
+    ly = np.sin(phi + np.pi / 2) * lean * 0.6 + lean * 0.4 * 0.3
+    # five points per blade: base pair, a narrower pair half-way (bent less), the tip
+    co = np.stack([
+        np.stack([x - px, y - py, z], -1), np.stack([x + px, y + py, z], -1),
+        np.stack([x - px * 0.6 + lx * 0.3, y - py * 0.6 + ly * 0.3, z + h * 0.55], -1),
+        np.stack([x + px * 0.6 + lx * 0.3, y + py * 0.6 + ly * 0.3, z + h * 0.55], -1),
+        np.stack([x + lx, y + ly, z + h], -1),
+    ], axis=1).reshape(-1, 3)
+    f = np.array([[0, 1, 3], [0, 3, 2], [2, 3, 4]], dtype=np.int32)
+    faces = (f[None, :, :] + (np.arange(n) * 5)[:, None, None]).reshape(-1, 3)
+    me = new_mesh("Grass", co, faces, smooth_shading=False)
+    float_attr(me, "tone", np.repeat(RNG.beta(2.2, 1.6, n), 5))
+    float_attr(me, "tip", np.tile(np.array([0, 0, 0.55, 0.55, 1.0], dtype=np.float32), n))
+    mat, nd = material("Grass")
+    out = nd.new("ShaderNodeOutputMaterial")
+    bsdf = nd.new("ShaderNodeBsdfPrincipled")
+    color = nd.color_ramp(nd.attr("tone"), [(0.0, (0.045, 0.075, 0.020)), (0.45, (0.12, 0.12, 0.035)), (1.0, (0.30, 0.22, 0.08))])
+    shade = nd.new("ShaderNodeMixRGB", blend_type="MULTIPLY")
+    shade.inputs["Fac"].default_value = 1.0
+    nd.link(color, shade.inputs["Color1"])
+    lift = nd.math("ADD", nd.math("MULTIPLY", nd.attr("tip"), 0.65), 0.35)
+    comb = nd.new("ShaderNodeCombineXYZ")
+    for k in range(3):
+        nd.link(lift, comb.inputs[k])
+    nd.link(comb.outputs[0], shade.inputs["Color2"])
+    nd.link(shade.outputs["Color"], bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.75
+    trans = nd.new("ShaderNodeBsdfTranslucent")  # low sun through the blades
+    nd.link(shade.outputs["Color"], trans.inputs["Color"])
+    mix = nd.new("ShaderNodeMixShader")
+    mix.inputs["Fac"].default_value = 0.3
+    nd.link(bsdf.outputs["BSDF"], mix.inputs[1])
+    nd.link(trans.outputs["BSDF"], mix.inputs[2])
+    nd.link(mix.outputs["Shader"], out.inputs["Surface"])
+    return add_object("Grass", me, mat)
 
 
 # ---------------------------------------------------------------------------------------------------------------
 # sky, light, smoke
 # ---------------------------------------------------------------------------------------------------------------
 
+SUN_AZ = 300.0  # sunset on 17 June at 40 N is about 300 degrees (west-north-west): behind the fire from the eye
+
+
+def sun_vector(t):
+    """Unit vector towards the sun at story time t: low in the west-north-west, setting by t = 27."""
+    el = math.radians(ramp(t, [(0, 12.0), (10, 8.0), (18, 4.0), (24, 1.0), (30, -3.0), (40, -8.0)]))
+    az = math.radians(SUN_AZ)
+    return Vector((math.sin(az) * math.cos(el), math.cos(az) * math.cos(el), math.sin(el)))
+
+
 def build_world():
-    w = bpy.data.worlds.new("Night of 17 June")
+    """
+    The sky, from the end of the afternoon of 17 June to the night: a blue day sky with the sun low behind the fire,
+    a warm glow on the horizon around the sun as it sets, then the night sky (lighter than black, so the hills and
+    trees still read against it). Values `day`, `glow`, `sun` and `sky` are keyed per frame in apply().
+    """
+    w = bpy.data.worlds.new("Evening and night of 17 June")
     w.use_nodes = True
     n = Nodes(w.node_tree)
     out = n.new("ShaderNodeOutputWorld")
@@ -362,18 +555,42 @@ def build_world():
     xyz = n.new("ShaderNodeSeparateXYZ")
     n.link(tc.outputs["Generated"], xyz.inputs[0])
     up = n.math("ABSOLUTE", xyz.outputs["Z"])
-    sky = n.color_ramp(up, [(0.0, (0.050, 0.060, 0.105)), (0.12, (0.018, 0.026, 0.060)), (0.5, (0.004, 0.007, 0.022)), (1.0, (0.001, 0.002, 0.008))])
-    # last light low in the north-west
-    west = n.new("ShaderNodeVectorMath", operation="DOT_PRODUCT")
-    n.link(tc.outputs["Generated"], west.inputs[0])
-    west.inputs[1].default_value = Vector((-0.80, 0.60, 0.05)).normalized()
-    low = n.math("POWER", n.math("SUBTRACT", 1.0, up, clamp=True), 9.0)
-    after = n.math("MULTIPLY", n.math("POWER", n.math("MAXIMUM", west.outputs["Value"], 0.0), 3.0), low)
+    night = n.color_ramp(up, [(0.0, (0.085, 0.100, 0.165)), (0.12, (0.034, 0.046, 0.095)), (0.5, (0.010, 0.015, 0.042)), (1.0, (0.004, 0.006, 0.018))])
+    day = n.color_ramp(up, [(0.0, (0.78, 0.72, 0.62)), (0.05, (0.42, 0.58, 0.86)), (0.25, (0.15, 0.33, 0.78)), (1.0, (0.05, 0.16, 0.55))])
+    sky = n.new("ShaderNodeMixRGB", blend_type="MIX")
+    daylight = n.new("ShaderNodeValue", label="day", name="day")
+    daylight.outputs[0].default_value = 1.0
+    n.link(daylight.outputs[0], sky.inputs["Fac"])
+    n.link(night, sky.inputs["Color1"])
+    n.link(day, sky.inputs["Color2"])
+    # towards the sun: a wide warm glow low on the horizon, a tighter bright halo, and the disc itself
+    to_sun = n.new("ShaderNodeVectorMath", operation="DOT_PRODUCT", name="to_sun")
+    n.link(tc.outputs["Generated"], to_sun.inputs[0])
+    to_sun.inputs[1].default_value = sun_vector(0)
+    c = n.math("MAXIMUM", to_sun.outputs["Value"], 0.0)
+    low = n.math("POWER", n.math("SUBTRACT", 1.0, up, clamp=True), 7.0)
+    glow_amount = n.new("ShaderNodeValue", label="glow", name="glow")
+    glow_amount.outputs[0].default_value = 1.0
+    wide = n.math("MULTIPLY", n.math("MULTIPLY", n.math("POWER", c, 4.0), low), glow_amount.outputs[0])
+    sun_amount = n.new("ShaderNodeValue", label="sun", name="sun")
+    sun_amount.outputs[0].default_value = 1.0
+    halo = n.math("MULTIPLY", n.math("ADD", n.math("MULTIPLY", n.math("POWER", c, 120.0), 1.5),
+                                      n.math("MULTIPLY", n.math("POWER", c, 20000.0), 40.0)), sun_amount.outputs[0])
     add = n.new("ShaderNodeMixRGB", blend_type="ADD")
-    n.link(after, add.inputs["Fac"])
-    n.link(sky, add.inputs["Color1"])
-    add.inputs["Color2"].default_value = (0.36, 0.13, 0.05, 1)
-    n.link(add.outputs["Color"], bg.inputs["Color"])
+    n.link(wide, add.inputs["Fac"])
+    n.link(sky.outputs["Color"], add.inputs["Color1"])
+    add.inputs["Color2"].default_value = (1.0, 0.40, 0.13, 1)
+    add2 = n.new("ShaderNodeMixRGB", blend_type="ADD")  # sky + halo x sun colour (halo can exceed 1: no clamping)
+    add2.inputs["Fac"].default_value = 1.0
+    n.link(add.outputs["Color"], add2.inputs["Color1"])
+    sun_col = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="sun_colour")  # Color1 keyed in apply()
+    sun_col.inputs["Fac"].default_value = 1.0
+    comb = n.new("ShaderNodeCombineXYZ")
+    for k in range(3):
+        n.link(halo, comb.inputs[k])
+    n.link(comb.outputs[0], sun_col.inputs["Color2"])
+    n.link(sun_col.outputs["Color"], add2.inputs["Color2"])
+    n.link(add2.outputs["Color"], bg.inputs["Color"])
     strength = n.new("ShaderNodeValue", label="sky", name="sky")
     strength.outputs[0].default_value = 1.0
     n.link(strength.outputs[0], bg.inputs["Strength"])
@@ -388,6 +605,11 @@ def build_lights():
     sky.angle = math.radians(8)
     ob = add_object("Sky light", sky)
     ob.rotation_euler = (math.radians(58), 0, math.radians(128))  # from the north-west, 32 degrees up
+    sky.volume_factor = 0.2  # lights the land more than the smoke, so a lighter night does not turn the air to fog
+    sun = bpy.data.lights.new("Sun", "SUN")
+    sun.angle = math.radians(1.2)
+    sun.volume_factor = 0.3
+    sun_ob = add_object("Sun", sun)
     fires = []
     for k in range(6):
         li = bpy.data.lights.new(f"Fire light {k}", "POINT")
@@ -395,7 +617,7 @@ def build_lights():
         li.shadow_soft_size = 0.6
         li.use_shadow = False
         fires.append(add_object(f"Fire light {k}", li))
-    return ob, fires
+    return ob, sun_ob, fires
 
 
 def build_smoke():
@@ -540,15 +762,23 @@ def build(scale=100):
     p = L.load_points(ROOT / "site/public/data/portugal/points/2017.csv")
     _, monthly = L.monthly_harmonized(ROOT / "site/public/data/portugal/series.json")
     n = len(p["t"])
+    DEM[:] = [dem]
     S = {
-        "dem": dem, "p": p, "on": L.on_frames(p), "ground_z": L.height_km(dem, p["x"], p["y"]),
+        "dem": dem, "p": p, "on": L.on_frames(p), "ground_z": L.surface_km(dem, p["x"], p["y"]),
         "slots_t": L.timeline_slots(p["day"]), "slots_c": L.calendar_slots(monthly, n)[:2],
     }
     S["terrain"], S["grid"] = build_terrain(dem)
     S["squares"] = build_squares(p)
-    S["forest"] = build_forest(dem)
+    # the squares burning when the story opens, as seen from its first viewpoint: the trees keep out of their way
+    eye = L.camera(dem, 0)["eye"]
+    burning = (L.heat(p, S["on"], 0) > 0.25) & (np.hypot(p["x"] - L.FIRE[0], p["y"] - L.FIRE[1]) < 25)
+    targets = (p["x"][burning], p["y"][burning], S["ground_z"][burning] + 0.02)
+    pines = tree_material()
+    S["forest"] = build_forest(dem, eye, targets, pines)
+    S["far_forest"], S["far_cells"] = build_far_forest(dem, eye, targets, pines, S["grid"])
+    S["grass"] = build_grass(dem, eye)
     S["world"] = build_world()
-    S["sky_light"], S["fire_lights"] = build_lights()
+    S["sky_light"], S["sun"], S["fire_lights"] = build_lights()
     S["air"] = build_smoke()
     S["sats"] = {"Aqua": build_satellite("Aqua", (-1,)), "SNPP": build_satellite("Suomi NPP", (1,))}
     S["lines"] = {"Aqua": build_scan_line("Scan line MODIS", (0.35, 0.6, 1.0), L.PIXEL_KM["modis"]),
@@ -583,7 +813,7 @@ def build(scale=100):
         scene.view_settings.look = "AgX - Medium High Contrast"
     except TypeError:
         pass
-    build_bloom(scene)
+    S["glare"] = build_bloom(scene)
     scene["fe019"] = True
     print(f"scene built in {time.time() - t0:.1f} s: {n} detections")
     return S
@@ -605,6 +835,7 @@ def build_bloom(scene):
     tree.links.new(rl.outputs["Image"], glare.inputs["Image"])
     tree.links.new(glare.outputs["Image"], out.inputs[0])
     scene.compositing_node_group = tree
+    return glare
 
 
 def value(datablock, name):
@@ -612,21 +843,23 @@ def value(datablock, name):
 
 
 def apply(S, frame):
-    """Puts everything where it belongs at `frame` (0-179, may be fractional)."""
+    """Puts everything where it belongs at rendered `frame` (0 to L.FRAMES - 1, may be fractional)."""
+    t = L.story_time(frame)
     p, dem = S["p"], S["dem"]
-    pos, size, heat = L.squares(p, S["ground_z"], S["on"], S["slots_t"], S["slots_c"], frame)
+    pos, size, heat = L.squares(p, S["ground_z"], S["on"], S["slots_t"], S["slots_c"], t)
     update_squares(S, pos, size, heat)
     n = len(heat)
-    on_ground = L.to_timeline(n, frame) < 0.02
+    on_ground = L.to_timeline(n, t) < 0.02
     terrain = S["terrain"].data
-    float_attr(terrain, "glow", ground_glow(S, pos, size, heat, on_ground))
+    glow = ground_glow(S, pos, size, heat, on_ground)
+    float_attr(terrain, "glow", glow.ravel())
     terrain.update()
 
     # camera
-    c = L.camera(dem, frame)
+    c = L.camera(dem, t)
     eye, target = Vector(c["eye"]), Vector(c["target"])
     fwd = (target - eye).normalized()
-    w = smooth((frame - 30.0) / 24.0)  # up is the sky near the ground, north once we look straight down
+    w = smooth((t - 30.0) / 24.0)  # up is the sky near the ground, north once we look straight down
     hint = (Vector((0, 0, 1)) * (1 - w) + Vector((0, 1, 0)) * w).normalized()
     right = fwd.cross(hint).normalized()
     up = right.cross(fwd)
@@ -634,22 +867,47 @@ def apply(S, frame):
                                        (right.z, up.z, -fwd.z, eye.z), (0, 0, 0, 1)))
     cam = S["camera"].data
     cam.lens = c["mm"]
-    above = max(eye.z - float(L.height_km(dem, eye.x, eye.y)), 0.001)
+    above = max(eye.z - float(L.surface_km(dem, eye.x, eye.y)), 0.001)
     cam.clip_start = max(0.0004, above * 0.05)
     ee = bpy.context.scene.eevee
     ee.volumetric_start = cam.clip_start
     ee.volumetric_end = float(np.clip(above * 1.6 + 30.0, 30.0, 420.0))
 
-    # light: darkest on the forest floor, clearest from high up, then down again so the timeline carries the picture
-    S["sky_light"].data.energy = ramp(frame, [(0, 0.5), (30, 0.7), (54, 2.3), (100, 2.3), (144, 0.7), (179, 0.3)])
-    value(S["world"], "sky").default_value = ramp(frame, [(0, 1.0), (40, 1.0), (60, 0.5)])
-    value(S["terrain"].data.materials[0], "glow_strength").default_value = ramp(frame, [(0, 5.0), (36, 4.0), (72, 2.2), (108, 1.6), (144, 0.3)])
-    value(S["squares"].data.materials[0], "gain").default_value = ramp(frame, [(0, 1.3), (36, 1.1), (60, 1.0), (108, 1.0), (144, 0.9), (179, 0.8)])
+    # sunset: the sun goes down behind the fire while the camera climbs out of the forest (t 0 to 30), then night
+    sun = sun_vector(t)
+    S["sun"].rotation_euler = (-sun).to_track_quat("-Z", "Y").to_euler()
+    S["sun"].data.energy = ramp(t, [(0, 4.2), (12, 3.4), (20, 1.8), (25, 0.5), (27, 0.0)])
+    S["sun"].data.color = [ramp(t, [(0, a), (14, b), (24, c)]) for a, b, c in zip((1.0, 0.88, 0.72), (1.0, 0.68, 0.42), (1.0, 0.46, 0.22))]
+    S["sun"].hide_render = t >= 27
+    world = S["world"]
+    world.node_tree.nodes["to_sun"].inputs[1].default_value = sun
+    world.node_tree.nodes["sun_colour"].inputs["Color1"].default_value = (
+        1.0, ramp(t, [(0, 0.8), (22, 0.42)]), ramp(t, [(0, 0.55), (22, 0.12)]), 1.0)
+    value(world, "day").default_value = ramp(t, [(0, 1.0), (8, 1.0), (18, 0.55), (26, 0.18), (36, 0.0)])
+    value(world, "glow").default_value = ramp(t, [(0, 0.5), (12, 1.4), (22, 2.0), (30, 1.0), (40, 0.36)])
+    value(world, "sun").default_value = ramp(t, [(0, 1.0), (22, 1.0), (27, 0.0)])
+    value(world, "sky").default_value = ramp(t, [(0, 1.0), (40, 1.0), (60, 0.5)])
+    # glow only from what is hotter than the day sky
+    S["glare"].inputs["Threshold"].default_value = ramp(t, [(0, 1.6), (22, 1.6), (34, 0.7)])
+    # night light: lighter than the first cut on the way up (trees and hills stay readable), clearest from high up,
+    # then down again so the timeline carries the picture
+    S["sky_light"].data.energy = ramp(t, [(0, 0.0), (16, 0.3), (30, 1.15), (40, 1.2), (54, 2.3), (100, 2.3), (144, 0.7), (179, 0.3)])
+    fire_glow = ramp(t, [(0, 3.0), (16, 4.5), (36, 4.0), (72, 2.2), (108, 1.6), (144, 0.3)])
+    value(S["terrain"].data.materials[0], "glow_strength").default_value = fire_glow
+    value(S["forest"].data.materials[0], "glow_strength").default_value = fire_glow * 1.5
+    # dimmer in daylight, where full strength reads as cream instead of fire
+    value(S["squares"].data.materials[0], "gain").default_value = ramp(t, [(0, 0.6), (20, 1.0), (30, 1.3), (36, 1.1), (60, 1.0), (108, 1.0), (144, 0.9), (179, 0.8)])
     air = S["air"].data.materials[0]
-    value(air, "smoke").default_value = ramp(frame, [(0, 1.0), (40, 1.0), (56, 0.45), (90, 0.25), (120, 0.0)])
-    value(air, "haze").default_value = ramp(frame, [(0, 1.0), (40, 1.0), (60, 0.25), (110, 0.0)])
-    S["air"].hide_render = frame >= 120
-    S["forest"].hide_render = frame > 60
+    value(air, "smoke").default_value = ramp(t, [(0, 0.6), (24, 1.0), (40, 1.0), (56, 0.45), (90, 0.25), (120, 0.0)])
+    value(air, "haze").default_value = ramp(t, [(0, 0.12), (20, 0.25), (34, 1.0), (40, 1.0), (60, 0.25), (110, 0.0)])  # thin in daylight
+    S["air"].hide_render = t >= 120
+    S["forest"].hide_render = t > 60
+    S["grass"].hide_render = t > 28
+    S["far_forest"].hide_render = t > 64
+    if not S["far_forest"].hide_render:  # fire light on the ground, copied onto the pines standing in it
+        me = S["far_forest"].data
+        float_attr(me, "glow", glow.ravel()[S["far_cells"]])
+        me.update()
 
     # the brightest fire clusters light the smoke and the hills from below
     hot = on_ground & (heat > 0.3) & (np.hypot(pos[:, 0] - L.FIRE[0], pos[:, 1] - L.FIRE[1]) < 45)
@@ -658,7 +916,7 @@ def apply(S, frame):
     weight = heat[hot] * size[hot] ** 2
     total = np.bincount(inverse, weight, len(cells)) if len(cells) else np.zeros(0)
     order = np.argsort(-total)[: len(S["fire_lights"])]
-    power = ramp(frame, [(0, 60.0), (36, 60.0), (60, 12.0), (80, 0.0)])
+    power = ramp(t, [(0, 60.0), (36, 60.0), (60, 12.0), (80, 0.0)])
     for k, ob in enumerate(S["fire_lights"]):
         if k < len(order) and power > 0:
             sel = inverse == order[k]
@@ -671,7 +929,7 @@ def apply(S, frame):
             ob.hide_render = True
 
     # satellites: each one rides above its scan line
-    line = L.scan_line(frame)
+    line = L.scan_line(t)
     for key in S["sats"]:
         sat, strip = S["sats"][key], S["lines"][key]
         active = line is not None and line[0]["satellite"] == key
@@ -689,8 +947,8 @@ def apply(S, frame):
         sat.rotation_euler = (0, 0, math.radians(-L.TRACK_AZ))
         sat.scale = (eye.z * 0.016,) * 3
 
-    S["axis_emission"].inputs["Strength"].default_value = ramp(frame, [(112, 0.0), (130, 1.6), (150, 1.6), (166, 0.0)])
-    S["axis"].hide_render = not 112 < frame < 166
+    S["axis_emission"].inputs["Strength"].default_value = ramp(t, [(112, 0.0), (130, 1.6), (150, 1.6), (166, 0.0)])
+    S["axis"].hide_render = not 112 < t < 166
 
 
 def render(S, frames, out, quality=72):
@@ -711,7 +969,7 @@ def render(S, frames, out, quality=72):
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--all", action="store_true", help="render frames 0-179")
+    ap.add_argument("--all", action="store_true", help=f"render frames 0-{L.FRAMES - 1}")
     ap.add_argument("--frames", default="", help="comma-separated frames, or a-b ranges")
     ap.add_argument("--out", default=str(ROOT / "site/public/scene"))
     ap.add_argument("--scale", type=int, default=100, help="percent of 1600 x 900")
