@@ -10,12 +10,13 @@
 // the same days of past years (monthToDate) instead of whole months.
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, GlobeHemisphereWestIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { PlayCalendar } from "@/components/PlayCalendar";
+import { SpaceView } from "@/components/SpaceView";
 import { fetchSeries, fetchWeather, regionInfo, type RegionId, type SeriesResult } from "@/lib/data";
 import { SEASON_DRIVER, summarySentence, weatherSentence, weatherSummary, type Weather, type WeatherSummary } from "@/lib/weather";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
@@ -165,6 +166,20 @@ function CalendarView({
   const [active, setActive] = useState<CalendarCell | null>(null);
   const [focus, setFocus] = useState<[number, number]>([grid.rows.length - 1, 0]);
   const [announce, setAnnounce] = useState(""); // screen readers hear keyboard moves only, not every mouse hover
+  // "see it from space" (FE-024): the month shown, opened by a click or Enter on a month cell or the latest-month card
+  // (no view for a month without data); `opened` bumps on every open so re-opening scrolls and focuses again, and
+  // Close returns focus to whatever opened it
+  const [space, setSpace] = useState<{ year: number; month: number; opened: number } | null>(null);
+  const spaceTrigger = useRef<HTMLElement | null>(null);
+  const openSpace = (cell: CalendarCell) => {
+    if (week || cell.value == null) return;
+    spaceTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setSpace((s) => ({ year: cell.year, month: cell.month, opened: (s?.opened ?? 0) + 1 }));
+  };
+  const closeSpace = () => {
+    setSpace(null);
+    spaceTrigger.current?.focus();
+  };
   const table = useRef<HTMLTableElement>(null);
   const [shownView, setShownView] = useState(grid.view);
   if (shownView !== grid.view) {
@@ -172,6 +187,7 @@ function CalendarView({
     // belongs to the other grid, and the focused column maps month <-> first week of that month
     setShownView(grid.view);
     setActive(null);
+    setSpace(null);
     setAnnounce(`Showing the ${week ? "weekly" : "monthly"} view.`);
     const [r, c] = focus;
     setFocus([Math.min(r, grid.rows.length - 1), remapColumn(c, week ? "week" : "month")]);
@@ -223,6 +239,11 @@ function CalendarView({
 
   const onKey = (e: KeyboardEvent<HTMLTableElement>) => {
     const [r, c] = focus;
+    if (e.key === "Enter" && !week && (e.target as HTMLElement).closest("[data-cell]")) {
+      e.preventDefault();
+      openSpace(grid.rows[r][c]);
+      return;
+    }
     const last = grid.cols - 1;
     const next: Record<string, [number, number]> = {
       ArrowUp: [Math.max(0, r - 1), c],
@@ -245,9 +266,15 @@ function CalendarView({
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
         {latestMonth &&
           (mtd && latestMonth.partial ? (
-            <MonthToDateCard cell={latestMonth} mtd={mtd} snppEnd={snppEnd} weather={weather} />
+            <MonthToDateCard
+              cell={latestMonth}
+              mtd={mtd}
+              snppEnd={snppEnd}
+              weather={weather}
+              onSpace={week ? undefined : () => openSpace(latestMonth)}
+            />
           ) : (
-            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} />
+            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={week ? undefined : () => openSpace(latestMonth)} />
           ))}
         <Legend
           max={grid.max}
@@ -292,7 +319,7 @@ function CalendarView({
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
+          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.${week ? "" : " Click a month or press Enter to see it from space."}`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -308,6 +335,7 @@ function CalendarView({
               Harmonized {week ? "weekly" : "monthly"} fire detections. Values are VIIRS observations from{" "}
               {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and model back-casts before.
               {shownForward && ` ${forwardSentence(snppEnd)}`}
+              {!week && " Press Enter on a month to see it from space."}
             </caption>
             {week && (
               // fixed layout + one <col> per week keeps all 52 columns the same width (the month headers span several)
@@ -363,6 +391,7 @@ function CalendarView({
                           data-cell={`${r}-${c}`}
                           tabIndex={isFocus ? 0 : -1}
                           onMouseEnter={() => setActive(cell)}
+                          onClick={() => openSpace(cell)}
                           onFocus={() => {
                             setFocus([r, c]);
                             setActive(cell);
@@ -380,13 +409,14 @@ function CalendarView({
                         data-cell={`${r}-${c}`}
                         tabIndex={isFocus ? 0 : -1}
                         onMouseEnter={() => setActive(cell)}
+                        onClick={() => openSpace(cell)}
                         onFocus={() => {
                           setFocus([r, c]);
                           setActive(cell);
                           setAnnounce(describe(cell, stats, snppEnd));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className={`relative ${week ? "h-5" : "h-8"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
+                        className={`relative ${week ? "h-5" : "h-8 cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                       >
                         {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
                         {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
@@ -450,6 +480,9 @@ function CalendarView({
           />
         </div>
       </section>
+      {!week && space && (
+        <SpaceView region={label.region} year={space.year} month={space.month} opened={space.opened} onClose={closeSpace} />
+      )}
       {!week && summary && <WeatherSummaryBlock summary={summary} region={label.region} />}
     </div>
   );
@@ -573,7 +606,17 @@ function describe(cell: CalendarCell, stats: CalendarStats | undefined, snppEnd:
 
 const monthName = (cell: CalendarCell) => `${MONTHS_LONG[cell.month - 1]} ${cell.year}`;
 
-function LatestCard({ cell, stats, weather }: { cell: CalendarCell; stats?: CalendarStats; weather: Weather | null }) {
+function LatestCard({
+  cell,
+  stats,
+  weather,
+  onSpace,
+}: {
+  cell: CalendarCell;
+  stats?: CalendarStats;
+  weather: Weather | null;
+  onSpace?: () => void;
+}) {
   const name = MONTHS_LONG[cell.month - 1];
   const median = stats?.month_median[cell.month - 1];
   // Monthly arrays end at the last fully covered month, so the newest the record can be is last month. Once present-day
@@ -608,6 +651,11 @@ function LatestCard({ cell, stats, weather }: { cell: CalendarCell; stats?: Cale
         </div>
       )}
       <WeatherLine weather={weather} year={cell.year} month={cell.month} flag={cell.flag} />
+      {onSpace && (
+        <Button variant="outline" size="sm" className="self-start" onClick={onSpace}>
+          <GlobeHemisphereWestIcon aria-hidden /> See this month from space
+        </Button>
+      )}
       {!isRecent && (
         <p className="text-xs leading-relaxed text-muted-foreground">
           Present-day detections are not in the record yet, so this card compares the latest complete month, not this
@@ -622,7 +670,19 @@ function LatestCard({ cell, stats, weather }: { cell: CalendarCell; stats?: Cale
  * Latest-month card for a month still running (FE-009): detections on days 1..N against the same days of past years
  * (median, middle half, the last three years). Never against a whole month, and never marked unusual.
  */
-function MonthToDateCard({ cell, mtd, snppEnd, weather }: { cell: CalendarCell; mtd: MonthToDate; snppEnd: string; weather: Weather | null }) {
+function MonthToDateCard({
+  cell,
+  mtd,
+  snppEnd,
+  weather,
+  onSpace,
+}: {
+  cell: CalendarCell;
+  mtd: MonthToDate;
+  snppEnd: string;
+  weather: Weather | null;
+  onSpace?: () => void;
+}) {
   const name = MONTHS_LONG[mtd.month - 1];
   const days = mtd.days === 1 ? `1 ${name}` : `1-${mtd.days} ${name}`;
   // read the clock once per mount, as LatestCard does (render stays pure; the card renders after the client fetch)
@@ -652,6 +712,11 @@ function MonthToDateCard({ cell, mtd, snppEnd, weather }: { cell: CalendarCell; 
         )}
       </div>
       <WeatherLine weather={weather} year={mtd.year} month={mtd.month} flag={0} />
+      {onSpace && (
+        <Button variant="outline" size="sm" className="self-start" onClick={onSpace}>
+          <GlobeHemisphereWestIcon aria-hidden /> See this month from space
+        </Button>
+      )}
       <p className="text-xs leading-relaxed text-muted-foreground">
         The month isn&apos;t over, so it is compared only with the same days of other years and not marked unusual.
         {cell.source === "forward" && ` ${forwardSentence(snppEnd)}`}
