@@ -153,6 +153,7 @@ Python libraries (precompute; exact versions in `requirements.txt`)
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
 - Next.js 16: web framework. https://nextjs.org . MIT
+  - `turbopackFileSystemCache` docs (https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopackFileSystemCache): basis for turning off Turbopack's on-disk build cache in `site/next.config.ts`, after a restored Vercel build cache shipped stale theme CSS.
 - React 19, React DOM: UI library. https://react.dev . MIT
 - TypeScript: type checking. https://www.typescriptlang.org . Apache-2.0
 - Tailwind CSS 4 (with @tailwindcss/turbopack): styling. https://tailwindcss.com . MIT
