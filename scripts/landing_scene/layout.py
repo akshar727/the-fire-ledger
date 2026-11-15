@@ -4,15 +4,18 @@
 published data. Units: kilometres. x = east, y = north of 40 N, 8 W (the middle of the four SRTM tiles); z = up,
 terrain heights multiplied by EXAG.
 
-The 180 frames follow the six chapters of the story page (site/app/page.tsx); frame ANCHORS[k] is what the canvas
-shows when chapter k+1 is in the middle of the window.
+The 360 frames follow the six chapters of the story page (site/app/page.tsx); frame ANCHORS[k] is what the canvas
+shows when chapter k+1 is in the middle of the window. Everything below is keyed in story time t, 0 to 179 (one unit
+per frame of the first, 180-frame cut); story_time() maps a rendered frame to t, so the frame count can change
+without moving anything in the story.
 
-  frame   0  forest floor, night of 17-18 June 2017, the Pedrógão Grande fire on the hills ahead
-         36  above the smoke, the fire below
-         72  far above, looking straight down; Aqua (1 km pixels) then Suomi NPP (375 m) have just crossed
-        108  pulled back; every 2017 detection in the area has switched on, in date order
-        144  the squares have fallen into a timeline: one column per day of 2017
-        179  the squares have settled into 26 x 12 cells, in proportion to the harmonized monthly record
+  t   0 (frame   0)  forest floor at the end of the afternoon of 17 June 2017, the Pedrógão Grande fire on the
+                     hills ahead; the sun sets behind it as the page scrolls
+     36 (frame  72)  night, above the smoke, the fire below
+     72 (frame 144)  far above, looking straight down; Aqua (1 km pixels) then Suomi NPP (375 m) have just crossed
+    108 (frame 216)  pulled back; every 2017 detection in the area has switched on, in date order
+    144 (frame 288)  the squares have fallen into a timeline: one column per day of 2017
+    179 (frame 359)  the squares have settled into 26 x 12 cells, in proportion to the harmonized monthly record
 """
 import csv
 import json
@@ -23,8 +26,17 @@ import numpy as np
 
 import srtm  # the folder of this file is on sys.path (scene.py and the tests put it there)
 
-FRAMES = 180
-ANCHORS = (0, 36, 72, 108, 144, 179)
+FRAMES = 360
+ANCHORS = (0, 72, 144, 216, 288, 359)
+STORY_ANCHORS = (0, 36, 72, 108, 144, 179)  # the same six moments in story time
+
+
+def story_time(frame: float) -> float:
+    """Story time t (0-179, what every key below uses) of a rendered frame (0 to FRAMES - 1), exact at the anchors."""
+    return float(np.interp(frame, ANCHORS, STORY_ANCHORS))
+
+# From here on, every `frame` argument and every frame key (CLOCK, PASSES, CAMERA, the layout moves) is story time t.
+
 
 LAT_C, LON_C = 40.0, -8.0
 KM_LAT = 111.195
@@ -105,6 +117,35 @@ def height_km(dem: np.ndarray, x, y) -> np.ndarray:
     z = (dem[r0, c0] * (1 - fc) * (1 - fr) + dem[r0, c0 + 1] * fc * (1 - fr)
          + dem[r0 + 1, c0] * (1 - fc) * fr + dem[r0 + 1, c0 + 1] * fc * fr)
     return np.where(inside, z, 0.0) / 1000.0 * EXAG
+
+
+def surface_km(dem: np.ndarray, x, y, step: int = 2) -> np.ndarray:
+    """
+    Height (scene km) of the terrain mesh scene.py draws, at scene x, y: every `step`-th sample, each grid square
+    split into two triangles along its north-west to south-east diagonal. Grass and trees stand on this surface, so
+    they neither float above it nor sink into it where the coarser mesh and the full grid (height_km) differ.
+    0 outside the tiles.
+    """
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    d = dem[::step, ::step]
+    per = (srtm.SIZE - 1) / step
+    c = (x / KM_LON + LON_C - srtm.LON0) * per
+    r = (srtm.LAT1 - (y / KM_LAT + LAT_C)) * per
+    inside = (c >= 0) & (c <= d.shape[1] - 1) & (r >= 0) & (r <= d.shape[0] - 1)
+    c0 = np.clip(np.floor(c).astype(int), 0, d.shape[1] - 2)
+    r0 = np.clip(np.floor(r).astype(int), 0, d.shape[0] - 2)
+    fc, fr = np.clip(c - c0, 0, 1), np.clip(r - r0, 0, 1)
+    z00, z10 = d[r0, c0].astype(float), d[r0 + 1, c0].astype(float)
+    z11, z01 = d[r0 + 1, c0 + 1].astype(float), d[r0, c0 + 1].astype(float)
+    z = np.where(fr >= fc, z00 + fr * (z10 - z00) + fc * (z11 - z10), z00 + fc * (z01 - z00) + fr * (z11 - z01))
+    return np.where(inside, z, 0.0) / 1000.0 * EXAG
+
+
+def mesh_faces(rows: int, cols: int) -> np.ndarray:
+    """Triangles of a rows x cols grid of vertices (row-major), split the way surface_km assumes, facing up."""
+    i = np.arange(rows * cols).reshape(rows, cols)
+    a, b, c, d = i[:-1, :-1].ravel(), i[1:, :-1].ravel(), i[1:, 1:].ravel(), i[:-1, 1:].ravel()
+    return np.concatenate([np.stack([a, b, c], axis=1), np.stack([a, c, d], axis=1)])
 
 
 # ---------------------------------------------------------------------------------------------------------------
