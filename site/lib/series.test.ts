@@ -1,8 +1,8 @@
 // Run with `npm test` (Node's built-in test runner; Node >= 23.6 strips the TypeScript types).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { buildGrid, compact, parseSeries, rampColor, rampPosition, SeriesFormatError } from "./series.ts";
+import { existsSync, readFileSync } from "node:fs";
+import { buildGrid, compact, parseSeries, rampColor, rampPosition, SeriesFormatError, times } from "./series.ts";
 
 const fixture = JSON.parse(readFileSync(new URL("../fixtures/series.portugal.sample.json", import.meta.url), "utf8"));
 
@@ -25,6 +25,7 @@ test("grid: years x 12, harmonized = viirs ?? pred, observed flag", () => {
   assert.deepEqual(g.partialYears, []);
   assert.equal(g.latest?.year, 2025);
   assert.equal(g.latest?.month, 12);
+  assert.equal(g.firstObserved?.index, fixture.monthly.viirs.findIndex((v: number | null) => v != null));
 });
 
 test("grid: a series ending mid-year marks that year partial and leaves later months empty", () => {
@@ -84,3 +85,28 @@ test("compact labels", () => {
   assert.equal(compact(2000), "2k");
   assert.equal(compact(18578), "19k");
 });
+
+test("ratio labels", () => {
+  assert.equal(times(0.1787), "0.18×");
+  assert.equal(times(1), "1.0×");
+  assert.equal(times(2.44), "2.4×");
+  assert.equal(times(12.6), "13×");
+});
+
+// The model's real exports (site/public/data/<region>/series.json, written by model.py). Skipped for a region whose
+// file isn't there, so a fresh checkout without outputs still passes.
+for (const region of ["portugal", "ghana", "punjab"]) {
+  const url = new URL(`../public/data/${region}/series.json`, import.meta.url);
+  test(`published ${region} series.json passes the parser and has calendar statistics`, { skip: !existsSync(url) }, () => {
+    const b = parseSeries(JSON.parse(readFileSync(url, "utf8")));
+    assert.equal(b.region, region);
+    assert.ok(b.calendar, "calendar section (ML-005) is missing");
+    const g = buildGrid(b);
+    assert.equal(g.years[0], b.monthly.start_year);
+    assert.ok(g.max > 0);
+    assert.ok(g.latest && g.firstObserved);
+    // VIIRS S-NPP's first day is 2012-01-20, so January 2012 is still back-cast and February 2012 is observed
+    assert.equal(g.firstObserved.year, 2012);
+    assert.equal(g.firstObserved.month, 2);
+  });
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { BurnCalendar } from "@/components/BurnCalendar";
-import { REGIONS } from "@/lib/data";
+import { Suspense } from "react";
+import { CalendarSkeleton } from "@/components/BurnCalendar";
+import { CalendarExplorer } from "@/components/CalendarExplorer";
 
 export const metadata: Metadata = { title: "Burn calendar" };
 
@@ -10,10 +11,13 @@ export default function CalendarPage() {
       <header className="flex max-w-[65ch] flex-col gap-4">
         <h1 className="text-4xl leading-[1.05] font-semibold tracking-tighter md:text-5xl">Burn calendar</h1>
         <p className="text-lg leading-relaxed text-muted-foreground">
-          Which months burn in {REGIONS.portugal}, and which years broke the pattern. Every month is on the VIIRS scale.
+          Which months burn, and which years broke the pattern. Every month is on the VIIRS scale.
         </p>
       </header>
-      <BurnCalendar region="portugal" />
+      {/* useSearchParams needs a Suspense boundary to keep the page statically rendered */}
+      <Suspense fallback={<CalendarSkeleton />}>
+        <CalendarExplorer />
+      </Suspense>
     </main>
   );
 }

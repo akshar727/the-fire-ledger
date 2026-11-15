@@ -15,6 +15,7 @@ import {
   MONTHS_LONG,
   rampColor,
   rampPosition,
+  times,
   type CalendarCell,
   type CalendarGrid,
   type CalendarStats,
@@ -38,24 +39,25 @@ function useColorMode(): Mode {
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
 export function BurnCalendar({ region }: { region: RegionId }) {
-  const [result, setResult] = useState<SeriesResult | null>(null);
+  // results are tagged with the request they answer, so switching region or retrying shows the skeleton, never the
+  // previous region's grid
+  const [loaded, setLoaded] = useState<{ key: string; result: SeriesResult } | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const key = `${region}:${attempt}`;
 
   useEffect(() => {
     const ac = new AbortController();
-    fetchSeries(region, ac.signal).then(setResult, () => {});
+    fetchSeries(region, ac.signal).then((result) => setLoaded({ key, result }), () => {});
     return () => ac.abort();
-  }, [region, attempt]);
+  }, [region, key]);
 
-  const retry = useCallback(() => {
-    setResult(null);
-    setAttempt((a) => a + 1);
-  }, []);
+  const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
+  const result = loaded?.key === key ? loaded.result : null;
   if (result == null) return <CalendarSkeleton />;
   if (result.status === "missing") return <NotPublished />;
   if (result.status === "error") return <LoadError message={result.message} onRetry={retry} />;
-  return <CalendarView grid={buildGrid(result.bundle)} stats={result.bundle.calendar} />;
+  return <CalendarView key={region} grid={buildGrid(result.bundle)} stats={result.bundle.calendar} />;
 }
 
 function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarStats }) {
@@ -88,7 +90,7 @@ function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarSta
     <div className="flex flex-col gap-8">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
         {latest && <LatestCard cell={latest} stats={stats} />}
-        <Legend max={grid.max} mode={mode} hasFlags={!!stats} />
+        <Legend max={grid.max} mode={mode} hasFlags={!!stats} firstObserved={grid.firstObserved} />
       </div>
 
       <section aria-labelledby="calendar-heading" className="rounded-xl border bg-card p-4 sm:p-6">
@@ -108,7 +110,8 @@ function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarSta
             onMouseLeave={() => setActive(null)}
           >
             <caption className="sr-only">
-              Harmonized monthly fire detections. Values are VIIRS observations from 2012 and model back-casts before.
+              Harmonized monthly fire detections. Values are VIIRS observations from{" "}
+              {grid.firstObserved ? monthName(grid.firstObserved) : "2012"} and model back-casts before.
             </caption>
             <thead>
               <tr>
@@ -233,38 +236,69 @@ function describe(cell: CalendarCell, stats?: CalendarStats): string {
   const src = cell.observed ? "VIIRS observed" : "model back-cast";
   let s = `${when}: ${fmt(cell.value)} harmonized detections (${src}).`;
   if (stats && cell.anomaly != null) {
-    s += ` ${cell.anomaly.toFixed(1)}× the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
+    s += ` ${times(cell.anomaly)} the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
     s += cell.flag === 1 ? ", marked unusually high." : cell.flag === -1 ? ", marked unusually low." : ".";
   }
   return s;
 }
 
+const monthName = (cell: CalendarCell) => `${MONTHS_LONG[cell.month - 1]} ${cell.year}`;
+
 function LatestCard({ cell, stats }: { cell: CalendarCell; stats?: CalendarStats }) {
   const name = MONTHS_LONG[cell.month - 1];
   const median = stats?.month_median[cell.month - 1];
+  // Monthly arrays end at the last fully covered month, so the newest the record can be is last month. Once present-day
+  // data (DP-005) reaches that, the card is "last month vs median"; until then it says it shows an older month.
+  // read the clock once per mount (a state initializer keeps render pure for the React Compiler); no hydration risk,
+  // since this card only renders after the client-side fetch
+  const [today] = useState(() => new Date());
+  const lastComplete = today.getUTCFullYear() * 12 + today.getUTCMonth() - 1;
+  const isRecent = cell.year * 12 + cell.month - 1 >= lastComplete;
+  const Mark = cell.flag === 1 ? CaretUpIcon : CaretDownIcon;
   return (
     <div className="flex flex-col gap-3 rounded-xl bg-accent p-5">
       <p className="text-sm text-muted-foreground">
-        Latest month in the record: {name} {cell.year}
+        {isRecent ? "Last month" : "Latest complete month in the record"}: {monthName(cell)}
       </p>
       <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="font-mono text-4xl font-semibold tracking-tight tabular-nums">{fmt(cell.value ?? 0)}</span>
         <span className="text-sm text-muted-foreground">detections</span>
       </p>
-      {median != null && cell.anomaly != null && (
-        <p className="text-sm">
-          <span className="font-mono font-semibold text-primary tabular-nums">{cell.anomaly.toFixed(1)}×</span> the {name}{" "}
-          median ({fmt(median)})
+      {stats && median != null && cell.anomaly != null && (
+        <div className="flex flex-col gap-1 text-sm">
+          <p>
+            <span className="font-mono font-semibold text-primary tabular-nums">{times(cell.anomaly)}</span> the {name}{" "}
+            median ({fmt(median)}, {stats.baseline_years[0]}-{stats.baseline_years[1]})
+          </p>
+          {cell.flag !== 0 && (
+            <p className="flex items-center gap-1 font-medium">
+              <Mark weight="fill" className="size-3" aria-hidden />
+              Unusually {cell.flag === 1 ? "high" : "low"} for {name}
+            </p>
+          )}
+        </div>
+      )}
+      {!isRecent && (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Present-day detections are not in the record yet, so this card compares the latest complete month, not this
+          month.
         </p>
       )}
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        Present-day detections are not in the record yet, so this is the most recent month available, not this month.
-      </p>
     </div>
   );
 }
 
-function Legend({ max, mode, hasFlags }: { max: number; mode: Mode; hasFlags: boolean }) {
+function Legend({
+  max,
+  mode,
+  hasFlags,
+  firstObserved,
+}: {
+  max: number;
+  mode: Mode;
+  hasFlags: boolean;
+  firstObserved: CalendarCell | null;
+}) {
   const steps = Array.from({ length: 24 }, (_, i) => rampColor(i / 23, mode).bg);
   // keep clear of the max label; with max 0 every tick would sit at 0, so show none
   const ticks = max > 0 ? [0, 10, 100, 1000, 10000].filter((v) => rampPosition(v, max) < 0.9) : [];
@@ -308,12 +342,17 @@ function Legend({ max, mode, hasFlags }: { max: number; mode: Mode; hasFlags: bo
           <span className="size-3 rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_3px,transparent_3px_6px)] ring-1 ring-border" />
           no data yet
         </li>
+        {firstObserved && (
+          <li className="basis-full">
+            Before {monthName(firstObserved)}: model back-cast. From {monthName(firstObserved)}: VIIRS observed.
+          </li>
+        )}
       </ul>
     </div>
   );
 }
 
-function CalendarSkeleton() {
+export function CalendarSkeleton() {
   return (
     <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading the calendar">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
