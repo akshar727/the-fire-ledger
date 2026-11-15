@@ -1,11 +1,13 @@
 """Per-region model: fit VIIRS ~ MODIS count model on 2012-2019, back-cast a VIIRS-equivalent record
 for 2001-2011, validate on held-out 2020-2025. Usage: python model.py [region_id ...] [--nboot N]
-Writes site/public/data/<region_id>/annual.json and series.json (monthly + weekly series with 5-95% bands);
+Writes site/public/data/<region_id>/annual.json and series.json (monthly + weekly series with 5-95% bands,
+plus the burn-calendar block from calendar_stats.calendar_block);
 run() also returns per-week sums and bootstrap draw sums."""
 import argparse, gc, json, os, time
 import numpy as np, pandas as pd
 import statsmodels.api as sm
 from patsy import dmatrix
+from calendar_stats import calendar_block
 try:
     import resource   # not on Windows
 except ImportError:
@@ -62,9 +64,12 @@ def series_bundle(region_id, weeks, wk, draws):
         lo, hi = np.percentile(draws @ M if M is not None else draws, [5, 95], axis=0)
         d["lo"], d["hi"] = r(lo), r(hi)
         return d
-    return {"schema": 1, "region": region_id,
-            "monthly": block(S, [pd.Timestamp(2001 + i // 12, i % 12 + 1, 1) for i in range(nm)]),
-            "weekly": block(None, [week_start(yr, wkn) for yr, wkn in weeks])}
+    monthly = block(S, [pd.Timestamp(2001 + i // 12, i % 12 + 1, 1) for i in range(nm)])
+    # burn calendar (ML-005): stats on the published harmonized record = observed VIIRS where it exists, else the model
+    harmonized = [p if v is None else v for v, p in zip(monthly["viirs"], monthly["pred"])]
+    return {"schema": 1, "region": region_id, "monthly": monthly,
+            "weekly": block(None, [week_start(yr, wkn) for yr, wkn in weeks]),
+            "calendar": calendar_block(harmonized, monthly["start_year"])}
 
 def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"):
     """Fit one region and write annual.json + series.json. Returns dict: weeks (list of (year, week)), modis/viirs/pred
@@ -163,9 +168,10 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
            "hi": [float(v) for v in ann.hi], "score": score,
            "partial": [int(n < 52) for n in nweeks], "data_through": week_end(*weeks[-1]).strftime("%Y-%m-%d")}
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
+    # build both files before writing either, so a failure can't leave annual.json new and series.json stale
+    bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws)
     write_json(os.path.join(out_dir, region_id, "annual.json"), out)
-    write_json(os.path.join(out_dir, region_id, "series.json"),
-               series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws))
+    write_json(os.path.join(out_dir, region_id, "series.json"), bundle)
 
     mem = ""
     if resource:
