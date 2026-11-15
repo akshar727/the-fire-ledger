@@ -6,6 +6,8 @@ import { backcastOffset, nearLevel, stepLabel, stepRange } from "@/lib/referee";
 import { SAT } from "@/components/story/FireFootprints";
 import { PIXEL_M, SCENE_BBOX, STORY_FIRE, utc } from "@/lib/story";
 import { loadStory } from "@/lib/story-data";
+import { boardSentence, LABEL_TEXT, LABELS, scoreRow, summarize, type ScoreSource } from "@/lib/scoreboard";
+import { WorldScoreboard } from "@/components/WorldScoreboard";
 
 export const metadata: Metadata = { title: "Method" };
 
@@ -14,6 +16,7 @@ const SECTIONS = [
   { id: "problem", title: "The problem" },
   { id: "harmonization", title: "How the conversion works" },
   { id: "holdout", title: "What the hold-out shows" },
+  { id: "scoreboard", title: "The world scoreboard" },
   { id: "referee", title: "An independent check" },
   { id: "caveats", title: "Known limits" },
   { id: "sources", title: "Sources" },
@@ -28,6 +31,9 @@ const ALL = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnu
 const RECORDS = ALL.filter((r) => r.tier === "region");
 const COUNTRY_RECORDS = ALL.filter((r) => r.tier === "country");
 const SPAN = recordSpan();
+// FE-028: every record's own hold-out check, deep dives first, then whole countries (index.json order)
+const SCORE_ROWS = ALL.map((r) => scoreRow(r.id, r.name, r.tier === "country", r.D as unknown as ScoreSource));
+const BOARD = summarize(SCORE_ROWS);
 const REF = loadReferee();
 // End of the downloaded record (index.json archive_through, the same for every region), e.g. 2026-11-02.
 const THROUGH = RECORDS.map((r) => r.through).sort().at(-1)!;
@@ -237,7 +243,13 @@ export default function MethodPage() {
                 end with the FIRMS yearly archive ({dayLabel(COUNTRY_RECORDS[0].through)}), so they have no forward link,
                 no per-detection download, no weather and no burned-area check.
               </p>
-              <ScoreTable records={COUNTRY_RECORDS} caption="Hold-out scores per whole country" />
+              <p>
+                Every country&apos;s own scores are in{" "}
+                <a className="underline underline-offset-2 hover:text-foreground" href="#scoreboard">
+                  the world scoreboard
+                </a>{" "}
+                below.
+              </p>
             </>
           )}
           {FORWARD.length > 0 && (
@@ -262,6 +274,25 @@ export default function MethodPage() {
             This is a forward test: it shows whether the model carries over to later years. It cannot directly prove
             accuracy for {SPAN.first}-{VIIRS_FROM - 1}, because no VIIRS data exists then to check against; the next
             section checks those years against a different satellite product instead.
+          </p>
+        </section>
+
+        <section id="scoreboard">
+          <h2>The world scoreboard</h2>
+          <p>{boardSentence(BOARD)}</p>
+          <WorldScoreboard rows={SCORE_ROWS} />
+          <dl className="grid gap-x-4 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[auto_1fr]">
+            {LABELS.map((l) => (
+              <div key={l} className="contents">
+                <dt className="font-medium text-foreground">{l}</dt>
+                <dd>{LABEL_TEXT[l]}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-sm">
+            Errors are the mean absolute percentage error of the yearly totals over the complete hold-out years
+            ({HOLD_FROM} on), as in the table above; the smaller of the two is in bold. Big countries use coarser cells
+            so the model runs on as many countries as possible; the rest get the fixed-ratio estimate (label ratio).
           </p>
         </section>
 
@@ -456,7 +487,7 @@ export default function MethodPage() {
 
 type Rec = { id: string; name: string; D: Annual; through: string };
 
-/** Hold-out scores, one column per record (FE-007 table; DP-009 also draws it for whole countries). */
+/** Hold-out scores, one column per deep dive (FE-007 table). Whole countries are in the world scoreboard (FE-028). */
 function ScoreTable({ records, caption }: { records: Rec[]; caption: string }) {
   const [h0, h1] = holdoutYears(records[0].D);
   return (
