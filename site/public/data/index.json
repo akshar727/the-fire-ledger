@@ -11,19 +11,19 @@
         42.2
       ],
       "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Oct)",
-      "data_through": "2025-12-31",
+      "data_through": "2026-11-02",
       "sensors": {
         "terra": {
           "first_date": "2000-11-06",
-          "last_date": "2025-11-28"
+          "last_date": "2026-11-01"
         },
         "aqua": {
           "first_date": "2002-07-04",
-          "last_date": "2025-11-27"
+          "last_date": "2026-11-01"
         },
         "viirs": {
           "first_date": "2012-01-20",
-          "last_date": "2025-12-31"
+          "last_date": "2026-11-02"
         }
       },
       "point_years": [
@@ -52,9 +52,10 @@
         2022,
         2023,
         2024,
-        2025
+        2025,
+        2026
       ],
-      "point_rows": 179151
+      "point_rows": 186439
     },
     {
       "id": "ghana",
@@ -66,19 +67,19 @@
         11.5
       ],
       "fire_type": "West African savanna burning (peak Nov–Feb)",
-      "data_through": "2025-12-31",
+      "data_through": "2026-11-02",
       "sensors": {
         "terra": {
           "first_date": "2000-11-02",
-          "last_date": "2025-12-31"
+          "last_date": "2026-11-02"
         },
         "aqua": {
           "first_date": "2002-07-19",
-          "last_date": "2025-12-31"
+          "last_date": "2026-11-01"
         },
         "viirs": {
           "first_date": "2012-01-20",
-          "last_date": "2025-12-31"
+          "last_date": "2026-11-02"
         }
       },
       "point_years": [
@@ -107,9 +108,10 @@
         2022,
         2023,
         2024,
-        2025
+        2025,
+        2026
       ],
-      "point_rows": 4088620
+      "point_rows": 4216096
     },
     {
       "id": "punjab",
@@ -121,19 +123,19 @@
         32.5
       ],
       "fire_type": "Crop-residue burning (peaks Apr–May and Oct–Nov)",
-      "data_through": "2025-12-31",
+      "data_through": "2026-11-02",
       "sensors": {
         "terra": {
           "first_date": "2000-11-01",
-          "last_date": "2025-12-22"
+          "last_date": "2026-11-02"
         },
         "aqua": {
           "first_date": "2002-07-18",
-          "last_date": "2025-12-27"
+          "last_date": "2026-11-02"
         },
         "viirs": {
           "first_date": "2012-01-20",
-          "last_date": "2025-12-30"
+          "last_date": "2026-11-02"
         }
       },
       "point_years": [
@@ -162,9 +164,10 @@
         2022,
         2023,
         2024,
-        2025
+        2025,
+        2026
       ],
-      "point_rows": 1763613
+      "point_rows": 1794781
     }
   ]
 }
