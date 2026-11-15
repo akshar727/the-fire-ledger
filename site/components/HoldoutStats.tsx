@@ -16,15 +16,15 @@ function Help({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** Hold-out scores for 2020-2025, years the model never saw. */
-export function HoldoutStats({ score }: { score: Score }) {
+/** Hold-out scores for the complete hold-out years (`years`, first and last), which the model never saw. */
+export function HoldoutStats({ score, years }: { score: Score; years: [number, number] }) {
   return (
     <dl className="grid grid-cols-1 divide-y border-y md:grid-cols-[1.5fr_1fr_1fr] md:divide-x md:divide-y-0">
       <div className="flex flex-col gap-3 py-6 md:pr-8">
         <dt className="flex items-center gap-1 text-sm text-muted-foreground">
           Mean annual error, hold-out years
           <Help label="About mean annual error">
-            Average absolute gap between predicted and observed VIIRS totals per year, 2020-2025. The comparison is one
+            Average absolute gap between predicted and observed VIIRS totals per year, {years[0]}-{years[1]}. The comparison is one
             constant VIIRS/MODIS factor ({score.ratio.toFixed(2)}) fitted on the same training years.
           </Help>
         </dt>

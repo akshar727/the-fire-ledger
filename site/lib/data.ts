@@ -5,34 +5,13 @@ import ghanaAnnual from "@/public/data/ghana/annual.json";
 import regionIndex from "@/public/data/index.json";
 import portugalAnnual from "@/public/data/portugal/annual.json";
 import punjabAnnual from "@/public/data/punjab/annual.json";
-import { isRegionId, type RegionId } from "@/lib/regions";
+import { spanOf, type Annual } from "@/lib/annual";
+import { isRegionId, REGIONS, type RegionId } from "@/lib/regions";
 import type { Bounds } from "@/lib/selection";
 import { parseSeries, SeriesFormatError, type SeriesBundle } from "@/lib/series";
 
 export { REGIONS, type RegionId } from "@/lib/regions";
-
-/** Hold-out scores for 2020-2025 (see the "DATA" row in SHARED_VARIABLES_AND_FUNCTIONS.md §3). */
-export type Score = {
-  mape_model: number; // mean absolute % error of the model's annual totals
-  mape_ratio: number; // same, for one constant VIIRS/MODIS factor
-  coverage: number; // hold-out years whose observed total is inside the 5-95% band
-  n_hold: number;
-  ratio: number;
-  alpha: number;
-  weekly_r: number;
-  sigma_year: number; // year-level error (RMS of log obs/pred, leave-one-year-out on 2012-2019); sizes the band
-};
-
-/** Annual series, one entry per year. `viirs` is null before 2012. */
-export type Annual = {
-  years: number[];
-  modis: number[];
-  viirs: (number | null)[];
-  pred: number[];
-  lo: number[];
-  hi: number[];
-  score: Score;
-};
+export type { Annual, Score } from "@/lib/annual";
 
 const ANNUAL: Record<RegionId, Annual> = {
   portugal: portugalAnnual as Annual,
@@ -62,6 +41,11 @@ export const REGION_LIST: RegionInfo[] = regionIndex.regions.flatMap((r) =>
 
 export function regionInfo(region: RegionId): RegionInfo {
   return REGION_LIST.find((r) => r.id === region)!;
+}
+
+/** The whole published record across regions, for site-wide copy (`spanOf` in lib/annual.ts). */
+export function recordSpan() {
+  return spanOf(REGION_LIST.map((r) => ANNUAL[r.id]), REGION_LIST.map((r) => REGIONS[r.id]));
 }
 
 /** Selectable dates: from the first year of the annual record to the end of the downloaded archive. */

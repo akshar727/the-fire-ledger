@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { dayLabel } from "@/lib/annual";
+import { recordSpan } from "@/lib/data";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,10 +17,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const span = recordSpan();
+
 export const metadata: Metadata = {
   title: { default: "One Fire Record", template: "%s | One Fire Record" },
-  description:
-    "MODIS and VIIRS active-fire detections from NASA FIRMS, harmonized into one record for mainland Portugal, 2001-2025.",
+  description: `MODIS and VIIRS active-fire detections from NASA FIRMS, harmonized into one record for ${span.regions}, ${span.first} to ${dayLabel(span.through)}.`,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -7,17 +7,10 @@ import { DownloadCsv } from "@/components/DownloadCsv";
 import { HoldoutStats } from "@/components/HoldoutStats";
 import { RecordChart } from "@/components/RecordChart";
 import { RegionSwitcher } from "@/components/RegionSwitcher";
-import { loadAnnual, type Annual } from "@/lib/data";
+import { eraMeans, HOLD_FROM, holdoutYears, lastCompleteYear, VIIRS_FROM } from "@/lib/annual";
+import { loadAnnual } from "@/lib/data";
 import { FIRE_SEASON, REGION_CAVEAT, REGIONS } from "@/lib/regions";
 import { useSelection } from "@/lib/use-selection";
-
-/** Mean VIIRS year over mean MODIS year before 2012: the apparent jump the harmonization removes. */
-function jump(data: Annual): number {
-  const i2012 = data.years.indexOf(2012);
-  const modisMean = data.modis.slice(0, i2012).reduce((p, c) => p + c, 0) / i2012;
-  const viirs = data.viirs.filter((v): v is number => v != null);
-  return viirs.reduce((p, c) => p + c, 0) / viirs.length / modisMean;
-}
 
 export function JumpStat() {
   const { sel } = useSelection();
@@ -25,11 +18,11 @@ export function JumpStat() {
   return (
     <div className="flex flex-col gap-1 border-l-2 border-primary pl-5 md:col-span-4 md:justify-self-end">
       <span className="text-xs font-medium tracking-[0.16em] text-primary uppercase">
-        {REGIONS[sel.region]}, {data.years[0]}-{data.years.at(-1)}
+        {REGIONS[sel.region]}, {data.years[0]}-{lastCompleteYear(data)}
       </span>
-      <span className="font-mono text-5xl font-semibold tracking-tight tabular-nums">×{jump(data).toFixed(1)}</span>
+      <span className="font-mono text-5xl font-semibold tracking-tight tabular-nums">×{eraMeans(data).jump.toFixed(1)}</span>
       <span className="max-w-[28ch] text-sm leading-relaxed text-muted-foreground">
-        apparent rise in yearly detections when VIIRS replaces MODIS in 2012
+        apparent rise in yearly detections when VIIRS replaces MODIS in {VIIRS_FROM}
       </span>
     </div>
   );
@@ -39,6 +32,7 @@ export function RecordExplorer() {
   const { sel } = useSelection();
   const data = loadAnnual(sel.region);
   const years: [number, number] = [Number(sel.from.slice(0, 4)), Number(sel.to.slice(0, 4))];
+  const [h0, h1] = holdoutYears(data);
 
   return (
     <>
@@ -64,11 +58,11 @@ export function RecordExplorer() {
             Tested on years it never saw
           </h2>
           <p className="leading-relaxed text-muted-foreground">
-            The model learned from 2012-2019, when both sensors flew. We then predicted 2020-2025 from MODIS alone and
-            checked against what VIIRS saw in {REGIONS[sel.region]}.
+            The model learned from {VIIRS_FROM}-{HOLD_FROM - 1}, when both sensors flew. We then predicted {h0}-{h1} from
+            MODIS alone and checked against what VIIRS saw in {REGIONS[sel.region]}.
           </p>
         </div>
-        <HoldoutStats score={data.score} />
+        <HoldoutStats score={data.score} years={[h0, h1]} />
       </section>
 
       <DownloadCsv />
