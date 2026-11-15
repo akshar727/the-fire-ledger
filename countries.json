@@ -1,0 +1,44 @@
+[
+  {
+    "id": "greece",
+    "name": "Greece",
+    "country": "Greece",
+    "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Sep)",
+    "tier": "country"
+  },
+  {
+    "id": "australia",
+    "name": "Australia",
+    "country": "Australia",
+    "fire_type": "Savanna burning in the north (Apr–Nov), forest fire in the south-east (Dec–Feb)",
+    "tier": "country"
+  },
+  {
+    "id": "brazil",
+    "name": "Brazil",
+    "country": "Brazil",
+    "fire_type": "Deforestation and Cerrado savanna burning (peak Aug–Oct)",
+    "tier": "country"
+  },
+  {
+    "id": "united-states",
+    "name": "United States",
+    "country": "United_States",
+    "fire_type": "Western wildfire (Jul–Oct) and south-eastern prescribed and crop burning (Feb–Apr)",
+    "tier": "country"
+  },
+  {
+    "id": "canada",
+    "name": "Canada",
+    "country": "Canada",
+    "fire_type": "Boreal forest wildfire (peak Jun–Aug)",
+    "tier": "country"
+  },
+  {
+    "id": "indonesia",
+    "name": "Indonesia",
+    "country": "Indonesia",
+    "fire_type": "Peat and land-clearing fire (peak Aug–Oct, worst in El Niño years)",
+    "tier": "country"
+  }
+]
