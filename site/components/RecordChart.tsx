@@ -2,34 +2,74 @@
 
 // Annual record chart with the Raw / Harmonized toggle. Port of the proof-of-concept web/index.html
 // (same series, band and sentences; top margin and two extra labels added), plus a per-year readout on hover / arrow keys.
+// FE-004: draws only the years in `years` (the selected dates); the sentences under it still describe the whole record.
 import { useState, type KeyboardEvent } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Annual } from "@/lib/data";
+import { compact } from "@/lib/series";
 
 type Mode = "raw" | "harm";
 
 const W = 800, H = 380, L = 55, R = 15, T = 18, B = 30;
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
-export function RecordChart({ data }: { data: Annual }) {
-  const [mode, setMode] = useState<Mode>("raw");
-  const [hover, setHover] = useState<number | null>(null);
+/** Gridline step: the 1, 2 or 5 times a power of ten nearest to max / 5 (Portugal keeps its 5k lines). */
+function tickStep(max: number): number {
+  const raw = max / 5, p = 10 ** Math.floor(Math.log10(raw));
+  return [1, 2, 5, 10].map((m) => m * p).reduce((best, s) => (Math.abs(s - raw) < Math.abs(best - raw) ? s : best));
+}
 
-  const D = data, n = D.years.length;
+/** Marker label beside a vertical line; flips to the left of the line near the right edge so it isn't clipped. */
+function MarkerLabel({ at, children }: { at: number; children: string }) {
+  const flip = at > W - R - 90;
+  return (
+    <text x={flip ? at - 5 : at + 5} y={T + 8} textAnchor={flip ? "end" : "start"} className="fill-muted-foreground">
+      {children}
+    </text>
+  );
+}
+
+export function RecordChart({ data, region, years }: { data: Annual; region: string; years: [number, number] }) {
+  const [mode, setMode] = useState<Mode>("raw");
+  const [hoverAt, setHover] = useState<number | null>(null);
+
+  const D = data;
+  // visible years: full-record indexes a..b (inclusive); every index below is a full-record index
+  const a = Math.max(0, D.years.indexOf(Math.max(years[0], D.years[0])));
+  const b = Math.max(a, D.years.indexOf(Math.min(years[1], D.years.at(-1)!)));
+  const n = b - a + 1;
+  const visible = (i: number) => i >= a && i <= b;
+  const hover = hoverAt != null && visible(hoverAt) ? hoverAt : null;
+
   const viirsVals = D.viirs.filter((v): v is number => v != null);
-  const max = Math.max(...D.hi, ...viirsVals) * 1.05;
-  const x = (i: number) => L + (i * (W - L - R)) / (n - 1);
+  const inView = D.years.flatMap((_, i) => (visible(i) ? [D.hi[i], D.modis[i], D.viirs[i] ?? 0] : []));
+  const max = Math.max(1, ...inView) * 1.05;
+  const step = (W - L - R) / Math.max(1, n - 1);
+  const x = (i: number) => (n === 1 ? (L + W - R) / 2 : L + (i - a) * step);
   const y = (v: number) => H - B - (v * (H - T - B)) / max;
   const i2003 = D.years.indexOf(2003), i2012 = D.years.indexOf(2012), i2020 = D.years.indexOf(2020);
 
-  const path = (vals: (number | null)[], from: number, to: number) =>
-    vals.slice(from, to).map((v, k) => `${k ? "L" : "M"}${x(from + k)} ${y(v ?? 0)}`).join("");
-  const band = (from: number, to: number) =>
-    path(D.hi, from, to) +
-    D.lo.slice(from, to).map((v, k) => `L${x(from + k)} ${y(v)}`).reverse().join("") + "Z";
+  // full-record index range [from, to) cut down to the visible years; null when nothing is left
+  const clip = (from: number, to: number): [number, number] | null => {
+    const lo = Math.max(from, a), hi = Math.min(to, b + 1);
+    return lo < hi ? [lo, hi] : null;
+  };
+  const pts = (vals: (number | null)[], lo: number, hi: number) =>
+    Array.from({ length: hi - lo }, (_, k) => `${x(lo + k)} ${y(vals[lo + k] ?? 0)}`);
+  const path = (vals: (number | null)[], from: number, to: number) => {
+    const c = clip(from, to);
+    return c ? "M" + pts(vals, ...c).join("L") : "";
+  };
+  const band = (from: number, to: number) => {
+    const c = clip(from, to);
+    return c ? "M" + [...pts(D.hi, ...c), ...pts(D.lo, ...c).reverse()].join("L") + "Z" : "";
+  };
+  // back-cast line runs into the first VIIRS year so the two segments join
+  const backcast = D.pred.map((p, i) => (i < i2012 ? p : i === i2012 ? D.viirs[i] : null));
 
   const ticks: number[] = [];
-  for (let v = 0; v <= max; v += 5000) ticks.push(v);
+  for (let v = 0, s = Math.max(1, tickStep(max / 1.05)); v <= max; v += s) ticks.push(v);
+  const labelEvery = n <= 8 ? 1 : n <= 16 ? 2 : 3;
 
   // Sentences under the chart: same formulas as the proof of concept.
   const modisMean = D.modis.slice(0, i2012).reduce((p, c) => p + c, 0) / i2012;
@@ -50,8 +90,8 @@ export function RecordChart({ data }: { data: Annual }) {
         ];
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === "ArrowRight") setHover((h) => Math.min(n - 1, (h ?? -1) + 1));
-    else if (e.key === "ArrowLeft") setHover((h) => Math.max(0, (h ?? n) - 1));
+    if (e.key === "ArrowRight") setHover(Math.min(b, (hover ?? a - 1) + 1));
+    else if (e.key === "ArrowLeft") setHover(Math.max(a, (hover ?? b + 1) - 1));
     else if (e.key === "Escape") setHover(null);
     else return;
     e.preventDefault();
@@ -97,7 +137,7 @@ export function RecordChart({ data }: { data: Annual }) {
           className="relative min-w-[560px] rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           tabIndex={0}
           role="group"
-          aria-label="Annual fire detections chart. Use the left and right arrow keys to read values per year."
+          aria-label={`Annual fire detections chart, ${region}. Use the left and right arrow keys to read values per year.`}
           onKeyDown={onKey}
           onMouseLeave={(e) => e.currentTarget !== document.activeElement && setHover(null)}
           onBlur={() => setHover(null)}
@@ -107,67 +147,81 @@ export function RecordChart({ data }: { data: Annual }) {
               <g key={v}>
                 <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="stroke-border" />
                 <text x={L - 8} y={y(v) + 4} textAnchor="end" className="fill-muted-foreground font-mono">
-                  {v / 1000}k
+                  {compact(v)}
                 </text>
               </g>
             ))}
             {D.years.map((yr, i) =>
-              yr % 3 === 0 ? (
+              visible(i) && yr % labelEvery === 0 ? (
                 <text key={yr} x={x(i)} y={H - 8} textAnchor="middle" className="fill-muted-foreground font-mono">
                   {yr}
                 </text>
               ) : null,
             )}
 
-            <line x1={x(i2012)} x2={x(i2012)} y1={T} y2={H - B} className="stroke-muted-foreground/60" strokeDasharray="2 3" />
-            <text x={x(i2012) + 5} y={T + 8} className="fill-muted-foreground">VIIRS starts</text>
+            {visible(i2012) && (
+              <>
+                <line x1={x(i2012)} x2={x(i2012)} y1={T} y2={H - B} className="stroke-muted-foreground/60" strokeDasharray="2 3" />
+                <MarkerLabel at={x(i2012)}>VIIRS starts</MarkerLabel>
+              </>
+            )}
 
             {mode === "raw" ? (
               <g key="raw">
                 {/* Aqua MODIS data starts in July 2002: before that, counts are Terra alone. */}
-                <rect x={x(0)} y={T} width={x(i2003 - 1) - x(0)} height={H - T - B} className="fill-muted chart-fade" />
-                <text x={x(0) + 5} y={T + 8} className="fill-muted-foreground">Terra only to mid-2002</text>
+                {visible(i2003 - 1) && a < i2003 - 1 && (
+                  <>
+                    <rect x={x(a)} y={T} width={x(i2003 - 1) - x(a)} height={H - T - B} className="fill-muted chart-fade" />
+                    <text x={x(a) + 5} y={T + 8} className="fill-muted-foreground">Terra only to mid-2002</text>
+                  </>
+                )}
                 <path d={path(D.modis, 0, i2012)} pathLength={1} fill="none" stroke="var(--modis)" strokeWidth={2.25} className="chart-draw" />
-                <path d={path(D.viirs, i2012, n)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.25} className="chart-draw" />
-                <path
-                  d={`M${x(i2012 - 1)} ${y(D.modis[i2012 - 1])}L${x(i2012)} ${y(D.viirs[i2012] ?? 0)}`}
-                  className="stroke-muted-foreground chart-fade"
-                  strokeDasharray="2 3"
-                />
+                <path d={path(D.viirs, i2012, D.years.length)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.25} className="chart-draw" />
+                {visible(i2012 - 1) && visible(i2012) && (
+                  <path
+                    d={`M${x(i2012 - 1)} ${y(D.modis[i2012 - 1])}L${x(i2012)} ${y(D.viirs[i2012] ?? 0)}`}
+                    className="stroke-muted-foreground chart-fade"
+                    strokeDasharray="2 3"
+                  />
+                )}
+                {n === 1 && <Dot cx={x(a)} cy={y(a < i2012 ? D.modis[a] : (D.viirs[a] ?? 0))} color={a < i2012 ? "var(--modis)" : "var(--viirs)"} />}
               </g>
             ) : (
               <g key="harm">
-                <line x1={x(i2020)} x2={x(i2020)} y1={T} y2={H - B} className="stroke-muted-foreground/60" strokeDasharray="2 3" />
-                <text x={x(i2020) + 5} y={T + 8} className="fill-muted-foreground">Hold-out</text>
+                {visible(i2020) && (
+                  <>
+                    <line x1={x(i2020)} x2={x(i2020)} y1={T} y2={H - B} className="stroke-muted-foreground/60" strokeDasharray="2 3" />
+                    <MarkerLabel at={x(i2020)}>Hold-out</MarkerLabel>
+                  </>
+                )}
                 <path d={band(0, i2012 + 1)} fill="var(--primary)" opacity={0.18} className="chart-fade" />
-                <path d={band(i2020, n)} fill="var(--primary)" opacity={0.18} className="chart-fade" />
-                <path
-                  d={path(D.pred.slice(0, i2012).concat(D.viirs[i2012] ?? 0), 0, i2012 + 1)}
-                  pathLength={1}
-                  fill="none"
-                  stroke="var(--primary)"
-                  strokeWidth={2.25}
-                  className="chart-draw"
-                />
-                <path d={path(D.viirs, i2012, n)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.25} className="chart-draw" />
-                <path d={path(D.pred, i2020, n)} fill="none" stroke="var(--primary)" strokeWidth={2.25} strokeDasharray="5 4" className="chart-fade" />
+                <path d={band(i2020, D.years.length)} fill="var(--primary)" opacity={0.18} className="chart-fade" />
+                <path d={path(backcast, 0, i2012 + 1)} pathLength={1} fill="none" stroke="var(--primary)" strokeWidth={2.25} className="chart-draw" />
+                <path d={path(D.viirs, i2012, D.years.length)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.25} className="chart-draw" />
+                <path d={path(D.pred, i2020, D.years.length)} fill="none" stroke="var(--primary)" strokeWidth={2.25} strokeDasharray="5 4" className="chart-fade" />
+                {n === 1 && (a < i2012 || a >= i2020) && (
+                  <line x1={x(a)} x2={x(a)} y1={y(D.lo[a])} y2={y(D.hi[a])} stroke="var(--primary)" strokeWidth={6} opacity={0.25} />
+                )}
+                {n === 1 && <Dot cx={x(a)} cy={y(a < i2012 ? D.pred[a] : (D.viirs[a] ?? 0))} color={a < i2012 ? "var(--primary)" : "var(--viirs)"} />}
               </g>
             )}
 
             {hover != null && (
               <line x1={x(hover)} x2={x(hover)} y1={T} y2={H - B} className="stroke-foreground/40" />
             )}
-            {D.years.map((yr, i) => (
-              <rect
-                key={yr}
-                x={x(i) - (W - L - R) / (n - 1) / 2}
-                y={T}
-                width={(W - L - R) / (n - 1)}
-                height={H - T - B}
-                fill="transparent"
-                onMouseEnter={() => setHover(i)}
-              />
-            ))}
+            {D.years.map((yr, i) =>
+              visible(i) ? (
+                <rect
+                  key={yr}
+                  x={n === 1 ? L : x(i) - step / 2}
+                  y={T}
+                  width={n === 1 ? W - L - R : step}
+                  height={H - T - B}
+                  fill="transparent"
+                  onMouseEnter={() => setHover(i)}
+                />
+              ) : null,
+            )}
           </svg>
 
           {readout && hover != null && (
@@ -199,7 +253,7 @@ export function RecordChart({ data }: { data: Annual }) {
 
       <div className="sr-only">
       <table>
-        <caption>Annual active-fire detections, mainland Portugal</caption>
+        <caption>Annual active-fire detections, {region}</caption>
         <thead>
           <tr>
             <th scope="col">Year</th>
@@ -211,7 +265,7 @@ export function RecordChart({ data }: { data: Annual }) {
           </tr>
         </thead>
         <tbody>
-          {D.years.map((yr, i) => (
+          {D.years.map((yr, i) => visible(i) && (
             <tr key={yr}>
               <th scope="row">{yr}</th>
               <td>{fmt(D.modis[i])}</td>
@@ -226,6 +280,11 @@ export function RecordChart({ data }: { data: Annual }) {
       </div>
     </div>
   );
+}
+
+/** Marker for a one-year view, where a line has nothing to join. */
+function Dot({ cx, cy, color }: { cx: number; cy: number; color: string }) {
+  return <circle cx={cx} cy={cy} r={5} fill={color} className="chart-fade" />;
 }
 
 function readoutRows(D: Annual, i: number, mode: Mode): [string, string][] {

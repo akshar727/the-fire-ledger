@@ -15,6 +15,7 @@ import {
   MONTHS_LONG,
   rampColor,
   rampPosition,
+  sliceGrid,
   times,
   type CalendarCell,
   type CalendarGrid,
@@ -38,7 +39,7 @@ function useColorMode(): Mode {
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
-export function BurnCalendar({ region }: { region: RegionId }) {
+export function BurnCalendar({ region, from, to }: { region: RegionId; from: string; to: string }) {
   // results are tagged with the request they answer, so switching region or retrying shows the skeleton, never the
   // previous region's grid
   const [loaded, setLoaded] = useState<{ key: string; result: SeriesResult } | null>(null);
@@ -57,7 +58,14 @@ export function BurnCalendar({ region }: { region: RegionId }) {
   if (result == null) return <CalendarSkeleton />;
   if (result.status === "missing") return <NotPublished />;
   if (result.status === "error") return <LoadError message={result.message} onRetry={retry} />;
-  return <CalendarView key={region} grid={buildGrid(result.bundle)} stats={result.bundle.calendar} />;
+  // keyed by the selection so focus and readout reset when the visible rows change
+  return (
+    <CalendarView
+      key={`${region}:${from}:${to}`}
+      grid={sliceGrid(buildGrid(result.bundle), from, to)}
+      stats={result.bundle.calendar}
+    />
+  );
 }
 
 function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarStats }) {
@@ -152,7 +160,7 @@ function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarSta
                             setActive(cell);
                             setAnnounce(describe(cell, stats));
                           }}
-                          className="h-8 rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className={`h-8 rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
                         >
                           <span className="sr-only">no data</span>
                         </td>
@@ -170,7 +178,7 @@ function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarSta
                           setAnnounce(describe(cell, stats));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className="relative h-8 rounded-sm text-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                        className={`relative h-8 rounded-sm text-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
                       >
                         {compact(cell.value)}
                         {cell.flag !== 0 && <FlagMark flag={cell.flag} />}
@@ -231,7 +239,7 @@ function FlagMark({ flag }: { flag: -1 | 1 }) {
 }
 
 function describe(cell: CalendarCell, stats?: CalendarStats): string {
-  const when = `${MONTHS_LONG[cell.month - 1]} ${cell.year}`;
+  const when = `${MONTHS_LONG[cell.month - 1]} ${cell.year}${cell.inRange ? "" : " (outside the selected dates)"}`;
   if (cell.value == null) return `${when}: no data in the record yet.`;
   const src = cell.observed ? "VIIRS observed" : "model back-cast";
   let s = `${when}: ${fmt(cell.value)} harmonized detections (${src}).`;

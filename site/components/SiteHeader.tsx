@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { FlameIcon } from "@phosphor-icons/react/dist/ssr";
-import { SiteNav } from "@/components/SiteNav";
+import { NavLinks, SiteNav } from "@/components/SiteNav";
 
 export function SiteHeader() {
   return (
@@ -10,7 +11,9 @@ export function SiteHeader() {
           <FlameIcon weight="fill" className="size-5 text-primary" aria-hidden />
           One Fire Record
         </Link>
-        <SiteNav />
+        <Suspense fallback={<NavLinks />}>
+          <SiteNav />
+        </Suspense>
       </div>
     </header>
   );
