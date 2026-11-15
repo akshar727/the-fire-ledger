@@ -12,7 +12,8 @@ without moving anything in the story.
   t   0 (frame   0)  forest floor at the end of the afternoon of 17 June 2017, the Pedrógão Grande fire on the
                      hills ahead; the sun sets behind it as the page scrolls
      36 (frame  72)  night, above the smoke, the fire below
-     72 (frame 144)  far above, looking straight down; Aqua (1 km pixels) then Suomi NPP (375 m) have just crossed
+     72 (frame 144)  far above, looking straight down; Aqua (1 km pixels) then, slower, Suomi NPP (375 m) have
+                     just crossed
     108 (frame 216)  pulled back; every 2017 detection in the area has switched on, in date order
     144 (frame 288)  the squares have fallen into a timeline: one column per day of 2017
     179 (frame 359)  the squares have settled into 26 x 12 cells, in proportion to the harmonized monthly record
@@ -51,13 +52,19 @@ MODIS = ("Terra", "Aqua")
 # of the satellite that made them, south to north, instead of all at once.
 STORY_DAY = "2017-06-18"
 PASSES = (
-    {"satellite": "Aqua", "from": "1250", "to": "1257", "frames": (55.0, 63.0)},
-    {"satellite": "SNPP", "from": "1325", "to": "1332", "frames": (64.0, 72.0)},
+    {"satellite": "Aqua", "from": "1250", "to": "1257", "frames": (47.0, 55.0),
+     "track": ((47.0, -42.0), (48.5, -14.0), (54.0, 14.0), (55.0, 36.0))},
+    {"satellite": "SNPP", "from": "1325", "to": "1332", "frames": (57.5, 71.0),
+     "track": ((57.5, -64.0), (59.5, -14.0), (69.0, 14.0), (71.0, 36.0))},
 )
+# "track": (frame, km along the track from the scene centre) keys of each pass's scan line, linear between them. The
+# line enters the picture fast, slows to a crawl over the fire (the middle key pair, +-14 km around it, where every
+# detection but one SNPP outlier lies) and leaves fast. Suomi NPP's 375 m re-scan gets the slowest crossing (9.5
+# frames over the fire against Aqua's 5.5), so its finer squares visibly fill in behind the line. The first and last
+# keys start and end outside the picture and outside every detection of the pass (a test checks it).
 TRACK_AZ = -12.0  # both are ascending (northbound) daytime passes; ground track about 12 degrees west of north
 TRACK = (math.sin(math.radians(TRACK_AZ)), math.cos(math.radians(TRACK_AZ)))
-PASS_SPAN = (-70.0, 30.0)  # the scan line's travel along the track, km from the scene centre, over a pass's frames
-                           # (covers every detection of both passes; a test checks it)
+CROSS = (TRACK[1], -TRACK[0])  # across the track, to the east-north-east
 
 Z_PLANE = 12.0  # height of the flat timeline and calendar layouts, above the peaks and the smoke
 HIST = {"x0": -95.0, "x1": 95.0, "y0": -56.0, "sub": 5, "gap": 0.1}  # low in the picture: the page's text sits mid-screen
@@ -161,7 +168,9 @@ def _m(date: str, hhmm: str) -> float:
 CLOCK = (
     (0.0, _m("2017-06-18", "0300")),
     (36.0, _m("2017-06-18", "1240")),
-    (54.0, _m("2017-06-18", "1249")),
+    (47.0, _m("2017-06-18", "1250")),  # Aqua's pass (PASSES)
+    (55.0, _m("2017-06-18", "1257")),
+    (57.5, _m("2017-06-18", "1325")),  # Suomi NPP's pass
     (72.0, _m("2017-06-18", "1335")),
     (108.0, _m("2017-12-31", "2359")),
 )
@@ -176,8 +185,9 @@ def scan_line(frame: float):
     """(pass, km along the track) for the scan line crossing the scene at `frame`, or None between passes."""
     for ps in PASSES:
         f0, f1 = ps["frames"]
-        if f0 <= frame <= f1:  # PASS_SPAN starts and ends outside the picture, so the line enters and leaves it
-            return ps, PASS_SPAN[0] + (frame - f0) / (f1 - f0) * (PASS_SPAN[1] - PASS_SPAN[0])
+        if f0 <= frame <= f1:
+            kf, km = zip(*ps["track"])
+            return ps, float(np.interp(frame, kf, km))
     return None
 
 
@@ -193,8 +203,8 @@ def on_frames(p: dict) -> np.ndarray:
     for ps in PASSES:
         t0, t1 = _m(STORY_DAY, ps["from"]), _m(STORY_DAY, ps["to"])
         sel = np.array([s == ps["satellite"] for s in p["satellite"]]) & (p["t"] >= t0) & (p["t"] <= t1)
-        f0, f1 = ps["frames"]
-        out[sel] = np.interp(along_track(p["x"][sel], p["y"][sel]), PASS_SPAN, (f0, f1))
+        kf, km = zip(*ps["track"])
+        out[sel] = np.interp(along_track(p["x"][sel], p["y"][sel]), km, kf)
     return out
 
 
