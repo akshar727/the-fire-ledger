@@ -14,6 +14,7 @@ import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, GlobeHem
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Disclosure } from "@/components/Disclosure";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { PlayCalendar } from "@/components/PlayCalendar";
 import { SpaceView } from "@/components/SpaceView";
@@ -263,7 +264,10 @@ function CalendarView({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
+      {/* FE-025: on a wide screen the card and legend are a column beside the calendar, so the headline number and the
+          calendar's first rows share the first screen; narrower, they stack above it as before */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)] xl:items-start">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end xl:flex xl:flex-col xl:items-stretch">
         {latestMonth &&
           (mtd && latestMonth.partial ? (
             <MonthToDateCard
@@ -315,11 +319,11 @@ function CalendarView({
             </ToggleGroup>
           )}
         </div>
-        <div className="mb-3">
+        <div className="mb-2">
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.${week ? "" : " Click a month or press Enter to see it from space."}`}
+          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read it${week ? "." : "; click or press Enter to see it from space."}`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -462,8 +466,8 @@ function CalendarView({
         </div>
         {week ? (
           <p className="mt-4 text-sm text-muted-foreground">
-            Week w of a year is days 7w+1 to 7w+7, so weeks start on the same date every year and the last week runs to
-            31 December (8 or 9 days). Monthly medians and unusual-month marks are in the month view.
+            Week w is days 7w+1 to 7w+7 of the year (the last runs to 31 December); medians and unusual-month marks are in
+            the month view.
           </p>
         ) : (
           !stats && (
@@ -480,6 +484,7 @@ function CalendarView({
           />
         </div>
       </section>
+      </div>
       {!week && space && (
         <SpaceView region={label.region} year={space.year} month={space.month} opened={space.opened} onClose={closeSpace} />
       )}
@@ -550,11 +555,16 @@ function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; 
         </table>
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
-        NASA POWER daily weather (hot, dry air times wind, damped by the last 30 days of rain), averaged over the region
-        where its fires are. Chance alone would put about {Math.round(100 * s.baseShare)}% of months in that column.
-        Weather is shown next to the record, never used to make it.
+        Chance alone would put about {Math.round(100 * s.baseShare)}% of months in the fire-prone (top-quarter weather) column.
       </p>
+      {/* FE-025: the method note, on request */}
+      <Disclosure summary="How fire-prone weather is measured">
+        <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
+          Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
+          NASA POWER daily weather (hot, dry air times wind, damped by the last 30 days of rain), averaged over the region
+          where its fires are. Weather is shown next to the record, never used to make it.
+        </p>
+      </Disclosure>
     </section>
   );
 }
@@ -812,10 +822,10 @@ function Legend({
 
 export function CalendarSkeleton() {
   return (
-    <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading the calendar">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)] xl:items-start" aria-busy="true" aria-label="Loading the calendar">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:flex xl:flex-col">
         <div className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
-        <div className="h-16 animate-pulse self-end rounded-md bg-muted motion-reduce:animate-none" />
+        <div className="h-16 animate-pulse self-end rounded-md bg-muted motion-reduce:animate-none xl:self-stretch" />
       </div>
       <div className="grid grid-cols-[5rem_repeat(12,minmax(0,1fr))] gap-[3px] rounded-xl border bg-card p-4 sm:p-6">
         {Array.from({ length: 13 * 10 }, (_, i) => (
