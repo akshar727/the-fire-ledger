@@ -270,7 +270,7 @@ export const NEUTRAL = "#6b5a56";
 export const TREND_STOPS = ["#2f7fc1", "#62a3d6", "#a6cbe8", "#f5b39a", "#f0703f", "#d4291c"];
 /** Trend bin edges in % a year between the 6 colours (≤ -4, -4..-1.5, -1.5..0, 0..1.5, 1.5..4, ≥ 4). */
 export const TREND_EDGES = [-4, -1.5, 0, 1.5, 4];
-/** "Significant" = Mann-Kendall p below this (the record trend's bar, FE-014). */
+/** "Significant" = Mann-Kendall p below this (the ledger trend's bar, FE-014). */
 export const SIG_P = 0.05;
 
 const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));

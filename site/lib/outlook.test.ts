@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { backtest, cumAt, forecastFrom, outlook, quantile, seasons, seasonStartWeek, weekAtShare } from "./outlook.ts";
 import { parseSeries, seasonTiming, type Weekly } from "./series.ts";
 
-// Synthetic weekly record: every year has the same shape (quietest week 40, peak around week 10), scaled by its own
+// Synthetic weekly ledger: every year has the same shape (quietest week 40, peak around week 10), scaled by its own
 // factor, so every season finishes with the same ratio and a forecast must be exact.
 const shape = (wk: number) => {
   const d = Math.min(Math.abs(wk - 10), 52 - Math.abs(wk - 10));
@@ -103,7 +103,7 @@ test("back-test catches a season that finished unlike the others (no leak)", () 
   for (const r of rows) assert.ok(r.covered < r.n, `share ${r.share}: ${r.covered}/${r.n}`);
 });
 
-test("season-complete: the record ends on a season boundary", () => {
+test("season-complete: the ledger ends on a season boundary", () => {
   const o = outlook(synthetic(12, 40), [2001, 2012])!;
   assert.equal(o.current.complete, true);
   assert.equal(o.forecast, null);
@@ -111,7 +111,7 @@ test("season-complete: the record ends on a season boundary", () => {
 });
 
 test("week 51 is complete only with all of its 8 or 9 days", () => {
-  // the record ends in week 51 of 2012, a leap year: 23-31 Dec, 9 days
+  // the ledger ends in week 51 of 2012, a leap year: 23-31 Dec, 9 days
   assert.equal(seasons(synthetic(12, 0, 8), 0).at(-1)!.complete, false);
   assert.equal(seasons(synthetic(12, 0, 9), 0).at(-1)!.complete, true);
 });

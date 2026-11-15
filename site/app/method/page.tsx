@@ -26,7 +26,7 @@ const SECTIONS = [
 const ARCHIVE_URL = "https://firms.modaps.eosdis.nasa.gov/country/";
 const AREA_API_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/";
 
-// Every region, in index.json order, with its annual record (scores, years) and display name. DP-009: the cell regions
+// Every region, in index.json order, with its annual ledger (scores, years) and display name. DP-009: the cell regions
 // make up the main text and table; whole countries get their own table under the hold-out.
 const ALL = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id), through: r.data_through, tier: r.tier }));
 const RECORDS = ALL.filter((r) => r.tier === "region");
@@ -36,7 +36,7 @@ const SPAN = recordSpan();
 const SCORE_ROWS = ALL.map((r) => scoreRow(r.id, r.name, r.tier === "country", r.D as unknown as ScoreSource));
 const BOARD = summarize(SCORE_ROWS);
 const REF = loadReferee();
-// End of the downloaded record (index.json archive_through, the same for every region), e.g. 2026-11-02.
+// End of the downloaded ledger (index.json archive_through, the same for every region), e.g. 2026-11-02.
 const THROUGH = RECORDS.map((r) => r.through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
 
@@ -132,7 +132,7 @@ export default function MethodPage() {
         <header className="flex flex-col gap-4">
           <h1 className="text-4xl leading-[1.05] font-bold tracking-tight md:text-5xl">Method</h1>
           <p className="text-lg">
-            How we turn two satellite fire records into one, and how far the result can be trusted.
+            How we turn two satellite fire ledgers into one, and how far the result can be trusted.
           </p>
         </header>
 
@@ -258,9 +258,9 @@ export default function MethodPage() {
           )}
           {FORWARD.length > 0 && (
             <p id="forward-link">
-              <span className="font-medium text-foreground">After Suomi NPP.</span> The Suomi NPP record ends on{" "}
+              <span className="font-medium text-foreground">After Suomi NPP.</span> The Suomi NPP ledger ends on{" "}
               {dayLabel(FORWARD[0].D.data_through)}. NOAA-20 and NOAA-21 carry the same VIIRS instrument in the same
-              orbit, about 50 minutes apart, so a second, much smaller model carries the record on: one ratio per region
+              orbit, about 50 minutes apart, so a second, much smaller model carries the ledger on: one ratio per region
               and day or night pass that turns their detections into Suomi-NPP-equivalent counts, fitted on{" "}
               {span(FORWARD[0].F.train)} and tested on {span(FORWARD[0].F.hold)}, where Suomi NPP is there to check
               against. On the months of that test with at least {FORWARD[0].F.min_month} detections, its mean monthly
@@ -270,7 +270,7 @@ export default function MethodPage() {
                   .map((r) => r.name)
                   .join(" and ")} the simple NOAA-20 ratio does as well, so the link adds little there beyond using both NOAA satellites. `}
               Days after {dayLabel(FORWARD[0].D.data_through, false)}, up to{" "}
-              {dayLabel(FORWARD[0].D.forward_through!)}, are marked in the calendar with a bar and in the record chart
+              {dayLabel(FORWARD[0].D.forward_through!)}, are marked in the calendar with a bar and in the ledger chart
               with a dashed stem; the month still running is compared only with the same days of other years.
             </p>
           )}
@@ -305,8 +305,8 @@ export default function MethodPage() {
           <p>
             The hold-out cannot test {SPAN.first}-{VIIRS_FROM - 1} directly. MODIS burned area (MCD64) can help: it
             maps the land that burned each month from 2000 on with one method throughout, so it has no {VIIRS_FROM}{" "}
-            sensor switch. If the harmonized record is right, fire detections per square kilometre burned should stay
-            about level across {VIIRS_FROM}; the stitched record (MODIS counts, then VIIRS counts) should jump. We sum
+            sensor switch. If the harmonized ledger is right, fire detections per square kilometre burned should stay
+            about level across {VIIRS_FROM}; the stitched ledger (MODIS counts, then VIIRS counts) should jump. We sum
             burned area over exactly the grid cells the model uses and compare {REF.before[0]}-{REF.before[1]} with{" "}
             {REF.after[0]}-{REF.after[1]}.
           </p>
@@ -331,7 +331,7 @@ export default function MethodPage() {
               <tbody className="divide-y text-muted-foreground tabular-nums">
                 <tr>
                   <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Stitched record
+                    Stitched ledger
                   </th>
                   {RECORDS.map((r) => (
                     <td key={r.id} className="px-3 py-2 whitespace-nowrap">
@@ -341,7 +341,7 @@ export default function MethodPage() {
                 </tr>
                 <tr>
                   <th scope="row" className="px-3 py-2 text-left font-normal text-foreground">
-                    Harmonized record
+                    Harmonized ledger
                   </th>
                   {RECORDS.map((r) => (
                     <td key={r.id} className="px-3 py-2 font-medium whitespace-nowrap text-foreground">
@@ -367,11 +367,11 @@ export default function MethodPage() {
           </div>
           <p>
             Across {VIIRS_FROM}, detections per area burned jump{" "}
-            {stepRange(RECORDS.map((r) => REF.regions[r.id]?.stitched.step ?? null))} in the stitched record and move{" "}
-            {stepRange(RECORDS.map((r) => REF.regions[r.id]?.harmonized.step ?? null))} in the harmonized record.{" "}
+            {stepRange(RECORDS.map((r) => REF.regions[r.id]?.stitched.step ?? null))} in the stitched ledger and move{" "}
+            {stepRange(RECORDS.map((r) => REF.regions[r.id]?.harmonized.step ?? null))} in the harmonized ledger.{" "}
             {RECORDS.every((r) => REF.regions[r.id] && nearLevel(REF.regions[r.id]))
-              ? "In every region the harmonized record stays within 25% of level and much closer to it than the stitched record, which is consistent with the back-cast removing the sensor jump."
-              : "Not every region's harmonized record stays within 25% of level, so this check only partly supports the back-cast."}
+              ? "In every region the harmonized ledger stays within 25% of level and much closer to it than the stitched ledger, which is consistent with the back-cast removing the sensor jump."
+              : "Not every region's harmonized ledger stays within 25% of level, so this check only partly supports the back-cast."}
           </p>
           <p>
             Detections per area burned in the back-cast years compared with the observed VIIRS years:{" "}
@@ -447,7 +447,7 @@ export default function MethodPage() {
               {ARCHIVE_END + 1} Terra passes about 1.5 hours earlier than in the training years (near 9:10 local time)
               and Aqua about 1.5 hours later (near 15:00), so MODIS sees a different share of each day&apos;s fires.
               The model, fitted when both orbits were stable, then predicts {ARCHIVE_END + 1} about 16% too low in
-              Ghana and north-west India. The published record uses observed VIIRS from {VIIRS_FROM} on, so the line
+              Ghana and north-west India. The published ledger uses observed VIIRS from {VIIRS_FROM} on, so the line
               itself is not affected, but the model should not be read as a forecast from recent MODIS data.
             </li>
           </ul>

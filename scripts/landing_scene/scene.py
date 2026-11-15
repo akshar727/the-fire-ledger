@@ -9,7 +9,7 @@ What is in it, and where it comes from:
   squares   every 2017 detection in that area from site/public/data/portugal/points/2017.csv, at its position, drawn
             at the sensor's nominal pixel size (MODIS 1 km, VIIRS 375 m), switched on in time order
   timeline  the same squares stacked by day of 2017
-  calendar  the same number of squares dealt over 26 x 12 cells in proportion to the harmonized monthly record in
+  calendar  the same number of squares dealt over 26 x 12 cells in proportion to the harmonized monthly ledger in
             site/public/data/portugal/series.json
   trees, grass, smoke, satellites, sky, sun: drawn by this script (no imported models, textures or images)
 

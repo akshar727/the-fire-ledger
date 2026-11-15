@@ -45,10 +45,14 @@ export interface GlobeCanvasProps {
 
 const RADIUS_MIN = 140; // three-globe radius is 100: zoom stops just above the surface ...
 const RADIUS_MAX = 520; // ... and before the globe is a dot
+const SPIN_SPEED = 0.2; // OrbitControls units: about two and a half minutes a turn
+const SPIN_RESUME_MS = 4000; // idle time after a drag or a table pick before the spin picks up again
 
 export default function GlobeCanvas(props: GlobeCanvasProps) {
   const host = useRef<HTMLDivElement>(null);
   const globe = useRef<GlobeInstance | null>(null);
+  /** Pause (on) or release (off) the passive spin for one reason; it runs only while nothing holds it. */
+  const spinHold = useRef<(reason: string, on: boolean, delay?: number) => void>(() => {});
   const latest = useRef(props);
   // eslint-disable-next-line react-hooks/refs -- callbacks read the newest props without rebuilding the globe
   latest.current = props;
@@ -72,6 +76,8 @@ export default function GlobeCanvas(props: GlobeCanvasProps) {
         .onPolygonHover((o) => {
           const s = o as Shape | null;
           el.style.cursor = s?.id ? "pointer" : "";
+          // hold still under the pointer, or the country would turn away from it
+          spinHold.current("hover", !!s);
           latest.current.onHover(s?.id ?? null, s ? s.name : null);
         })
         .onPolygonClick((o) => {
@@ -98,13 +104,36 @@ export default function GlobeCanvas(props: GlobeCanvasProps) {
     controls.enableDamping = true;
     controls.rotateSpeed = 0.6;
     controls.zoomSpeed = 0.8;
-    // slow spin until the first touch; never under reduced motion
-    controls.autoRotate = !latest.current.reducedMotion;
-    controls.autoRotateSpeed = 0.35;
-    const stop = () => {
-      controls.autoRotate = false;
+    // slow passive spin, paused while dragging, hovering a country or showing a table pick, and resumed a few seconds
+    // after; never under reduced motion
+    controls.autoRotateSpeed = SPIN_SPEED;
+    const holds = new Set<string>();
+    const timers = new Map<string, ReturnType<typeof setTimeout>>();
+    const applySpin = () => {
+      controls.autoRotate = !latest.current.reducedMotion && holds.size === 0;
     };
+    spinHold.current = (reason, on, delay = 0) => {
+      clearTimeout(timers.get(reason));
+      timers.delete(reason);
+      if (on) holds.add(reason);
+      else if (delay > 0) {
+        timers.set(
+          reason,
+          setTimeout(() => {
+            timers.delete(reason);
+            holds.delete(reason);
+            applySpin();
+          }, delay),
+        );
+        return;
+      } else holds.delete(reason);
+      applySpin();
+    };
+    applySpin();
+    const stop = () => spinHold.current("drag", true);
+    const resume = () => spinHold.current("drag", false, SPIN_RESUME_MS);
     controls.addEventListener("start", stop);
+    controls.addEventListener("end", resume);
     // OrbitControls sets touch-action: none, which would trap page scroll on phones: let vertical swipes scroll the
     // page and keep horizontal swipes (and pinch) for the globe
     controls.domElement.style.touchAction = "pan-y";
@@ -127,6 +156,9 @@ export default function GlobeCanvas(props: GlobeCanvasProps) {
     latest.current.onReady();
     return () => {
       controls.removeEventListener("start", stop);
+      controls.removeEventListener("end", resume);
+      timers.forEach(clearTimeout);
+      spinHold.current = () => {};
       ro.disconnect();
       io.disconnect();
       g.renderer().forceContextLoss(); // hand the WebGL context back now, not at garbage collection
@@ -154,15 +186,22 @@ export default function GlobeCanvas(props: GlobeCanvasProps) {
       .polygonAltitude((o) => p(o).altitude);
   }, [version, active, shapes]);
 
+  // reduced motion switched on or off while the page is open
+  const { reducedMotion } = props;
+  useEffect(() => {
+    spinHold.current("motion", reducedMotion);
+  }, [reducedMotion]);
+
   // turn to a region chosen in the table
   const { focus } = props;
   useEffect(() => {
     const g = globe.current;
-    if (!g || !focus) return;
+    if (!g) return;
+    spinHold.current("focus", !!focus, focus ? 0 : SPIN_RESUME_MS);
+    if (!focus) return;
     const s = latest.current.shapes.find((x) => x.id === focus && x.kind === "box") ?? latest.current.shapes.find((x) => x.id === focus);
     if (!s) return;
     const [lng, lat] = geoCentroid({ type: "Feature", properties: {}, geometry: s.geometry } as Parameters<typeof geoCentroid>[0]);
-    g.controls().autoRotate = false;
     g.pointOfView({ lat, lng, altitude: Math.min(g.pointOfView().altitude, 2) }, latest.current.reducedMotion ? 0 : 900);
   }, [focus]);
 

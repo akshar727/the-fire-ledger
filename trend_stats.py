@@ -1,4 +1,4 @@
-"""Trend statistics for the yearly fire record (F-7, ML-020): "is the trend real?".
+"""Trend statistics for the yearly fire ledger (F-7, ML-020): "is the trend real?".
 
 Method: Theil-Sen slope (median of all pairwise slopes, scipy.stats.theilslopes) of the yearly totals against the
 year, with its 90% interval, and a Mann-Kendall test p-value (= Kendall's tau between year and value,

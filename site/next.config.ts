@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
-  // FE-018: the record moved from / to /record and / became the story; later /record was renamed /ledger (Fire Ledger).
+  // FE-018: the ledger moved from / to /record and / became the story; later /record was renamed /ledger (Fire Ledger).
   // Old shared links (/?region=…, /?from=…, /?to=…, /record?…) still open the ledger; Next.js carries the query
   // string over unchanged.
   async redirects() {

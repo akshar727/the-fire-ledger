@@ -5,9 +5,9 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
+  { href: "/globe", label: "Globe" },
   { href: "/ledger", label: "Ledger" },
   { href: "/calendar", label: "Calendar" },
-  { href: "/globe", label: "Globe" },
   { href: "/method", label: "Method" },
 ] as const;
 

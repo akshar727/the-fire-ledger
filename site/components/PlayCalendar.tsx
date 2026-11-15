@@ -1,7 +1,7 @@
 "use client";
 
 // FE-013: "Hear the 2012 satellite jump". One button plays the years around the 2012 sensor switch twice with Web
-// Audio (no library): raw record first (notes jump up at 2012), then harmonized (no jump). lib/sonify.ts builds the
+// Audio (no library): raw ledger first (notes jump up at 2012), then harmonized (no jump). lib/sonify.ts builds the
 // notes; this component schedules them a little ahead (a few dozen live nodes, not one per cell) and marks the sounding
 // cell with a `data-playing` attribute on the calendar's table, so the calendar does not re-render on every note.
 // No AudioContext exists until the click. Unmounting, Next hiding the page on navigation, or a Month / Week switch
@@ -14,8 +14,8 @@ import { jumpTour, noteAt, tourSummary, type Note } from "@/lib/sonify";
 
 const LOOKAHEAD = 2; // seconds of notes scheduled ahead; > 1 s because background tabs run timers once a second
 const TAIL = 0.3; // seconds to let the last note ring before closing
-const CLIP = ["Clip 1 of 2, raw record", "Clip 2 of 2, harmonized record"];
-const GAP_LINE = "Pause. Next: clip 2 of 2, harmonized record";
+const CLIP = ["Clip 1 of 2, raw ledger", "Clip 2 of 2, harmonized ledger"];
+const GAP_LINE = "Pause. Next: clip 2 of 2, harmonized ledger";
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
@@ -176,7 +176,7 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
           {tour ? (
             <>
               Plays {tour.years[0]} to {tour.years[1]} twice, <strong className="font-medium text-foreground">higher note = more fire</strong>:
-              the raw record steps up in {year} when VIIRS takes over, the harmonized one barely does, because it was the
+              the raw ledger steps up in {year} when VIIRS takes over, the harmonized one barely does, because it was the
               satellite changing, not the fire.
             </>
           ) : (

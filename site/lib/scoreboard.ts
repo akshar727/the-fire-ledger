@@ -1,4 +1,4 @@
-// FE-028: the world scoreboard on /method. One row per published record (the 3 deep dives and every whole country in
+// FE-028: the world scoreboard on /method. One row per published ledger (the 3 deep dives and every whole country in
 // index.json, each annual.json read at build time: DP-018), each with its own hold-out check. Pure, no imports, so `node --test` and the client table use it.
 // Country fields (`ship`, `method`, `cell_deg`) are the registry rows "Country-tier outputs" / "Globe data" (ML-023);
 // the deep dives' annual.json has none of them. A country joins index.json (site_bundle.py) as soon as ML-026 commits

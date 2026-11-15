@@ -6,7 +6,7 @@ method (`method="ratio"`: MODIS x the 2012-2019 VIIRS/MODIS ratio, no fit, secon
 Writes site/public/data/<region_id>/annual.json and series.json (monthly + weekly series with 5-95% bands,
 plus the burn-calendar block from calendar_stats.calendar_block);
 run() also returns per-week sums and bootstrap draw sums.
-After the S-NPP end (`archive_through`) the record continues with S-NPP-equivalent counts from NOAA-20/21
+After the S-NPP end (`archive_through`) the ledger continues with S-NPP-equivalent counts from NOAA-20/21
 (forward_link.py, ML-017); every period carries `source`: backcast | observed | forward."""
 import argparse, gc, json, os, time
 import numpy as np, pandas as pd
@@ -135,7 +135,7 @@ def week_start(yr, wk):
     return pd.Timestamp(yr, 1, 1) + pd.Timedelta(days=7 * wk)
 
 def forward_through(sensors, archive_through):
-    """Last day of the forward record: the earliest NOAA-20/21 `data_through` in the manifest, or None if there is
+    """Last day of the forward ledger: the earliest NOAA-20/21 `data_through` in the manifest, or None if there is
     no NOAA data past `archive_through`."""
     ends = [pd.Timestamp(sensors[s]["data_through"]) for s in ("n20", "n21") if s in sensors]
     end = min(ends) if ends else None
@@ -157,7 +157,7 @@ def write_json(path, obj):
 
 def kept_weeks(through):
     """(year, week) pairs from 2001 that start on or before `through`. The last one is partial when it ends after
-    `through` (ML-010: dropping it cut the record, and the last whole month, short of the data)."""
+    `through` (ML-010: dropping it cut the ledger, and the last whole month, short of the data)."""
     through = pd.Timestamp(through)
     return [(yr, wk) for yr in range(2001, through.year + 1) for wk in range(52) if week_start(yr, wk) <= through]
 
@@ -247,7 +247,7 @@ def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
         return d
     monthly = block(S, Fm, mstarts, [m + pd.offsets.MonthEnd(0) for m in mstarts])
     monthly["last_month_days"] = (min(mstarts[-1] + pd.offsets.MonthEnd(0), end) - mstarts[-1]).days + 1
-    # burn calendar (ML-005): stats on the published harmonized record = observed VIIRS where it exists, else the model;
+    # burn calendar (ML-005): stats on the published harmonized ledger = observed VIIRS where it exists, else the model;
     # a partial last month (forward, to date) is left out so it is never compared with whole months
     harmonized = [p if v is None else v for v, p in zip(monthly["viirs"], monthly["pred"])]
     if monthly["last_month_days"] < (mstarts[-1] + pd.offsets.MonthEnd(0)).day:
@@ -501,7 +501,7 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
     bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_bc}, draws, through, fwd)
-    # trend (ML-020, F-7): naive stitched record (raw MODIS for weeks before VIIRS_START, raw VIIRS after, so 2012
+    # trend (ML-020, F-7): naive stitched ledger (raw MODIS for weeks before VIIRS_START, raw VIIRS after, so 2012
     # has no fake dip; same rule as the monthly viirs ?? modis) vs harmonized, complete years only. The bootstrap range
     # puts each draw in place of the model mean in the back-cast weeks (observed VIIRS fixed).
     full = [i for i, yr in enumerate(years) if complete[yr]]

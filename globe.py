@@ -1,5 +1,5 @@
 """ML-023: site/public/data/globe.json, the one file the 3D globe (FE-026) and the method-page scoreboard (FE-028) read:
-every region in index.json that has an annual.json, with its yearly harmonized record, label and score. Registry row
+every region in index.json that has an annual.json, with its yearly harmonized ledger, label and score. Registry row
 "Globe data". Complete years only (2001-2025: the partial current year is left out), aligned with `years`.
 
 model.py and run_countries.py call write(); on its own: `python globe.py` from anywhere.
@@ -56,7 +56,7 @@ def build(out=OUT, countries_path=COUNTRIES):
         if os.path.isfile(p):
             rows.append((r["id"],) + entry(r, load(p), iso))
     # every record starts in 2001 and runs to its own last complete year: the globe spans the longest one, and a
-    # shorter record (a tiny country FIRMS has no 2025 file for) is padded with null, never trimming the others
+    # shorter ledger (a tiny country FIRMS has no 2025 file for) is padded with null, never trimming the others
     years = max((yrs for _, yrs, _ in rows), key=len, default=[])
     for rid, yrs, e in rows:
         if yrs != years[:len(yrs)]:

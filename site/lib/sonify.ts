@@ -1,12 +1,12 @@
 // "Hear the 2012 satellite jump" (FE-013): pure value -> note mapping for components/PlayCalendar.tsx. No Web Audio
 // here, so `node --test` can check it. Relative imports only (see lib/series.ts).
 //
-// The tour plays the years around the 2012 sensor switch twice: first the raw stitched record (MODIS counts before
-// 2012, VIIRS after), where the notes jump up because VIIRS sees several times more fires; then the harmonized record,
+// The tour plays the years around the 2012 sensor switch twice: first the raw stitched ledger (MODIS counts before
+// 2012, VIIRS after), where the notes jump up because VIIRS sees several times more fires; then the harmonized ledger,
 // where they don't, because the jump was the satellite, not the fire.
 import type { CalendarCell, CalendarGrid, GridView, SeriesBundle } from "./series.ts";
 
-/** "raw" = the stitched record (viirs ?? modis), 2012 jump left in; "harmonized" = what the calendar shows (viirs ?? pred). */
+/** "raw" = the stitched ledger (viirs ?? modis), 2012 jump left in; "harmonized" = what the calendar shows (viirs ?? pred). */
 export type Source = "raw" | "harmonized";
 
 export const LOW_HZ = 130.81; // C3: the note for the fewest detections

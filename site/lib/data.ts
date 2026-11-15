@@ -61,7 +61,7 @@ export function regionInfo(region: RegionId): RegionInfo {
 }
 
 /**
- * Selectable dates: from the first year of the annual record to the end of the downloaded archive, or to the end of
+ * Selectable dates: from the first year of the annual ledger to the end of the downloaded archive, or to the end of
  * the NOAA-20/21 forward link when there is one (FE-009: its weeks and points run past the Suomi NPP end). DP-018: both
  * come from index.json, so the dates are known before annual.json is fetched.
  */

@@ -52,7 +52,7 @@ export type Annual = {
   score: Score;
   partial: number[]; // 1 = fewer than 52 kept weeks (the year still running, e.g. 2026)
   data_through: string; // YYYY-MM-DD, last day with data (the archive end; ML-010)
-  // ML-009: published record = observed VIIRS weeks + model for weeks before VIIRS started (2012 weeks 0-2)
+  // ML-009: published ledger = observed VIIRS weeks + model for weeks before VIIRS started (2012 weeks 0-2)
   harmonized: number[];
   viirs_partial: number[]; // 1 = blended year: observed VIIRS for part of it, model for the rest
   // ML-017: `harmonized` (and pred/lo/hi) of a "forward" year add S-NPP-equivalent counts from NOAA-20/21 for the days
@@ -132,7 +132,7 @@ export function partialLabel(D: Annual, i: number): string {
 }
 
 /**
- * The whole published record across regions, for site-wide copy: first year, last complete year (common to all
+ * The whole published ledger across regions, for site-wide copy: first year, last complete year (common to all
  * regions), last year, latest `data_through`, and the region names as one phrase ("A, B and C").
  */
 export function spanOf(list: Annual[], names: string[]) {

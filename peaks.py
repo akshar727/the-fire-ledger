@@ -54,7 +54,7 @@ def daily_counts(grid, archive_through, n20_through):
 
 
 def build_peaks(region, grid, archive_through, n20_through=None):
-    """n20_through None (no NOAA-20 data) means the record ends at archive_through."""
+    """n20_through None (no NOAA-20 data) means the ledger ends at archive_through."""
     n20_through = n20_through or archive_through
     daily = daily_counts(grid, archive_through, n20_through)
     last = daily.index[-1]

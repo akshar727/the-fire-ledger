@@ -140,7 +140,7 @@ export function DownloadCsv() {
               ).
             </p>
             <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-              Pictures: &quot;Download picture&quot; under the record chart and the calendar saves what is on screen as PNG
+              Pictures: &quot;Download picture&quot; under the ledger chart and the calendar saves what is on screen as PNG
               or SVG, with title, legend and the FIRMS acknowledgment.
             </p>
 
@@ -166,7 +166,7 @@ export function DownloadCsv() {
             )}
             {earlier.length > 0 && (
               <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-                Before the record starts:{" "}
+                Before the ledger starts:{" "}
                 {earlier.map((y, i) => (
                   <span key={y}>
                     {i > 0 && ", "}

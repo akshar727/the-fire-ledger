@@ -1,6 +1,6 @@
 "use client";
 
-// Fire Ledger view for the selected region and dates (?region=&from=&to=): hero stat, the record chart and its trend (FE-014), hold-out
+// Fire Ledger view for the selected region and dates (?region=&from=&to=): hero stat, the ledger chart and its trend (FE-014), hold-out
 // scores and downloads. DP-018: the region's annual.json is fetched when it is picked (`use(fetchAnnual(...))`, so the
 // page's Suspense fallback shows while it loads; a region switch is a router transition, so the old view stays until
 // the new one is ready); nothing per region is in the page bundle.
@@ -23,7 +23,7 @@ import { useSelection } from "@/lib/use-selection";
 export function JumpStat() {
   const { sel } = useSelection();
   const data = use(fetchAnnual(sel.region));
-  if (!data) return <div className="md:col-span-4" />; // RecordExplorer says the record is missing
+  if (!data) return <div className="md:col-span-4" />; // RecordExplorer says the ledger is missing
   const label = SHIP_LABEL[sel.region];
   const era = eraMeans(data);
   // FE-029: with a handful of detections a year (sparse countries) the ratio of the two means is noise, e.g. 0 to 0
@@ -114,7 +114,7 @@ export function RecordExplorer() {
 
 export function RecordSkeleton() {
   return (
-    <div className="flex flex-col gap-6 panel p-4 sm:p-6" role="status" aria-busy="true" aria-label="Loading the record">
+    <div className="flex flex-col gap-6 panel p-4 sm:p-6" role="status" aria-busy="true" aria-label="Loading the ledger">
       <div className="h-9 w-80 max-w-full animate-pulse rounded-md bg-muted motion-reduce:animate-none" />
       <div className="h-14 w-full max-w-xl animate-pulse rounded-md bg-muted motion-reduce:animate-none" />
       <div className="aspect-[800/330] w-full animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />

@@ -1,4 +1,4 @@
-// Browser half of the picture downloads (FE-015): resolves theme colours, serialises the live record chart with its
+// Browser half of the picture downloads (FE-015): resolves theme colours, serialises the live ledger chart with its
 // computed colours inlined, rasterises an SVG to PNG and saves files. Client components only (needs the DOM).
 import type { PictureTheme } from "./picture.ts";
 import { MONO, SANS } from "./picture.ts";

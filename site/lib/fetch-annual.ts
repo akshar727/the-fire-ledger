@@ -6,7 +6,7 @@ const cache = new Map<string, Promise<Annual | null>>();
 
 /**
  * /data/<region>/annual.json, fetched once per region and page load. Never rejects: null when the file is missing,
- * unreadable or not an annual record. The SAME promise is returned on every call, including after a failure: React's
+ * unreadable or not an annual ledger. The SAME promise is returned on every call, including after a failure: React's
  * `use()` re-renders a suspended component from scratch on first mount, so a fresh promise per call would fetch in an
  * endless loop (R10). A failure therefore stays cached until the page reloads, which is what the error message asks for.
  */

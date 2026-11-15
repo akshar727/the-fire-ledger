@@ -1,7 +1,7 @@
 "use client";
 
-// FE-014 (F-7): "is the trend real?" under the record chart. One sentence and a small graphic of the Theil-Sen slope
-// and its 90% interval for the stitched and the harmonized record, recomputed for the complete years in the selected
+// FE-014 (F-7): "is the trend real?" under the ledger chart. One sentence and a small graphic of the Theil-Sen slope
+// and its 90% interval for the stitched and the harmonized ledger, recomputed for the complete years in the selected
 // range (lib/trend.ts, a port of trend_stats.py). The stitched 2012 total needs the weekly file, so series.json is
 // fetched only when 2012 is in a range other than the published 2001-2025 block (whose answer annual.json already
 // holds); the harmonized row never waits for it.
@@ -48,7 +48,7 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
       <Disclosure summary="How the trend is measured">
         <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
           Theil-Sen slope as a share of the median year, with its {Math.round(ALPHA * 100)}% interval; significant means a
-          Mann-Kendall p below 0.05. Partial years are left out. The stitched record glues raw MODIS (before 20 January{" "}
+          Mann-Kendall p below 0.05. Partial years are left out. The stitched ledger glues raw MODIS (before 20 January{" "}
           {VIIRS_FROM}) to raw VIIRS, so it carries the sensor change.
           {r.boot &&
             ` The thin tick marks show how much the harmonized slope moves across the ${D.method === "ratio" ? "ratio estimate's" : "model's"} back-cast draws.`}

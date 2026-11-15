@@ -1,7 +1,7 @@
 "use client";
 
 // From / to date filter (UTC days, both included) plus a whole-year shortcut. A date is written to the URL only once it
-// is a complete date inside the record, so typing a year digit by digit doesn't jump the field to the first year.
+// is a complete date inside the ledger, so typing a year digit by digit doesn't jump the field to the first year.
 // Either end can cross the other; the other end then moves to the same day (moveEnd).
 import { useId, useState } from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";

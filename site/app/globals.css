@@ -54,7 +54,7 @@
 }
 
 /* Red "Thermal console" theme: near-black with a red cast, hairlines instead of boxes, one signal red.
-   Chart series: --primary = harmonized record, --modis = raw MODIS, --viirs = observed VIIRS.
+   Chart series: --primary = harmonized ledger, --modis = raw MODIS, --viirs = observed VIIRS.
    --tick = the corner ticks on panels and chapters. Square corners everywhere (--radius: 0). */
 :root {
   color-scheme: dark;

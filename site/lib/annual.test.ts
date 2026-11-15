@@ -95,7 +95,7 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(h0, HOLD_FROM);
     assert.ok(h1 <= lastCompleteYear(D));
     assert.ok(D.years.includes(VIIRS_FROM) && D.viirs[D.years.indexOf(VIIRS_FROM) - 1] === null);
-    // the jump uses complete years only, from the harmonized record (ML-009)
+    // the jump uses complete years only, from the harmonized ledger (ML-009)
     assert.equal(D.harmonized.length, D.years.length);
     assert.equal(D.viirs_partial.length, D.years.length);
     const e = eraMeans(D);

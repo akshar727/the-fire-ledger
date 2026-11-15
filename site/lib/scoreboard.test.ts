@@ -12,7 +12,7 @@ import {
   type ScoreSource,
 } from "./scoreboard.ts";
 
-// DP-018: every published record, read one annual.json per index.json region (annual-all.json is gone)
+// DP-018: every published ledger, read one annual.json per index.json region (annual-all.json is gone)
 const readData = (p: string) => JSON.parse(readFileSync(new URL(`../public/data/${p}`, import.meta.url), "utf8"));
 const bundle = Object.fromEntries(
   (readData("index.json").regions as { id: string; first_year?: number }[])

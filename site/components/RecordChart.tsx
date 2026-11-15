@@ -1,8 +1,8 @@
 "use client";
 
-// Annual record chart with the Raw / Harmonized toggle. Port of the proof-of-concept web/index.html
+// Annual ledger chart with the Raw / Harmonized toggle. Port of the proof-of-concept web/index.html
 // (same series, band and sentences; top margin and two extra labels added), plus a per-year readout on hover / arrow keys.
-// FE-004: draws only the years in `years` (the selected dates); the sentences under it still describe the whole record.
+// FE-004: draws only the years in `years` (the selected dates); the sentences under it still describe the whole ledger.
 // FE-006: a partial year (the year still running, `partial` = 1) is a hollow dot with a "2026 to 28 Oct" label, not
 // joined to the lines, not part of the hold-out and not in the era means.
 // ML-009: the Harmonized view draws `harmonized` from 2012 (2012 = observed VIIRS from 20 Jan + model for 1-19 Jan).
@@ -125,7 +125,7 @@ export function RecordChart({
   const noJump = sparse || !Number.isFinite(era.jump); // as JumpStat
   const note =
     mode === "raw"
-      ? `Naively stitched record. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by ${by})` +
+      ? `Naively stitched ledger. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by ${by})` +
         (noJump
           ? `: too few detections to read a jump.`
           : `: ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire changed.`)
@@ -175,7 +175,7 @@ export function RecordChart({
     const chart = serializeChart(svgRef.current, theme.bg);
     return composePicture({
       title: `Annual active-fire detections, ${region}`,
-      subtitle: `${mode === "raw" ? "Raw (naively stitched) record" : "Harmonized record, VIIRS scale"}, ${y0 === y1 ? y0 : `${y0}-${y1}`}`,
+      subtitle: `${mode === "raw" ? "Raw (naively stitched) ledger" : "Harmonized ledger, VIIRS scale"}, ${y0 === y1 ? y0 : `${y0}-${y1}`}`,
       legend: legend.map((l) => ({ ...l, color: color(l.color), kind: l.kind ?? "line" })),
       body: chart.body,
       bodyWidth: chart.width,
@@ -377,7 +377,7 @@ export function RecordChart({
       <DownloadPicture
         make={makePicture}
         name={pictureName("record", regionId,mode === "raw" ? "raw" : "harmonized", y0 === y1 ? y0 : `${y0}-${y1}`)}
-        what="record chart"
+        what="ledger chart"
       />
 
       <div className="sr-only">
@@ -386,7 +386,7 @@ export function RecordChart({
           Annual active-fire detections, {region}
           {tail.length > 0 && `. ${tail.map((i) => D.years[i]).join(", ")} is a partial year, data to ${dayLabel(D.data_through)}.`}
           {tail.some((i) => isForward(D, i)) &&
-            ` Its harmonized record adds S-NPP-equivalent counts from NOAA-20/21 to ${dayLabel(D.forward_through!)}.`}
+            ` Its harmonized ledger adds S-NPP-equivalent counts from NOAA-20/21 to ${dayLabel(D.forward_through!)}.`}
         </caption>
         <thead>
           <tr>
@@ -394,7 +394,7 @@ export function RecordChart({
             <th scope="col">MODIS</th>
             <th scope="col">VIIRS observed</th>
             <th scope="col">VIIRS-equivalent ({by === "the ratio" ? "constant ratio" : "model"})</th>
-            <th scope="col">Harmonized record</th>
+            <th scope="col">Harmonized ledger</th>
             <th scope="col">5th percentile</th>
             <th scope="col">95th percentile</th>
           </tr>

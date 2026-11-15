@@ -12,7 +12,7 @@ export type Selection = {
   region: RegionId;
   from: string; // YYYY-MM-DD, inclusive
   to: string; // YYYY-MM-DD, inclusive
-  whole: boolean; // true when the range is the region's whole record
+  whole: boolean; // true when the range is the region's whole ledger
 };
 
 const DAY_MS = 86_400_000;
@@ -68,7 +68,7 @@ export function withSelection(
 
 /**
  * The range after one end is set to `v`. If the new end crosses the other one, the other end moves to the same day, so
- * either field can be moved anywhere in the record without editing the other field first.
+ * either field can be moved anywhere in the ledger without editing the other field first.
  */
 export function moveEnd(sel: { from: string; to: string }, end: "from" | "to", v: string): { from: string; to: string } {
   if (end === "from") return { from: v, to: v > sel.to ? v : sel.to };

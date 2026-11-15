@@ -139,7 +139,7 @@ test("sliceGrid keeps the touched years and marks months outside the dates", () 
   assert.deepEqual(s.years, [2017, 2018]);
   assert.deepEqual(s.rows[0].map((c) => c.inRange), [false, false, false, false, false, true, true, true, true, true, true, true]);
   assert.deepEqual(s.rows[1].map((c) => c.inRange), [true, true, false, false, false, false, false, false, false, false, false, false]);
-  // colours and the latest-month card still describe the whole record
+  // colours and the latest-month card still describe the whole ledger
   assert.equal(s.max, g.max);
   assert.equal(s.latest, g.latest);
   assert.ok(g.rows.flat().every((c) => c.inRange));

@@ -146,15 +146,15 @@ test("wording: sign, significance, missing values", () => {
 test("trendSentence", () => {
   assert.equal(
     trendSentence(rt(stat(6, 0.01), stat(-2, 0.32))),
-    "2001-2025 (25 complete years). Stitched record: +6.0% a year, significant. Harmonized: −2.0% a year, not significant. The stitched trend does not hold once both sensors are on one scale.",
+    "2001-2025 (25 complete years). Stitched ledger: +6.0% a year, significant. Harmonized: −2.0% a year, not significant. The stitched trend does not hold once both sensors are on one scale.",
   );
   assert.equal(
     trendSentence(rt(stat(3.4, 0.09), stat(-2.1, 0.32))),
-    "2001-2025 (25 complete years). Stitched record: +3.4% a year, not significant. Harmonized: −2.1% a year, not significant.",
+    "2001-2025 (25 complete years). Stitched ledger: +3.4% a year, not significant. Harmonized: −2.1% a year, not significant.",
   );
   assert.match(trendSentence(rt(stat(5, 0.001), stat(-3, 0.01))), /opposite directions/);
   assert.match(trendSentence(rt(stat(1, 0.4), stat(4, 0.01))), /shows a trend the stitched one hides/);
   assert.equal(trendSentence(rt(stat(1, 0.01), stat(1, 0.01), 2)), "A trend needs at least 3 complete years; this range has 2.");
-  assert.match(trendSentence(rt(null, stat(1, 0.5))), /Stitched record: loading\./);
-  assert.match(trendSentence(rt(null, stat(1, 0.5)), true), /Stitched record: unavailable \(the weekly file did not load\)\./);
+  assert.match(trendSentence(rt(null, stat(1, 0.5))), /Stitched ledger: loading\./);
+  assert.match(trendSentence(rt(null, stat(1, 0.5)), true), /Stitched ledger: unavailable \(the weekly file did not load\)\./);
 });

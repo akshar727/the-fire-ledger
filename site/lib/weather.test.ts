@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { parseSeries, type CalendarStats } from "./series.ts";
 import { monthWeather, parseWeather, summarySentence, weatherPhrase, weatherSentence, weatherSummary, weatherVerdict, type Weather } from "./weather.ts";
 
-// Two years of a toy file: 24 months, `index` rising through the years so the second year is the record for each month.
+// Two years of a toy file: 24 months, `index` rising through the years so the second year is the ledger for each month.
 function toy(pctl: number[], opts: { complete?: boolean; days?: number; peak7?: number[] } = {}): Weather {
   const n = pctl.length;
   return {

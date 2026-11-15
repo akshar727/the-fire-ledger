@@ -118,7 +118,7 @@ export function BurnCalendar({
       raw={rawValues(bundle, week ? "week" : "month")}
       stats={bundle.calendar}
       weather={weather}
-      // whole record, not the selected dates: the summary counts every complete month
+      // whole ledger, not the selected dates: the summary counts every complete month
       summary={weather && bundle.calendar ? weatherSummary(weather, bundle.calendar, bundle.monthly.start_year, !!monthGrid.latest?.partial) : null}
       label={{ region, from, to }}
       onView={bundle.weekly ? onView : undefined}
@@ -552,7 +552,7 @@ function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; 
         <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
           Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
           NASA POWER daily weather (hot, dry air times wind, damped by the last 30 days of rain), averaged over the region
-          where its fires are. Weather is shown next to the record, never used to make it.
+          where its fires are. Weather is shown next to the ledger, never used to make it.
         </p>
       </Disclosure>
     </section>
@@ -601,7 +601,7 @@ function describe(
 ): string {
   const long = cell.week != null && cell.length > 7 ? ` (${cell.length} days)` : "";
   const when = `${periodLabel(cell)}${long}${cell.inRange ? "" : " (outside the selected dates)"}`;
-  if (cell.value == null) return `${when}: no data in the record yet.`;
+  if (cell.value == null) return `${when}: no data in the ledger yet.`;
   let s = `${when}: ${fmt(cell.value)} harmonized detections (${sourceText(cell, snppEnd, back)}).`;
   if (cell.partial) s += ` Partial ${cell.week == null ? "month" : "week"}: data for ${cell.days} of ${cell.length} days.`;
   if (stats && cell.anomaly != null) {
@@ -629,7 +629,7 @@ function LatestCard({
 }) {
   const name = MONTHS_LONG[cell.month - 1];
   const median = stats?.month_median[cell.month - 1];
-  // Monthly arrays end at the last fully covered month, so the newest the record can be is last month. Once present-day
+  // Monthly arrays end at the last fully covered month, so the newest the ledger can be is last month. Once present-day
   // data (DP-005) reaches that, the card is "last month vs median"; until then it says it shows an older month.
   // read the clock once per mount (a state initializer keeps render pure for the React Compiler); no hydration risk,
   // since this card only renders after the client-side fetch
@@ -640,7 +640,7 @@ function LatestCard({
   return (
     <div className="flex flex-col gap-3 border-l-2 border-primary bg-accent p-5">
       <p className="text-sm text-muted-foreground">
-        {isRecent ? "Last month" : "Latest complete month in the record"}: {monthName(cell)}
+        {isRecent ? "Last month" : "Latest complete month in the ledger"}: {monthName(cell)}
       </p>
       <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="font-mono text-4xl font-semibold tracking-tight tabular-nums">{fmt(cell.value ?? 0)}</span>
@@ -669,7 +669,7 @@ function LatestCard({
       )}
       {!isRecent && (
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Present-day detections are not in the record yet, so this card compares the latest complete month, not this
+          Present-day detections are not in the ledger yet, so this card compares the latest complete month, not this
           month.
         </p>
       )}

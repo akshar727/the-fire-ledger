@@ -1,8 +1,8 @@
 "use client";
 
 // FE-022: season outlook on /ledger, under the annual chart. This fire season's running total against every past
-// season since the record starts, with the forecast range to season end and how that forecast did on past seasons.
-// Every number comes from `outlook()` (lib/outlook.ts, FE-021) on the weekly harmonized record in series.json; the
+// season since the ledger starts, with the forecast range to season end and how that forecast did on past seasons.
+// Every number comes from `outlook()` (lib/outlook.ts, FE-021) on the weekly harmonized ledger in series.json; the
 // sentences and the week-by-week range are in lib/outlook-view.ts. The date range above does not change it: it is
 // always the latest season. FE-017: the season timing section (SeasonTiming) follows, drawn from the same outlook.
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -73,7 +73,7 @@ export function SeasonOutlook({ data, regionId, region }: { data: Annual; region
             This fire season so far
           </h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Each line is one fire season&apos;s running total in {region} (harmonized record, starting in the quietest week, so
+            Each line is one fire season&apos;s running total in {region} (harmonized ledger, starting in the quietest week, so
             a season across New Year stays whole); always the latest season, whatever the dates above.
           </p>
         </div>

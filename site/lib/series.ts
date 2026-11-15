@@ -296,7 +296,7 @@ export function weeklyWindow(w: Weekly, year: number, month: number, fromDay: nu
 }
 
 /**
- * When the last month of the record is partial (`monthly.last_month_days`, ML-017: the forward month to date), compares
+ * When the last month of the ledger is partial (`monthly.last_month_days`, ML-017: the forward month to date), compares
  * it with the same days of that month in the baseline years: median and middle half of their harmonized detections on
  * days 1..N, from the weekly series. A partial month is never compared with whole months, and is not flagged. null when
  * the last month is complete or the bundle has no weekly series.
@@ -339,7 +339,7 @@ export function monthToDate(b: SeriesBundle): MonthToDate | null {
 /**
  * Keeps the year rows that the selected dates touch and marks months outside them (`inRange: false`). Takes
  * `YYYY-MM-DD` dates; a month or week counts as inside if any of its days is. `max`, `latest` and `firstObserved` still describe
- * the whole record, so colours and the latest-month card don't change with the filter.
+ * the whole ledger, so colours and the latest-month card don't change with the filter.
  */
 export function sliceGrid(g: CalendarGrid, from: string, to: string): CalendarGrid {
   const keep = g.years.map((y) => y >= Number(from.slice(0, 4)) && y <= Number(to.slice(0, 4)));
@@ -440,7 +440,7 @@ export const MONTHS_LONG = [
 
 // FE-017: season timing. When in each fire season the running total reaches 10%, 50% and 90% of that season's total,
 // from the weekly cumulative sums `outlook.seasons()` builds (lib/outlook.ts imports this file, so seasons come in as a
-// plain shape here), and whether those dates drift over the years (Theil-Sen + Mann-Kendall, as the record trend).
+// plain shape here), and whether those dates drift over the years (Theil-Sen + Mann-Kendall, as the ledger trend).
 
 /** The fields of an outlook `Season` this needs: running total after each of its 52 weeks, first week `startWeek`. */
 export type SeasonCum = { year: number; label: string; start: string; cum: number[] };
@@ -534,7 +534,7 @@ const TIMING_NAMES = ["first 10%", "halfway point", "90% point"] as const;
 
 /**
  * One sentence on whether onset (the 10% date) is drifting, with the halfway date as a second reading. "Drifting" =
- * Mann-Kendall p < SIGNIFICANT_P and a 90% interval that excludes 0, the same bar as the record trend sentence.
+ * Mann-Kendall p < SIGNIFICANT_P and a 90% interval that excludes 0, the same bar as the ledger trend sentence.
  */
 export function timingSentence(rows: SeasonTiming[], region: string): string {
   const on = timingDrift(rows, 0), mid = timingDrift(rows, 1);

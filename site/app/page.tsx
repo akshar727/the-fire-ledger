@@ -158,7 +158,7 @@ export default function StoryPage() {
             <p className="max-w-[58ch] text-lg leading-[1.65] text-muted-foreground">
               NASA&apos;s MODIS instruments have watched for fire from orbit
               since {monthYear(terraSince)}, and VIIRS since {VIIRS_FROM}. They
-              work differently, so the record breaks in {VIIRS_FROM}. Fire
+              work differently, so the ledger breaks in {VIIRS_FROM}. Fire
               Ledger mends it for{" "}
               {countries > 0
                 ? `${countries} whole countries (labelled where it is only an estimate), and in detail for ${span.regions}.`
@@ -288,9 +288,9 @@ export default function StoryPage() {
 
         {/* 5 · harmonized */}
         <Chapter
-          id="one-record"
+          id="one-ledger"
           n={5}
-          title="One record, with honest error bars."
+          title="One ledger, with honest error bars."
           figure={
             <div className="flex flex-col gap-3">
               <StoryLine
@@ -358,7 +358,7 @@ export default function StoryPage() {
             <Link href="/globe" className="underline underline-offset-4 hover:text-primary">
               See every place on the globe
             </Link>
-            , coloured by its fire record from 2001.
+            , coloured by its fire ledger from 2001.
           </p>
         </Chapter>
       </main>

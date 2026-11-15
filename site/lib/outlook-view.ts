@@ -137,7 +137,7 @@ export function outlookText(o: Outlook, stale = false): OutlookText {
     const { focus, seasons, rank } = staleView(o);
     return {
       headline: `No data for this year yet. The last complete season, ${focus.label}, ended with ${fmt(focus.cum[W - 1])} detections, the ${rankPhrase(rank, seasons.length)} of ${seasons.length}.`,
-      forecast: "No forecast: the record stops before the current season.",
+      forecast: "No forecast: the ledger stops before the current season.",
       honest: "",
     };
   }

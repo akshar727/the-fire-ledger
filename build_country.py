@@ -196,7 +196,7 @@ def build_country(c, raw=build.RAW, out_dir=OUT, delete_raw=False, fetch=None, j
                 rows, last = read_filtered(fpath, bbox)
                 # a yearly archive file covers the whole year: a country with no fire after 24 Dec still has data to
                 # 31 Dec, and a header-only file is a year FIRMS covered with no fire (the last fire would mark 2025
-                # partial and drop it from the record)
+                # partial and drop it from the ledger)
                 cov.end(archive, f"{y}-12-31")
                 nbytes += os.path.getsize(fpath)
                 files += 1

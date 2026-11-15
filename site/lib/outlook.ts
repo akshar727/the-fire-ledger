@@ -1,4 +1,4 @@
-// FE-021: season outlook maths (no UI). From the weekly harmonized record (`viirs ?? pred`, the calendar's value):
+// FE-021: season outlook maths (no UI). From the weekly harmonized ledger (`viirs ?? pred`, the calendar's value):
 // running totals per fire season, where this season stands among past seasons at the same point, a forecast of its
 // final total from how past seasons finished, and a leave-one-season-out back-test of that forecast.
 // Pure functions with relative imports only, so `node --test` runs them. FE-022 draws the chart.
@@ -57,7 +57,7 @@ export type Season = {
   forwardWeeks: number;
 };
 
-/** Splits the weekly record into seasons starting at `startWeek`, one per start year from the first year of the record. */
+/** Splits the weekly ledger into seasons starting at `startWeek`, one per start year from the first year of the ledger. */
 export function seasons(w: Weekly, startWeek: number): Season[] {
   const v = harmonized(w), n = v.length, out: Season[] = [];
   for (let y = w.start_year; ; y++) {

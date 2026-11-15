@@ -1,4 +1,4 @@
-// Chapters 4 and 5: the annual record as raw (MODIS, then VIIRS from VIIRS_FROM) or harmonized (back-cast with its
+// Chapters 4 and 5: the annual ledger as raw (MODIS, then VIIRS from VIIRS_FROM) or harmonized (back-cast with its
 // 5-95% band, then observed VIIRS). Both views share one y scale, so the leap and its removal read as the same chart.
 // Server component: static SVG; lines draw in only when lib motion (StoryMotion) marks the chapter as in view.
 import { VIIRS_FROM } from "@/lib/annual";

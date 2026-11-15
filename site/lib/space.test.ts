@@ -189,7 +189,7 @@ test("resolveDay: picks follow the opened month even across months; a new month 
   // opening another month, or another region, drops the old pick
   assert.equal(resolveDay({ open: "2017-10", region: "portugal", day: "2017-10-08" }, "2001-01", "portugal", [], min, max), "2001-01-01");
   assert.equal(resolveDay({ open: "2017-10", region: "ghana", day: "2017-10-08" }, "2017-10", "portugal", top, min, max), "2017-10-16");
-  // a month with no peak starts on its first day; nothing outside the record is ever returned
+  // a month with no peak starts on its first day; nothing outside the ledger is ever returned
   assert.equal(resolveDay(null, "2005-03", "portugal", [], min, max), "2005-03-01");
   assert.equal(resolveDay(null, "2026-12", "portugal", [], min, max), "2026-11-14");
   assert.equal(resolveDay(null, "2000-11", "portugal", [], min, max), "2001-01-01");

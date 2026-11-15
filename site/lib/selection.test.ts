@@ -32,7 +32,7 @@ import {
 const B: Bounds = { min: "2001-01-01", max: "2025-12-31" };
 const parse = (q: string) => parseSelection(new URLSearchParams(q), () => B);
 
-test("no query: portugal, whole record", () => {
+test("no query: portugal, whole ledger", () => {
   assert.deepEqual(parse(""), { region: "portugal", from: B.min, to: B.max, whole: true });
 });
 

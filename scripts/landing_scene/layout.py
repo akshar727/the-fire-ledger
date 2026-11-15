@@ -16,7 +16,7 @@ without moving anything in the story.
                      just crossed
     108 (frame 216)  pulled back; every 2017 detection in the area has switched on, in date order
     144 (frame 288)  the squares have fallen into a timeline: one column per day of 2017
-    179 (frame 359)  the squares have settled into 26 x 12 cells, in proportion to the harmonized monthly record
+    179 (frame 359)  the squares have settled into 26 x 12 cells, in proportion to the harmonized monthly ledger
 """
 import csv
 import json

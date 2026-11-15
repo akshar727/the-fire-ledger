@@ -6,7 +6,7 @@
 // shift). No WebGL, data-saver or a failed load → the table and legend alone, with one sentence saying why.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { GlobeCanvasProps, Paint, Shape } from "@/components/globe/GlobeCanvas";
@@ -219,7 +219,7 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
       const p = s.id ? byId.get(s.id) : undefined;
       const lines = p ? readoutLines(p, yi, state.year) : ["no data yet"];
       return `<div class="globe-tip"><b>${esc(s.name)}</b>${lines.map((l) => `<span>${esc(l)}</span>`).join("")}${
-        p ? "<em>Click to open the record</em>" : ""
+        p ? "<em>Click to open the ledger</em>" : ""
       }</div>`;
     },
     [byId, yi, state.year],
@@ -372,15 +372,17 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
 
           <Legend view={state.view} edges={edges} colors={colors} />
 
-          {/* no aria-live: it would talk over every table row a screen reader tabs through; the rows say it all */}
-          <div className="panel flex min-h-36 flex-col gap-1.5 p-4">
+          {/* no aria-live: it would talk over every table row a screen reader tabs through; the rows say it all.
+              Fixed height (long names and caveats are clamped): if it grew on hover, the table under it would move
+              away from the pointer. The full caveat is on each record page. */}
+          <div className="panel flex h-[19rem] flex-col gap-1.5 overflow-hidden p-4">
             <span className="kicker">Readout</span>
             {active ? (
               <>
-                <p className="text-lg leading-snug font-semibold">{active.name}</p>
+                <p className="line-clamp-2 text-lg leading-snug font-semibold">{active.name}</p>
                 {shownPlace ? (
                   readoutLines(shownPlace, yi, state.year).map((l) => (
-                    <p key={l} className="font-mono text-xs leading-relaxed text-muted-foreground">
+                    <p key={l} title={l.startsWith("Caveat:") ? l : undefined} className={`font-mono text-xs leading-relaxed text-muted-foreground ${l.startsWith("Caveat:") ? "line-clamp-4" : ""}`}>
                       {l}
                     </p>
                   ))
@@ -535,20 +537,32 @@ function Legend({ view, edges, colors }: { view: View; edges: number[]; colors: 
       </figure>
     );
   }
+  const labelled = legendLabels(edges);
   return (
     <figure className="flex flex-col gap-2">
       <figcaption className="kicker">Detections per 1,000 km²</figcaption>
-      <div className="flex h-3" aria-hidden>
-        {colors.map((c) => (
-          <span key={c} className="flex-1" style={{ background: c }} />
-        ))}
-      </div>
-      <div className="relative h-4 font-mono text-[10.5px] text-muted-foreground" aria-hidden>
-        {edges.map((e, i) => (
-          <span key={e} className="absolute -translate-x-1/2 first:translate-x-0 last:-translate-x-full" style={{ left: `${(i / (edges.length - 1)) * 100}%` }}>
-            {fmt(e)}
-          </span>
-        ))}
+      {/* inset by half a label so the end labels can sit centred on their edges */}
+      <div className="flex flex-col px-4" aria-hidden>
+        <div className="flex h-3">
+          {colors.map((c) => (
+            <span key={c} className="flex-1" style={{ background: c }} />
+          ))}
+        </div>
+        <div className="relative h-5 font-mono text-[10.5px] text-muted-foreground">
+          {edges.map((e, i) => {
+            const left = `${(i / (edges.length - 1)) * 100}%`;
+            return labelled[i] ? (
+              <Fragment key={e}>
+                <span className="absolute top-0 h-1.5 w-px -translate-x-1/2 bg-muted-foreground" style={{ left }} />
+                <span className="absolute top-1.5 -translate-x-1/2 whitespace-nowrap" style={{ left }}>
+                  {fmt(e)}
+                </span>
+              </Fragment>
+            ) : (
+              <span key={e} className="absolute top-0 h-1 w-px -translate-x-1/2 bg-border" style={{ left }} />
+            );
+          })}
+        </div>
       </div>
       <p className="sr-only">
         Colour bins, dark to bright: {edges.slice(0, -1).map((e, i) => `${fmt(e)} to ${fmt(edges[i + 1])}`).join("; ")}.
@@ -557,6 +571,17 @@ function Legend({ view, edges, colors }: { view: View; edges: number[]; colors: 
       <LegendKeys />
     </figure>
   );
+}
+
+/**
+ * Which bin edges get a number under the colour bar: one per power of ten (the edges run 1, 3, 10, 30, ...), so the
+ * labels never overlap in the 19rem side column; every other edge when the edges are not on powers of ten. The rest
+ * get a short tick, and the screen-reader text lists every bin.
+ */
+function legendLabels(edges: number[]): boolean[] {
+  const pow10 = edges.map((e) => e > 0 && Math.abs(Math.log10(e) - Math.round(Math.log10(e))) < 1e-9);
+  if (pow10.filter(Boolean).length >= 2) return pow10;
+  return edges.map((_, i) => i % 2 === 0);
 }
 
 function LegendKeys({ extra }: { extra?: { color: string; text: string } }) {

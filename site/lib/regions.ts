@@ -1,6 +1,6 @@
 // DP-009 / DP-018: the region list comes from the pipeline's index.json (build.py + site_bundle.py), so adding a region
 // (or one of ~180 whole countries) needs no edit under site/ except data files. Entries carry the ids, names, page copy,
-// tier and the record fields the site needs before it fetches a region's annual.json (`first_year`; for a country
+// tier and the ledger fields the site needs before it fetches a region's annual.json (`first_year`; for a country
 // `ship` and `ship_caveat`); an entry without `first_year` has no record yet and is left out. No per-region file is
 // imported here (WORLD PLAN). Relative JSON import, so client components and `node --test` both use it. `buildRegions`
 // is pure, so tests can feed it whole countries without one being published.

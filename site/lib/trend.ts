@@ -1,4 +1,4 @@
-// Trend of the yearly record over the selected years (FE-014, F-7): "is the trend real?". A port of trend_stats.py
+// Trend of the yearly ledger over the selected years (FE-014, F-7): "is the trend real?". A port of trend_stats.py
 // `trend` (ML-020) so the site can test any range of complete years, not only the 2001-2025 block in annual.json.
 // Same method: Theil-Sen slope (scipy.stats.theilslopes, 90% interval, Sen 1968 eq. 2.6) as % of the median per
 // year, and the Mann-Kendall two-sided p (scipy.stats.kendalltau, exact when there are no ties and n <= 33, normal
@@ -6,7 +6,7 @@
 // Pure and import-free apart from types, so client components and `node --test` can both use it.
 import { VIIRS_FROM, type Annual } from "./annual.ts";
 
-/** One record's trend: the shape of `trend.stitched` / `trend.harmonized` in annual.json. Nulls = no trend defined. */
+/** One ledger's trend: the shape of `trend.stitched` / `trend.harmonized` in annual.json. Nulls = no trend defined. */
 export type TrendStat = { slope_pct: number | null; lo_pct: number | null; hi_pct: number | null; p: number | null };
 
 /** The `trend` block model.py writes into annual.json (registry §3 "Annual series as JSON", ML-020). */
@@ -168,7 +168,7 @@ export function trend(x: number[], y: number[]): TrendStat {
 }
 
 /**
- * The naive stitched record per year, as model.py builds it: raw MODIS before VIIRS starts (2012-01-20), raw VIIRS
+ * The naive stitched ledger per year, as model.py builds it: raw MODIS before VIIRS starts (2012-01-20), raw VIIRS
  * after. 2012 needs the weekly file (observed VIIRS from 20 Jan + MODIS for weeks 0-2), so it is null without it.
  */
 export function stitchedTotals(D: Annual, weekly?: WeeklyRaw | null): (number | null)[] {
@@ -235,19 +235,19 @@ export function trendClause(t: TrendStat | null, unavailable = false): string {
 }
 
 /**
- * The sentence under the record chart, e.g. "Stitched record: +3.4% a year, not significant. Harmonized: −2.1% a
+ * The sentence under the ledger chart, e.g. "Stitched ledger: +3.4% a year, not significant. Harmonized: −2.1% a
  * year, not significant." plus one plain-language reading when the two disagree. Null-safe throughout.
  */
 export function trendSentence(r: RangeTrend, stitchedUnavailable = false): string {
   const n = r.years.length;
   if (n < 3) return `A trend needs at least 3 complete years; this range has ${n}.`;
-  const head = `${r.years[0]}-${r.years[n - 1]} (${n} complete years). Stitched record: ${trendClause(r.stitched, stitchedUnavailable)}. Harmonized: ${trendClause(r.harmonized)}.`;
+  const head = `${r.years[0]}-${r.years[n - 1]} (${n} complete years). Stitched ledger: ${trendClause(r.stitched, stitchedUnavailable)}. Harmonized: ${trendClause(r.harmonized)}.`;
   const s = r.stitched;
   const h = r.harmonized;
   if (!s || s.slope_pct === null || h.slope_pct === null) return head;
   if (isSignificant(s) && !isSignificant(h)) return `${head} The stitched trend does not hold once both sensors are on one scale.`;
   if (isSignificant(s) && isSignificant(h) && Math.sign(s.slope_pct) !== Math.sign(h.slope_pct))
     return `${head} The two records point in opposite directions; the stitched one carries the sensor change.`;
-  if (!isSignificant(s) && isSignificant(h)) return `${head} The harmonized record shows a trend the stitched one hides.`;
+  if (!isSignificant(s) && isSignificant(h)) return `${head} The harmonized ledger shows a trend the stitched one hides.`;
   return head;
 }

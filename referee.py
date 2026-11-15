@@ -1,7 +1,7 @@
 """Independent referee for the back-cast (ML-019, F-5a): MODIS burned area (MCD64CMQ) has no 2012 sensor break.
 
-If the harmonized record is right, fire detections per km^2 burned should stay about level across 2012, while the
-naive stitched record (MODIS until 2012, VIIRS after) should jump by roughly the VIIRS/MODIS factor.
+If the harmonized ledger is right, fire detections per km^2 burned should stay about level across 2012, while the
+naive stitched ledger (MODIS until 2012, VIIRS after) should jump by roughly the VIIRS/MODIS factor.
 
 Two steps:
   python referee.py extract <folder of MCD64CMQ .hdf files>   # needs pyhdf (only for this step; see README)

@@ -20,7 +20,7 @@ export function readAnnual(region: RegionId): Annual {
   return a;
 }
 
-/** The whole published record across the cell regions, for site-wide copy (`spanOf` in lib/annual.ts). Whole countries
+/** The whole published ledger across the cell regions, for site-wide copy (`spanOf` in lib/annual.ts). Whole countries
  * (DP-009) are left out: they are listed apart, and their archive-only record would shorten every page's year range. */
 export function recordSpan() {
   const cells = REGION_LIST.filter((r) => r.tier === "region");

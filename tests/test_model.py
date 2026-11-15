@@ -156,7 +156,7 @@ class ModelRunTests(unittest.TestCase):
         self.assertEqual(a["source"], ["backcast"] * 11 + ["observed"] * 14)
 
     def test_trend(self):
-        # ML-020: the synthetic record has no trend, but VIIRS is ~2.5x MODIS, so the stitched record jumps in 2012
+        # ML-020: the synthetic record has no trend, but VIIRS is ~2.5x MODIS, so the stitched ledger jumps in 2012
         t = self.annual["trend"]
         self.assertEqual((t["years"], t["n_years"]), ([2001, 2025], 25))
         self.assertGreater(t["stitched"]["slope_pct"], 3)
@@ -330,7 +330,7 @@ def with_noaa(g, through, fwd_through, rng):
 
 class ForwardRunTests(unittest.TestCase):
     """ML-017: S-NPP ends Sun 2 Nov 2025 (inside week 43), NOAA-20/21 continue to Thu 20 Nov 2025. The back-cast part
-    must be byte-identical to the run without NOAA (PartialYearRunTests' grid); forward days extend the record."""
+    must be byte-identical to the run without NOAA (PartialYearRunTests' grid); forward days extend the ledger."""
     THROUGH, FWD = "2025-11-02", "2025-11-20"
     NW, NM = 24 * 52 + 43, 24 * 12 + 10   # weeks / months that end on or before the S-NPP end, untouched
 

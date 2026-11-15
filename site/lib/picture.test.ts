@@ -29,7 +29,7 @@ test("wrap keeps every word, in order, and respects the width", () => {
 test("composePicture: standalone SVG with title, subtitle, legend, body, note and the full FIRMS credit", () => {
   const pic = composePicture({
     title: "Annual active-fire detections, Ghana",
-    subtitle: "Harmonized record, 2001-2026",
+    subtitle: "Harmonized ledger, 2001-2026",
     legend: [
       { color: "#cc3300", label: "Back-cast", kind: "line" },
       { color: "#cc3300", label: "Hold-out", kind: "dash" },
@@ -52,7 +52,7 @@ test("composePicture: standalone SVG with title, subtitle, legend, body, note an
   assert.match(pic.svg, /<circle [^>]*stroke="#000000"/, "ring legend mark");
   const all = texts(pic.svg);
   assert.ok(all.includes("Annual active-fire detections, Ghana"));
-  assert.ok(all.includes("Harmonized record, 2001-2026"));
+  assert.ok(all.includes("Harmonized ledger, 2001-2026"));
   assert.ok(all.includes("Back-cast") && all.includes("Hold-out"));
   assert.equal(all.filter((t) => FIRMS_CREDIT.includes(t)).join(" "), FIRMS_CREDIT, "credit is complete");
   assert.ok(all.join(" ").includes("mean annual error 4.0% & more <here>."), "note text is escaped, not dropped");

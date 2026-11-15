@@ -3,7 +3,7 @@
 // FE-017: season timing on /ledger, under the season outlook. For every whole fire season, the days on which its
 // running total reached 10%, 50% and 90% of that season's fire, and one sentence on whether onset is drifting. The
 // maths is `seasonTiming` / `timingSentence` in lib/series.ts, on the seasons `outlook()` (lib/outlook.ts) already
-// split from the weekly harmonized record, so the season start (the quietest week) is the same as the chart above.
+// split from the weekly harmonized ledger, so the season start (the quietest week) is the same as the chart above.
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Disclosure } from "@/components/Disclosure";
 import { DownloadPicture } from "@/components/DownloadPicture";

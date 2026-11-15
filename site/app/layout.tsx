@@ -24,7 +24,7 @@ const span = recordSpan();
 
 export const metadata: Metadata = {
   title: { default: "Fire Ledger", template: "%s | Fire Ledger" },
-  description: `MODIS and VIIRS active-fire detections from NASA FIRMS, harmonized into one record for ${span.regions}, ${span.first} to ${dayLabel(span.through)}.`,
+  description: `MODIS and VIIRS active-fire detections from NASA FIRMS, harmonized into one ledger for ${span.regions}, ${span.first} to ${dayLabel(span.through)}.`,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
