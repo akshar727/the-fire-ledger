@@ -101,7 +101,12 @@ def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
     fwd (ML-017): forward days after `through` from forward_link.run_forward (`dates`, `pred`, `draws` per day);
     `weeks` then runs to the last forward day and `wk`/`draws` hold zeros there. Forward days add to `pred`/`lo`/`hi`
     by their own day and month; `viirs` is null for any period with a forward day; the monthly arrays then end with
-    the partial month to date (monthly.last_month_days), whose calendar statistics are left out."""
+    the partial month to date (monthly.last_month_days), whose calendar statistics are left out.
+    ML-022: a period with forward days takes observed S-NPP (`wk["viirs"]`) for its days up to `through`, not the
+    back-cast: `pred` = observed part + forward mean, `lo`/`hi` = observed part + forward draws (the observed part is
+    fixed, so it adds no spread). The observed S-NPP-end week is split over months by equal weight per day, the same
+    approximation as every monthly value. Safe only because a forward period always starts after VIIRS_START, so
+    `wk["viirs"]` is observed S-NPP wherever `has_fwd` is true (padded zeros for pure-forward weeks add nothing)."""
     through = week_end(*weeks[-1]) if through is None else pd.Timestamp(through)
     end = fwd["dates"][-1] if fwd else through
     nw = len(weeks)
@@ -126,15 +131,16 @@ def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
         d = {"start_year": 2001}
         d.update({"bucketing": "calendar-month-day-share"} if M is not None else {"weeks_per_year": 52})
         has_fwd = [min(e, end) > through for e in ends]
+        obs = wk["viirs"] @ M if M is not None else wk["viirs"]    # observed S-NPP, days up to `through` only
         for k in ("modis", "viirs", "pred"):
             a = wk[k] @ M if M is not None else wk[k]
             if k == "pred" and F is not None:
-                a = a + fwd["pred"] @ F
+                a = np.where(has_fwd, obs, a) + fwd["pred"] @ F     # ML-022: observed S-NPP part, not the back-cast
             # viirs is null for a month or week that starts before VIIRS_START (incl. January 2012) or has forward days
             d[k] = [None if k == "viirs" and (s < VIIRS_START or f) else x for s, f, x in zip(starts, has_fwd, r(a))]
         dr = draws @ M if M is not None else draws
         if F is not None:
-            dr = dr + fwd["draws"] @ F
+            dr = np.where(has_fwd, obs, dr) + fwd["draws"] @ F
         lo, hi = np.percentile(dr, [5, 95], axis=0)
         d["lo"], d["hi"] = r(lo), r(hi)
         d["source"] = source_of(has_fwd, d["viirs"])
@@ -250,6 +256,7 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     end = fwd["dates"][-1] if fwd else pd.Timestamp(through)
     wk_bc, draws_all = wk_pred, draws
     wk_fwd = np.zeros(nw, bool)                                         # week has days after the S-NPP end
+    wk_link = np.zeros(nw)                                              # forward-link mean per week (ML-022)
     if fwd:
         weeks = kept_weeks(end)
         pad = lambda a: np.concatenate([a, np.zeros(a.shape[:-1] + (len(weeks) - nw,), a.dtype)], axis=-1)
@@ -257,7 +264,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         wi = {k: i for i, k in enumerate(weeks)}
         Fw = np.zeros((len(fwd["dates"]), len(weeks)))
         Fw[np.arange(len(fwd["dates"])), [wi[(t.year, min((t.dayofyear - 1) // 7, 51))] for t in fwd["dates"]]] = 1
-        wk_pred, draws_all = wk_bc + fwd["pred"] @ Fw, draws + fwd["draws"] @ Fw
+        wk_link = fwd["pred"] @ Fw
+        wk_pred, draws_all = wk_bc + wk_link, draws + fwd["draws"] @ Fw
         wk_fwd = np.array([covered_end(*k, end) > pd.Timestamp(through) for k in weeks])
     wyear = np.array([yr for yr, _ in weeks])
     years = sorted(set(wyear.tolist()))
@@ -267,8 +275,9 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     ann["lo"], ann["hi"] = np.percentile(ysum(draws_all), [5, 95], axis=0)
     # harmonized (ML-009): observed VIIRS for weeks starting on/after VIIRS_START, model mean for earlier weeks, so a
     # year VIIRS only partly covers (2012: from 20 Jan) isn't published as a fake dip. Other years: viirs ?? pred.
-    # Weeks with forward days (ML-017) take the model too: back-cast to the S-NPP end, forward link after it.
-    ann["harmonized"] = ysum(np.where(wk_nov | wk_fwd, wk_pred, wk_viirs))
+    # Weeks with forward days (ML-017, ML-022): observed S-NPP to the S-NPP end + the forward link after it.
+    # Annual pred/lo/hi stay the model line (back-cast + link) by design: don't align them to harmonized.
+    ann["harmonized"] = ysum(np.where(wk_nov, wk_pred, wk_viirs + np.where(wk_fwd, wk_link, 0)))
     ann["viirs_partial"] = (ysum(wk_nov.astype(int)) > 0) & (ysum((~wk_nov).astype(int)) > 0)   # 1 = blended year
     # obs_over_pred (ML-016): observed VIIRS / model mean over the weeks VIIRS covers (2012: from 20 Jan), so it
     # shows where the fitted MODIS -> VIIRS link stops holding (orbit drift). None before 2012.

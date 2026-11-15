@@ -399,18 +399,40 @@ class ForwardRunTests(unittest.TestCase):
 
     def test_forward_adds_to_pred(self):
         a, m, w = self.a, self.s["monthly"], self.s["weekly"]
-        self.assertGreater(w["pred"][self.NW], self.s0["weekly"]["pred"][self.NW])   # mixed week gains 3-4 Nov
+        self.assertGreater(w["pred"][self.NW], self.s0["weekly"]["viirs"][self.NW])  # observed 29 Oct-2 Nov + link 3-4 Nov
         self.assertTrue(all(p > 0 for p in w["pred"][self.NW:self.NW + 3]))
         self.assertEqual(w["pred"][-1], 0)   # 19-20 Nov: no NOAA detections -> no S-NPP equivalent
         self.assertTrue(all(lo <= p <= hi or hi - lo < 1 for lo, p, hi in
                             zip(w["lo"][self.NW:], w["pred"][self.NW:], w["hi"][self.NW:])))
-        # annual 2025 = weekly pred sum; harmonized = observed weeks + model for the forward weeks
+        # annual 2025 pred = the model line (back-cast + link); the published weekly values differ from it only in
+        # the S-NPP-end week, which takes observed S-NPP for 29 Oct-2 Nov (ML-022); harmonized = observed + link
         wk = w["pred"][24 * 52:]
-        self.assertAlmostEqual(a["pred"][-1], sum(wk), delta=53 * 0.05)
+        w0 = self.s0["weekly"]
+        self.assertAlmostEqual(a["pred"][-1], sum(wk) + w0["pred"][self.NW] - w0["viirs"][self.NW], delta=53 * 0.05)
         har = sum(v if s == "observed" else p for v, p, s in
                   zip(w["viirs"][24 * 52:], wk, w["source"][24 * 52:]))
         self.assertAlmostEqual(a["harmonized"][-1], har, delta=53 * 0.05)
-        self.assertAlmostEqual(sum(m["pred"][24 * 12:]), a["pred"][-1], delta=12 * 0.05 + 0.5)
+        # months: same model line, except November holds observed S-NPP for 1-2 Nov (2/5 of the S-NPP-end week)
+        self.assertAlmostEqual(sum(m["pred"][24 * 12:]), a["pred"][-1] - (w0["pred"][self.NW] - w0["viirs"][self.NW]) * 2 / 5,
+                               delta=12 * 0.05 + 0.5)
+
+    def test_transition_periods_use_observed_snpp(self):
+        # ML-022: the week and month that straddle the S-NPP end take observed S-NPP for their days up to 2 Nov, not
+        # the back-cast. Week 43 (29 Oct-4 Nov) = observed 29 Oct-2 Nov (the no-NOAA run's partial week) + link 3-4 Nov;
+        # November = 2/5 of that observed week (1-2 Nov, day share) + link 3-20 Nov. So the forward weeks minus
+        # November = 3/5 of the observed week 43 (29-31 Oct), whatever the link adds.
+        w, m, w0 = self.s["weekly"], self.s["monthly"], self.s0["weekly"]
+        obs, bc = w0["viirs"][self.NW], w0["pred"][self.NW]
+        self.assertGreater(abs(obs - bc), 1)        # the synthetic back-cast differs, so the test can tell them apart
+        self.assertAlmostEqual(sum(w["pred"][self.NW:]) - m["pred"][-1], obs * 3 / 5, delta=0.5)
+        self.assertGreaterEqual(w["pred"][self.NW], obs)
+        self.assertGreaterEqual(w["lo"][self.NW], obs - 0.05)   # the observed part has no spread
+        self.assertLessEqual(w["lo"][self.NW], w["pred"][self.NW])  # band = observed + forward draws: brackets the mean
+        self.assertGreaterEqual(w["hi"][self.NW], w["pred"][self.NW])
+        self.assertGreater(w["hi"][self.NW], w["lo"][self.NW])      # ...and carries the link's spread
+        # annual: harmonized 2025 = observed weeks + forward link; the observed S-NPP total is the raw viirs
+        self.assertAlmostEqual(self.a["harmonized"][-1] - self.a["viirs"][-1],
+                               sum(w["pred"][self.NW:]) - obs, delta=53 * 0.05)
 
     def test_forward_score(self):
         f = self.a["score"]["forward"]
