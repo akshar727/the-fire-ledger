@@ -15,7 +15,7 @@ import { RegionSwitcher } from "@/components/RegionSwitcher";
 import { SeasonOutlook } from "@/components/SeasonOutlook";
 import { TrendSummary } from "@/components/TrendSummary";
 import { ValidationStrip } from "@/components/ValidationStrip";
-import { eraMeans, HOLD_FROM, holdoutYears, lastCompleteYear, VIIRS_FROM } from "@/lib/annual";
+import { eraMeans, estimateOf, HOLD_FROM, holdoutYears, isSparse, lastCompleteYear, VIIRS_FROM } from "@/lib/annual";
 import { fetchAnnual } from "@/lib/data";
 import { FIRE_SEASON, REGION_CAVEAT, REGIONS, SHIP_LABEL } from "@/lib/regions";
 import { useSelection } from "@/lib/use-selection";
@@ -25,15 +25,23 @@ export function JumpStat() {
   const data = use(fetchAnnual(sel.region));
   if (!data) return <div className="md:col-span-4" />; // RecordExplorer says the record is missing
   const label = SHIP_LABEL[sel.region];
+  const era = eraMeans(data);
+  // FE-029: with a handful of detections a year (sparse countries) the ratio of the two means is noise, e.g. 0 to 0
+  // read as "×0.5"; say so instead of printing it
+  const noJump = isSparse(data) || !Number.isFinite(era.jump);
   return (
     <div className="flex flex-col gap-0.5 border-l-2 border-primary pl-5 md:col-span-4 md:justify-self-end">
       <span className="kicker">
         {REGIONS[sel.region]}, {data.years[0]}-{lastCompleteYear(data)}
         {label && <span className="text-muted-foreground"> · {label}</span>}
       </span>
-      <span className="font-mono text-3xl font-semibold tracking-tight tabular-nums">×{eraMeans(data).jump.toFixed(1)}</span>
+      <span className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
+        {noJump ? "–" : `×${era.jump.toFixed(1)}`}
+      </span>
       <span className="max-w-[30ch] text-sm leading-snug text-muted-foreground">
-        apparent rise in yearly detections when VIIRS replaces MODIS in {VIIRS_FROM}
+        {noJump
+          ? `too few detections a year to read a jump when VIIRS replaces MODIS in ${VIIRS_FROM}`
+          : `apparent rise in yearly detections when VIIRS replaces MODIS in ${VIIRS_FROM}`}
       </span>
     </div>
   );
@@ -50,6 +58,7 @@ export function RecordExplorer() {
     );
   const years: [number, number] = [Number(sel.from.slice(0, 4)), Number(sel.to.slice(0, 4))];
   const [h0, h1] = holdoutYears(data);
+  const estimate = estimateOf(data); // FE-029: most whole countries publish a constant-ratio estimate, not the model
 
   return (
     <>
@@ -90,11 +99,12 @@ export function RecordExplorer() {
             Tested on years it never saw
           </h2>
           <p className="leading-relaxed text-muted-foreground">
-            The model learned from {VIIRS_FROM}-{HOLD_FROM - 1}, when both sensors flew. We then predicted {h0}-{h1} from
-            MODIS alone and checked against what VIIRS saw in {REGIONS[sel.region]}.
+            {estimate === "ratio"
+              ? `The VIIRS/MODIS ratio was taken from ${VIIRS_FROM}-${HOLD_FROM - 1}, when both sensors flew. We then predicted ${h0}-${h1} from MODIS times that ratio and checked against what VIIRS saw in ${REGIONS[sel.region]}.`
+              : `The model learned from ${VIIRS_FROM}-${HOLD_FROM - 1}, when both sensors flew. We then predicted ${h0}-${h1} from MODIS alone and checked against what VIIRS saw in ${REGIONS[sel.region]}.`}
           </p>
         </div>
-        <HoldoutStats score={data.score} years={[h0, h1]} />
+        <HoldoutStats score={data.score} years={[h0, h1]} estimate={estimate} sparse={isSparse(data)} />
       </section>
 
       <DownloadCsv />

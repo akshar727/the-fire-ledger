@@ -22,7 +22,7 @@ import { fetchSeries, fetchWeather, regionInfo, type RegionId, type SeriesResult
 import { SEASON_DRIVER, summarySentence, weatherSentence, weatherSummary, type Weather, type WeatherSummary } from "@/lib/weather";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
-import { isCountry, REGIONS } from "@/lib/regions";
+import { isCountry, REGIONS, SHIP_LABEL } from "@/lib/regions";
 import { rawValues } from "@/lib/sonify";
 import type { CalendarView as View } from "@/lib/selection";
 import {
@@ -156,6 +156,7 @@ function CalendarView({
   // DP-009: a whole country has no peaks.json, so it gets no "see it from space" (the view would show nothing). Week cells
   // are not months, so in the week view a click on a cell does not change the month shown (the view itself stays).
   const hasSpace = !isCountry(label.region);
+  const back = backcastText(label.region);
   const noSpace = week || !hasSpace;
   const stats = week ? undefined : monthStats; // medians and flags are per month
   const unit = week ? "week" : "month";
@@ -215,7 +216,7 @@ function CalendarView({
       bodyWidth: body.width,
       bodyHeight: body.height,
       note: [
-        first && `Before ${periodName(first)}: model back-cast from MODIS. From ${periodName(first)}: VIIRS observed.`,
+        first && `Before ${periodName(first)}: ${back} from MODIS. From ${periodName(first)}: VIIRS observed.`,
         fwd && `${forwardSentence(snppEnd)} Bar along the bottom: ${unit}s with forward-link days.`,
         stats && `Median and middle half over ${stats.baseline_years[0]}-${stats.baseline_years[1]}.`,
         week && "Week w of a year is days 7w+1 to 7w+7; the last week runs to 31 December.",
@@ -279,6 +280,7 @@ function CalendarView({
           firstForward={shownForward}
           snppEnd={snppEnd}
           partial={partialCell}
+          back={back}
         />
       </div>
 
@@ -313,7 +315,7 @@ function CalendarView({
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats, snppEnd, weather) : `Hover a ${unit}, or focus the table and use the arrow keys, to read it${noSpace ? "." : "; click or press Enter to see it from space."}`}
+          {active ? describe(active, stats, snppEnd, weather, back) : `Hover a ${unit}, or focus the table and use the arrow keys, to read it${noSpace ? "." : "; click or press Enter to see it from space."}`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -327,7 +329,7 @@ function CalendarView({
           >
             <caption className="sr-only">
               Harmonized {week ? "weekly" : "monthly"} fire detections. Values are VIIRS observations from{" "}
-              {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and model back-casts before.
+              {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and {back}s before.
               {shownForward && ` ${forwardSentence(snppEnd)}`}
               {!noSpace && " Press Enter on a month to see it from space."}
             </caption>
@@ -389,7 +391,7 @@ function CalendarView({
                           onFocus={() => {
                             setFocus([r, c]);
                             setActive(cell);
-                            setAnnounce(describe(cell, stats, snppEnd));
+                            setAnnounce(describe(cell, stats, snppEnd, null, back));
                           }}
                           className={`${week ? "h-5" : "h-8"} rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                         >
@@ -407,7 +409,7 @@ function CalendarView({
                         onFocus={() => {
                           setFocus([r, c]);
                           setActive(cell);
-                          setAnnounce(describe(cell, stats, snppEnd));
+                          setAnnounce(describe(cell, stats, snppEnd, null, back));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
                         className={`relative ${week ? "h-5" : "h-8"} ${noSpace ? "" : "cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
@@ -576,21 +578,31 @@ const describePartial = (cell: CalendarCell) =>
 const forwardSentence = (snppEnd: string) =>
   `Suomi NPP data end ${dayMonth(snppEnd)} ${snppEnd.slice(0, 4)}; after that, S-NPP-equivalent counts from NOAA-20 and NOAA-21 (forward link).`;
 
+/** FE-029: what fills the years before 2012. A country with a ship label (ratio / sparse) publishes MODIS times a
+ * constant ratio, not the model (ML-023 method "ratio"). */
+const backcastText = (region: RegionId) => (SHIP_LABEL[region] ? "constant-ratio back-cast" : "model back-cast");
+
 /** Where a cell's value comes from, for the readout. */
-function sourceText(cell: CalendarCell, snppEnd: string): string {
+function sourceText(cell: CalendarCell, snppEnd: string, back: string): string {
   if (cell.source === "observed") return "VIIRS observed";
-  if (cell.source === "backcast") return "model back-cast";
+  if (cell.source === "backcast") return back;
   // forward: S-NPP for the days up to snppEnd, the NOAA-20/21 link after
   return cell.start > snppEnd
     ? "S-NPP equivalent from NOAA-20/21"
     : `VIIRS observed to ${dayMonth(snppEnd)}, S-NPP equivalent from NOAA-20/21 after`;
 }
 
-function describe(cell: CalendarCell, stats: CalendarStats | undefined, snppEnd: string, weather: Weather | null = null): string {
+function describe(
+  cell: CalendarCell,
+  stats: CalendarStats | undefined,
+  snppEnd: string,
+  weather: Weather | null = null,
+  back = "model back-cast",
+): string {
   const long = cell.week != null && cell.length > 7 ? ` (${cell.length} days)` : "";
   const when = `${periodLabel(cell)}${long}${cell.inRange ? "" : " (outside the selected dates)"}`;
   if (cell.value == null) return `${when}: no data in the record yet.`;
-  let s = `${when}: ${fmt(cell.value)} harmonized detections (${sourceText(cell, snppEnd)}).`;
+  let s = `${when}: ${fmt(cell.value)} harmonized detections (${sourceText(cell, snppEnd, back)}).`;
   if (cell.partial) s += ` Partial ${cell.week == null ? "month" : "week"}: data for ${cell.days} of ${cell.length} days.`;
   if (stats && cell.anomaly != null) {
     s += ` ${times(cell.anomaly)} the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
@@ -734,6 +746,7 @@ function Legend({
   firstForward,
   snppEnd,
   partial,
+  back,
 }: {
   max: number;
   mode: Mode;
@@ -743,6 +756,7 @@ function Legend({
   firstForward: CalendarCell | null;
   snppEnd: string;
   partial: CalendarCell | null;
+  back: string;
 }) {
   const steps = Array.from({ length: 24 }, (_, i) => rampColor(i / 23, mode).bg);
   // keep clear of the max label; with max 0 every tick would sit at 0, so show none
@@ -801,7 +815,7 @@ function Legend({
         )}
         {firstObserved && (
           <li className="basis-full">
-            Before {periodName(firstObserved)}: model back-cast. From {periodName(firstObserved)}: VIIRS observed.
+            Before {periodName(firstObserved)}: {back}. From {periodName(firstObserved)}: VIIRS observed.
             {firstForward && ` ${forwardSentence(snppEnd)}`}
           </li>
         )}

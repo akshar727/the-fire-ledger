@@ -100,9 +100,11 @@ export async function fetchSeries(region: RegionId, signal?: AbortSignal): Promi
 
 /**
  * Loads a region's fire-weather file (DP-014, /data/<region>/weather.json) in the browser. Optional extra: null when it
- * is missing, unreadable or in an unexpected format, and the calendar then shows no weather (FE-012).
+ * is missing, unreadable or in an unexpected format, and the calendar then shows no weather (FE-012). A whole country
+ * has no weather.json (deep dives only), so it gets null without a request (FE-029: no 404 on ~176 country pages).
  */
 export async function fetchWeather(region: RegionId, signal?: AbortSignal): Promise<Weather | null> {
+  if (TIER[region] === "country") return null;
   try {
     const res = await fetch(`/data/${region}/weather.json`, { signal, cache: "no-cache" });
     return res.ok ? parseWeather(await res.json()) : null;

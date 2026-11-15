@@ -31,6 +31,27 @@ test("constant factor wins: the strip says so", () => {
   assert.match(p.errorText, /Here one constant factor does better \(3\.2%\), and we say so\.$/);
 });
 
+test("FE-029: a constant-ratio country is never called the model; the model's losing score is shown", () => {
+  const p = proof(score(4.66, 4.36), [2020, 2025], undefined, yrs, { kind: "ratio", modelScore: { mape_model: 4.56 } });
+  assert.equal(p.error, "4.7%");
+  assert.equal(p.ratioWins, false);
+  assert.equal(
+    p.errorText,
+    "average yearly error of this constant-ratio estimate (day and night apart) on 6 hidden years (2020-2025). One pooled factor: 4.4%; the model: 4.6%.",
+  );
+  assert.doesNotMatch(p.errorText, /never saw/);
+  const q = proof(score(6, 5), [2020, 2025], undefined, yrs, { kind: "ratio" });
+  assert.match(q.errorText, /One pooled factor: 5\.0%\.$/);
+});
+
+test("FE-029: a sparse country shows no error number or band count", () => {
+  const p = proof(score(100, 100), [2020, 2024], undefined, yrs, { kind: "ratio", sparse: true });
+  assert.equal(p.error, "Unchecked");
+  assert.equal(p.band, "–");
+  assert.match(p.errorText, /^Too little fire here to score the hidden years \(2020-2024\)/);
+  assert.doesNotMatch(p.errorText + p.bandText, /100/);
+});
+
 test("no referee data: jump is null", () => {
   assert.equal(proof(score(4, 6), [2020, 2025], undefined, yrs).jump, null);
   assert.equal(proof(score(4, 6), [2020, 2025], ref(null, 1), yrs).jumpText, null);

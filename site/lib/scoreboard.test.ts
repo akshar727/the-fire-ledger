@@ -72,6 +72,28 @@ test("country label comes from ship; ratio-tier countries have no model error", 
   assert.equal(s.coverage, null);
 });
 
+test("FE-029: a country where the model ran and lost shows the model's error and counts as a loss", () => {
+  // ML-023: score = the published ratio estimate's; model_score = the model's run, against the same one ratio
+  const r = scoreRow("in", "India", true, {
+    ship: "ratio",
+    method: "ratio",
+    score: score(4.7, 4.4),
+    model_score: { mape_model: 4.6, mape_ratio: 4.4 },
+  });
+  assert.equal(r.label, "ratio");
+  assert.equal(r.model, 4.6);
+  assert.equal(r.ratio, 4.4);
+  assert.equal(r.modelWins, false);
+  const S = summarize([
+    r,
+    scoreRow("cn", "China", true, { ship: "model", method: "model", score: score(7.9, 10.2) }),
+    scoreRow("x", "X", true, { ship: "ratio", method: "ratio", score: score(5, 5) }), // ratio only: not compared
+  ]);
+  assert.equal(S.compared, 2);
+  assert.equal(S.modelWins, 1);
+  assert.match(boardSentence(S), /where the model ran, it beats one fixed ratio in 1;/);
+});
+
 test("summary counts labels and compares only rows where the model ran", () => {
   const rows = [
     scoreRow("a", "A", false, { score: score(4, 6) }),

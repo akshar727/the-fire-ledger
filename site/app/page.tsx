@@ -12,6 +12,7 @@ import { StoryLegend, StoryLine } from "@/components/story/StoryLine";
 import { StoryMotion } from "@/components/story/StoryMotion";
 import { StorySceneGate } from "@/components/story/StorySceneGate";
 import { dayLabel, HOLD_FROM, VIIRS_FROM } from "@/lib/annual";
+import { REGION_LIST } from "@/lib/data";
 import { recordSpan } from "@/lib/data-server";
 import { FIRE_SEASON } from "@/lib/regions";
 import { rampColor } from "@/lib/series";
@@ -121,6 +122,8 @@ function Chapter({
 export default function StoryPage() {
   const s = loadStory();
   const span = recordSpan();
+  // FE-029: whole countries (ML-026) are on the site too; the opening line names them once they are published
+  const countries = REGION_LIST.filter((r) => r.tier === "country").length;
   const { modis, viirs, gapMinutes, ratio, frame } = s.fire;
   const area = (PIXEL_M.modis / PIXEL_M.viirs) ** 2;
   const total = s.counts.reduce((a, c) => a + c.rows, 0);
@@ -156,7 +159,10 @@ export default function StoryPage() {
               NASA&apos;s MODIS instruments have watched for fire from orbit
               since {monthYear(terraSince)}, and VIIRS since {VIIRS_FROM}. They
               work differently, so the record breaks in {VIIRS_FROM}. Fire
-              Ledger mends it for {span.regions}.
+              Ledger mends it for{" "}
+              {countries > 0
+                ? `${countries} whole countries (labelled where it is only an estimate), and in detail for ${span.regions}.`
+                : `${span.regions}.`}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/ledger" className={primaryLink}>

@@ -16,16 +16,37 @@ function Help({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** Hold-out scores for the complete hold-out years (`years`, first and last), which the model never saw. */
-export function HoldoutStats({ score, years }: { score: Score; years: [number, number] }) {
+/** Hold-out scores for the complete hold-out years (`years`, first and last), which the model never saw. FE-029: for a
+ * whole country published as a constant-ratio estimate the first number is that estimate's error, labelled so; for a
+ * country with too little fire the scores are noise, so a sentence replaces them. */
+export function HoldoutStats({
+  score,
+  years,
+  estimate = "model",
+  sparse = false,
+}: {
+  score: Score;
+  years: [number, number];
+  estimate?: "model" | "ratio";
+  sparse?: boolean;
+}) {
+  if (sparse)
+    return (
+      <p className="max-w-[65ch] border-y py-6 leading-relaxed text-muted-foreground">
+        Too little fire here to score {years[0]}-{years[1]}: with so few detections a yearly error or a band count would be
+        noise, so none is shown. Treat the years before 2012 as unchecked.
+      </p>
+    );
+  const ours = estimate === "ratio" ? "this ratio estimate" : "our model";
   return (
     <dl className="grid grid-cols-1 divide-y border-y md:grid-cols-[1.5fr_1fr_1fr] md:divide-x md:divide-y-0">
       <div className="flex flex-col gap-3 py-6 md:pr-8">
         <dt className="flex items-center gap-1 text-sm text-muted-foreground">
           Mean annual error, hold-out years
           <Help label="About mean annual error">
-            Average absolute gap between predicted and observed VIIRS totals per year, {years[0]}-{years[1]}. The comparison is one
-            constant VIIRS/MODIS factor ({score.ratio.toFixed(2)}) fitted on the same training years.
+            Average absolute gap between predicted and observed VIIRS totals per year, {years[0]}-{years[1]}.{" "}
+            {estimate === "ratio" ? "This estimate is MODIS times this country's VIIRS/MODIS ratios (day and night apart). " : ""}
+            The comparison is one {estimate === "ratio" ? "pooled" : "constant"} VIIRS/MODIS factor ({score.ratio.toFixed(2)}) fitted on the same training years.
           </Help>
         </dt>
         <dd className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
@@ -33,13 +54,13 @@ export function HoldoutStats({ score, years }: { score: Score; years: [number, n
             <span className="font-mono text-4xl font-semibold tracking-tight text-primary tabular-nums">
               {score.mape_model.toFixed(1)}%
             </span>
-            <span className="text-sm text-muted-foreground">our model</span>
+            <span className="text-sm text-muted-foreground">{ours}</span>
           </span>
           <span className="flex items-baseline gap-2">
             <span className="font-mono text-2xl tracking-tight text-muted-foreground tabular-nums">
               {score.mape_ratio.toFixed(1)}%
             </span>
-            <span className="text-sm text-muted-foreground">constant factor</span>
+            <span className="text-sm text-muted-foreground">{estimate === "ratio" ? "one pooled factor" : "constant factor"}</span>
           </span>
         </dd>
       </div>

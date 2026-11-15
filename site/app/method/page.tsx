@@ -237,10 +237,13 @@ export default function MethodPage() {
           {COUNTRY_RECORDS.length > 0 && (
             <>
               <h3 id="countries" className="text-base font-semibold text-foreground">
-                Whole countries: whole-country runs of the same model
+                Whole countries: the same test, and the model where it wins
               </h3>
               <p>
-                The same model and the same test, run on every fire in a whole country instead of a box. Country records
+                Every whole country gets the same hold-out test as the boxes. The same model, at coarser cells, is
+                published only where it beats one constant ratio on the hidden years ({BOARD.counts.model + BOARD.counts.caveat}{" "}
+                of {BOARD.countries} countries so far); everywhere else the line is a constant-ratio estimate, MODIS times
+                the country&apos;s {VIIRS_FROM}-{HOLD_FROM - 1} VIIRS/MODIS ratio, and is labelled so. Country records
                 end with the FIRMS yearly archive ({dayLabel(COUNTRY_RECORDS[0].through)}), so they have no forward link,
                 no per-detection download, no weather and no burned-area check.
               </p>

@@ -40,13 +40,15 @@ export type ScoreSource = {
     coverage?: number | null;
     n_hold?: number | null;
   } | null;
+  /** ML-023: the model's own score when it ran on a country and lost to one ratio (that country ships the ratio). */
+  model_score?: { mape_model?: number | null; mape_ratio?: number | null } | null;
 };
 
 export type ScoreRow = {
   id: string;
   name: string;
   label: Label;
-  /** Model's mean annual hold-out error, %; null when the model was not run (ratio tier) or there is no score. */
+  /** Model's mean annual hold-out error, %; null when the model did not run (ratio only, or sparse) or there is no score; for a country where it ran and lost, from `model_score`. */
   model: number | null;
   /** One fixed ratio's mean annual hold-out error, %. */
   ratio: number | null;
@@ -76,9 +78,12 @@ export function scoreRow(
   country: boolean,
   a: ScoreSource,
 ): ScoreRow {
-  const ratioOnly = a.method === "ratio";
-  const model = ratioOnly ? null : num(a.score?.mape_model);
-  const ratio = num(a.score?.mape_ratio);
+  // A ratio-method file's `score.mape_model` is the ratio estimate's error, not the model's. FE-029: when the model ran
+  // and lost, its error is in `model_score`, compared with the same one-ratio error, so the "beats one ratio in X of N"
+  // claim counts the losses too (without this, 11 of 27 model runs on the world data were shown as "not run")
+  const lost = a.method === "ratio" ? a.model_score ?? null : null;
+  const model = a.method === "ratio" ? num(lost?.mape_model) : num(a.score?.mape_model);
+  const ratio = num(lost ? lost.mape_ratio : a.score?.mape_ratio);
   return {
     id,
     name,
