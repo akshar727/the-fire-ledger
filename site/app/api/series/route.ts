@@ -1,15 +1,8 @@
+import { seriesCsv, seriesFilename, type Block } from "@/lib/series-csv";
 import { ApiError, csvHeaders, errorResponse, fetchJson, parseRegion } from "@/lib/server-data";
 
 // No `dynamic` / `runtime` exports: with cacheComponents they are removed/unsupported
 // in Next 16 (Node.js is the default runtime; reading `request` makes this dynamic).
-
-type Num = (number | null)[];
-// harmonized: annual.json only (ML-009; 2012 blends model weeks before VIIRS started). series.json blocks have none:
-// their viirs is already null before 20 Jan 2012, so viirs ?? pred is the harmonized value there.
-// source (ML-017, FE-009): backcast | observed | forward per period, in annual.json and both series.json blocks
-type Block = { start_year: number; modis?: Num; viirs?: Num; pred?: Num; lo?: Num; hi?: Num; harmonized?: Num; source?: unknown[] };
-
-const SOURCES = new Set(["backcast", "observed", "forward"]);
 
 /**
  * from/to accepted formats: annual -> YYYY; monthly -> YYYY-MM; weekly -> YYYY
@@ -23,11 +16,6 @@ function parseBound(name: string, v: string | null, res: string): string | null 
   }
   return v;
 }
-
-const cell = (a: Num | undefined, i: number): number | null => {
-  const v = a?.[i];
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-};
 
 export async function GET(request: Request) {
   try {
@@ -43,56 +31,19 @@ export async function GET(request: Request) {
       throw new ApiError(400, "from must not be after to");
     }
 
-    const periods: string[] = [];
-    let b: Block;
+    let csv: string;
     if (res === "annual") {
-      const j = (await fetchJson(request, region, "annual.json")) as
-        | (Block & { years?: number[] })
-        | null;
+      const j = (await fetchJson(request, region, "annual.json")) as (Block & { years?: number[] }) | null;
       if (!j || !Array.isArray(j.years)) throw new ApiError(404, "no annual data for region");
-      for (const y of j.years) periods.push(String(y));
-      b = j;
+      csv = seriesCsv(res, j, from, to, j.years);
     } else {
-      const j = (await fetchJson(request, region, "series.json")) as Record<
-        string,
-        Block | undefined
-      > | null;
+      const j = (await fetchJson(request, region, "series.json")) as Record<string, Block | undefined> | null;
       const blk = j?.[res];
-      if (!blk || typeof blk.start_year !== "number") {
-        throw new ApiError(404, `no ${res} data for region`);
-      }
-      b = blk;
-      const len = Math.max(
-        ...[blk.modis, blk.viirs, blk.pred, blk.lo, blk.hi].map((a) => a?.length ?? 0),
-      );
-      for (let i = 0; i < len; i++) {
-        if (res === "monthly") {
-          const y = blk.start_year + Math.floor(i / 12);
-          periods.push(`${y}-${String((i % 12) + 1).padStart(2, "0")}`);
-        } else {
-          const y = blk.start_year + Math.floor(i / 52);
-          periods.push(`${y}-W${String(i % 52).padStart(2, "0")}`);
-        }
-      }
+      if (!blk || typeof blk.start_year !== "number") throw new ApiError(404, `no ${res} data for region`);
+      csv = seriesCsv(res, blk, from, to);
     }
-
-    // String-compare the period prefix of the same length as each bound.
-    // `source` is the last column so readers of the older 7-column file keep their column positions
-    const lines = ["period,modis,viirs,pred,lo,hi,harmonized,source"];
-    periods.forEach((p, i) => {
-      if (from !== null && p.slice(0, from.length) < from) return;
-      if (to !== null && p.slice(0, to.length) > to) return;
-      const viirs = cell(b.viirs, i);
-      const pred = cell(b.pred, i);
-      const harmonized = cell(b.harmonized, i) ?? viirs ?? pred;
-      const vals = [cell(b.modis, i), viirs, pred, cell(b.lo, i), cell(b.hi, i), harmonized];
-      const src = b.source?.[i];
-      const source = typeof src === "string" && SOURCES.has(src) ? src : "";
-      lines.push([p, ...vals.map((v) => (v === null ? "" : String(v))), source].join(","));
-    });
-    return new Response(lines.join("\n") + "\n", {
-      headers: csvHeaders(`series_${region}_${res}.csv`),
-    });
+    // BE-006: values rounded to 1 decimal, a `partial` column, week dates, and the range in the file name
+    return new Response(csv, { headers: csvHeaders(seriesFilename(region, res, from, to)) });
   } catch (e) {
     return errorResponse(e);
   }
