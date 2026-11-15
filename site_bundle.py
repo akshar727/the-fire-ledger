@@ -1,10 +1,11 @@
-"""DP-009: the region list the site reads, in two generated files under site/public/data/ (never hand-edited).
+"""DP-009 / DP-018: the region list the site reads, site/public/data/index.json (generated, never hand-edited).
 
-- index.json: build.py writes the cell regions (regions.json). This adds each whole country (countries.json, DP-011)
-  once ML-023 has written its annual.json, with its dates and sensors from data/grid/country/manifest.json.
-  Countries carry `tier: "country"` and no point files.
-- annual-all.json: every index.json region's annual.json in one object, {region_id: annual}, so the site bundles them
-  with one import and a new region needs no edit under site/.
+build.py writes the cell regions (regions.json). This adds each whole country (countries.json, DP-011 / DP-017) once
+it has an annual.json, with its dates and sensors from data/grid/country/manifest.json; countries carry
+`tier: "country"`, `iso_a3` and no point files. DP-018: every entry with an annual.json also gets the few record fields
+the site needs before it fetches that file (`first_year`, `forward_through`; for a country `ship`, `method`,
+`cell_deg` and the pipeline's `caveat`), so pages bundle only this list and fetch each region's annual.json by id
+(~180 regions would make a bundle of every record ~1 MB). An entry without them has no record yet; the site hides it.
 
 model.py runs this at the end of every run; on its own: `python site_bundle.py` from anywhere.
 """
@@ -13,10 +14,13 @@ import os
 
 OUT = "site/public/data"
 INDEX = f"{OUT}/index.json"
-BUNDLE = f"{OUT}/annual-all.json"
+OLD_BUNDLE = f"{OUT}/annual-all.json"  # DP-009's bundle of every record; removed by DP-018
 COUNTRIES = "countries.json"
 COUNTRY_GRID = "data/grid/country"
 CELL_DEG = 0.25  # build.CELL_DEG; cells are named by their south-west corner
+# record fields copied from annual.json into index.json (build.write_index keeps them; RECORD_KEYS must match there)
+RECORD_KEYS = ("first_year", "forward_through")
+COUNTRY_RECORD_KEYS = ("ship", "method", "cell_deg")
 
 
 def load(path):
@@ -69,6 +73,8 @@ def country_entry(c, manifest, grid_dir=COUNTRY_GRID, old=None):
     if c.get("short_name"):
         e["short_name"] = c["short_name"]
     e.update({"bbox": bbox, "fire_type": c.get("fire_type", ""), "tier": "country"})
+    if c.get("iso_a3"):
+        e["iso_a3"] = c["iso_a3"]
     season = c.get("season") or season_from(c.get("fire_type", ""))
     if season:
         e["season"] = season
@@ -116,27 +122,43 @@ def add_countries(index, out=OUT, countries_path=COUNTRIES, grid_dir=COUNTRY_GRI
     return {**index, "regions": regions}
 
 
-def bundle(index, out=OUT):
-    """{region_id: annual.json} for every index region that has been modelled, in index order."""
-    res = {}
+def record_fields(entry, annual):
+    """The entry with its record fields set from its annual.json (or removed when there is none: not modelled yet).
+    A country's `caveat` is the pipeline's ship sentence (ML-023), after any countries.json caveat."""
+    e = {k: v for k, v in entry.items() if k not in RECORD_KEYS + COUNTRY_RECORD_KEYS + ("ship_caveat",)}
+    if annual is None:
+        return e
+    e["first_year"] = annual["years"][0]
+    e["forward_through"] = annual.get("forward_through")
+    if e.get("tier") == "country":
+        for k in COUNTRY_RECORD_KEYS:
+            if annual.get(k) is not None:
+                e[k] = annual[k]
+        if annual.get("caveat"):
+            e["ship_caveat"] = annual["caveat"]
+    return e
+
+
+def add_records(index, out=OUT):
+    """index with every entry's record fields refreshed from <out>/<id>/annual.json."""
+    regions = []
     for r in index["regions"]:
         p = os.path.join(out, r["id"], "annual.json")
-        if os.path.isfile(p):
-            res[r["id"]] = load(p)
-    return res
+        regions.append(record_fields(r, load(p) if os.path.isfile(p) else None))
+    return {**index, "regions": regions}
 
 
 def main():
     # all paths are relative to the repo root (model.py calls this last, so changing directory there is harmless)
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    index = add_countries(load(INDEX))
+    index = add_records(add_countries(load(INDEX)))
     write_json(INDEX, index)
-    annual = bundle(index)
-    missing = [r["id"] for r in index["regions"] if r["id"] not in annual]
+    if os.path.exists(OLD_BUNDLE):
+        os.remove(OLD_BUNDLE)
+    missing = [r["id"] for r in index["regions"] if "first_year" not in r]
     if missing:
         print(f"site_bundle: no annual.json yet for {missing}; the site hides them until model.py has run")
-    write_json(BUNDLE, annual, indent=None)
-    print(f"site_bundle: index.json {len(index['regions'])} regions, annual-all.json {len(annual)}")
+    print(f"site_bundle: index.json {len(index['regions'])} regions, {len(index['regions']) - len(missing)} with a record")
 
 
 if __name__ == "__main__":

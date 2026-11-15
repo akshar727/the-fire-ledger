@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { dayLabel } from "@/lib/annual";
-import { recordSpan } from "@/lib/data";
+import { recordSpan } from "@/lib/data-server";
 import "./globals.css";
 
 // Red "Thermal console" theme (Ideas_2026-11-15.md §4, scheme A): Work Sans for text, IBM Plex Mono for every

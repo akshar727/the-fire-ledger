@@ -7,7 +7,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import regionIndex from "@/public/data/index.json";
 import { eraMeans, holdoutYears, lastCompleteYear } from "@/lib/annual";
-import { loadAnnual, REGION_LIST, REGIONS, type RegionId } from "@/lib/data";
+import { REGION_LIST, REGIONS, type RegionId } from "@/lib/data";
+import { readAnnual as loadAnnual } from "@/lib/data-server";
 import { buildGrid, parseSeries } from "@/lib/series";
 import { closestPair, extent, inBox, parsePoints, SCENE_BBOX, STORY_FIRE, storyLines } from "@/lib/story";
 

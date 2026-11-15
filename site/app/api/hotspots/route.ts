@@ -6,6 +6,7 @@ import {
   filterCsvStream,
   parseHotspotQuery,
 } from "@/lib/server-data";
+import { COUNTRY_NO_POINTS, isCountry } from "@/lib/regions";
 
 // No `dynamic` / `runtime` exports: with cacheComponents they are removed/unsupported
 // in Next 16 (Node.js is the default runtime; reading `request` makes this dynamic).
@@ -13,6 +14,8 @@ import {
 export async function GET(request: Request) {
   try {
     const q = parseHotspotQuery(new URL(request.url).searchParams);
+    // DP-018: whole countries have no points/ folder; say so plainly rather than "no data"
+    if (isCountry(q.region)) throw new ApiError(404, COUNTRY_NO_POINTS);
     const responses: Response[] = [];
     try {
       for (const year of q.years) {

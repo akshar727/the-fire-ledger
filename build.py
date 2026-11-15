@@ -343,6 +343,8 @@ def write_index(regions, manifest, points=None):
             "point_years": list(points[r["id"]][0]) if r["id"] in points else prev.get("point_years", []),
             "point_rows": points[r["id"]][1] if r["id"] in points else prev.get("point_rows", 0),
         })
+        # DP-018: record fields site_bundle.py copies from annual.json (its RECORD_KEYS); kept until it runs again
+        entries[-1].update({k: prev[k] for k in ("first_year", "forward_through") if k in prev})
     # DP-009: whole countries are added by site_bundle.py (not in regions.json); keep them, after the cell regions
     entries += [e for e in old.values() if e.get("tier") == "country" and e["id"] not in {x["id"] for x in entries}]
     os.makedirs(os.path.dirname(INDEX), exist_ok=True)

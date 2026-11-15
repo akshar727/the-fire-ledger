@@ -70,7 +70,9 @@
         2025,
         2026
       ],
-      "point_rows": 263899
+      "point_rows": 263899,
+      "first_year": 2001,
+      "forward_through": "2026-11-14"
     },
     {
       "id": "ghana",
@@ -141,7 +143,9 @@
         2025,
         2026
       ],
-      "point_rows": 6268043
+      "point_rows": 6268043,
+      "first_year": 2001,
+      "forward_through": "2026-11-14"
     },
     {
       "id": "punjab",
@@ -214,7 +218,9 @@
         2025,
         2026
       ],
-      "point_rows": 2611870
+      "point_rows": 2611870,
+      "first_year": 2001,
+      "forward_through": "2026-11-14"
     }
   ]
 }

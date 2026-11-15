@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { holdoutYears } from "@/lib/annual";
-import { loadAnnual, loadReferee } from "@/lib/data";
+import { loadReferee, type Annual } from "@/lib/data";
 import { proof } from "@/lib/proof";
 import { useSelection } from "@/lib/use-selection";
 
@@ -26,9 +26,8 @@ function Item({ value, text, href, accent }: { value: string; text: string; href
   );
 }
 
-export function ValidationStrip() {
+export function ValidationStrip({ data: D }: { data: Annual }) {
   const { sel } = useSelection();
-  const D = loadAnnual(sel.region);
   const p = proof(D.score, holdoutYears(D), REF.regions[sel.region], REF);
   return (
     <section aria-labelledby="proof-heading" className="flex flex-col gap-1 border-y">

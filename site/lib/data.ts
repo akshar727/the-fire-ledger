@@ -1,13 +1,11 @@
-// The only module that loads pipeline outputs from site/public/data/ (written by the pipeline, never hand-edited).
-// annual-all.json (every region's annual.json, site_bundle.py) and index.json are imported at build time; series.json is
-// fetched by the browser (it may not exist yet). No fs reads, so both work on Vercel. DP-009: no region is named here;
-// the list is whatever index.json and annual-all.json hold (lib/regions.ts).
-import annualAll from "@/public/data/annual-all.json";
+// The only module that loads pipeline outputs from site/public/data/ in the browser (written by the pipeline, never
+// hand-edited). index.json (the region list, with each region's record fields: DP-018) and referee.json are imported at
+// build time; every per-region file (annual.json, series.json, weather.json) is fetched by id, so ~180 regions add
+// nothing to a page's bundle (WORLD PLAN). Build-time reads for server components live in lib/data-server.ts.
 import regionIndex from "@/public/data/index.json";
 import refereeData from "@/public/data/referee.json";
-import { spanOf, type Annual } from "@/lib/annual";
 import type { Referee } from "@/lib/referee";
-import { isRegionId, REGION_IDS, REGIONS, TIER, type RegionId, type Tier } from "@/lib/regions";
+import { isRegionId, REGION_IDS, TIER, type RegionId, type Tier } from "@/lib/regions";
 import type { Bounds } from "@/lib/selection";
 import { parseSeries, SeriesFormatError, type SeriesBundle } from "@/lib/series";
 import { parseWeather, type Weather } from "@/lib/weather";
@@ -15,11 +13,8 @@ import { parseWeather, type Weather } from "@/lib/weather";
 export { REGIONS, type RegionId } from "@/lib/regions";
 export type { Annual, Score } from "@/lib/annual";
 
-const ANNUAL = annualAll as unknown as Record<RegionId, Annual>;
-
-export function loadAnnual(region: RegionId): Annual {
-  return ANNUAL[region];
-}
+// DP-018: per-region records are fetched by id (lib/fetch-annual.ts)
+export { fetchAnnual } from "@/lib/fetch-annual";
 
 /** Burned-area referee (ML-019): site/public/data/referee.json, written by referee.py. */
 export function loadReferee(): Referee {
@@ -35,10 +30,14 @@ export type RegionInfo = {
   point_years: number[]; // years with a points/<year>.csv file (none for a country)
   point_rows: number;
   bbox: [number, number, number, number]; // [west, south, east, north] degrees, from regions.json / countries.json
+  first_year: number; // DP-018: annual.json years[0], copied by site_bundle.py
+  forward_through: string | null; // DP-018: annual.json forward_through (NOAA-20/21 forward link end), or null
 };
 
+type IndexRow = Omit<RegionInfo, "tier" | "bbox" | "forward_through"> & { bbox: number[]; forward_through?: string | null };
+
 /** Regions in index.json order (the DP-003 region list), limited to those with a record (lib/regions.ts). */
-export const REGION_LIST: RegionInfo[] = regionIndex.regions.flatMap((r) =>
+export const REGION_LIST: RegionInfo[] = (regionIndex.regions as IndexRow[]).flatMap((r) =>
   isRegionId(r.id)
     ? [
         {
@@ -49,6 +48,8 @@ export const REGION_LIST: RegionInfo[] = regionIndex.regions.flatMap((r) =>
           point_years: r.point_years,
           point_rows: r.point_rows,
           bbox: r.bbox as RegionInfo["bbox"],
+          first_year: r.first_year,
+          forward_through: r.forward_through ?? null,
         },
       ]
     : [],
@@ -59,20 +60,14 @@ export function regionInfo(region: RegionId): RegionInfo {
   return REGION_LIST.find((r) => r.id === region)!;
 }
 
-/** The whole published record across the cell regions, for site-wide copy (`spanOf` in lib/annual.ts). Whole countries
- * (DP-009) are left out: they are listed apart, and their archive-only record would shorten every page's year range. */
-export function recordSpan() {
-  const cells = REGION_LIST.filter((r) => r.tier === "region");
-  return spanOf(cells.map((r) => ANNUAL[r.id]), cells.map((r) => REGIONS[r.id]));
-}
-
 /**
  * Selectable dates: from the first year of the annual record to the end of the downloaded archive, or to the end of
- * the NOAA-20/21 forward link when there is one (FE-009: its weeks and points run past the Suomi NPP end).
+ * the NOAA-20/21 forward link when there is one (FE-009: its weeks and points run past the Suomi NPP end). DP-018: both
+ * come from index.json, so the dates are known before annual.json is fetched.
  */
 export function regionBounds(region: RegionId): Bounds {
-  const through = regionInfo(region).data_through, fwd = ANNUAL[region].forward_through;
-  return { min: `${ANNUAL[region].years[0]}-01-01`, max: fwd && fwd > through ? fwd : through };
+  const r = regionInfo(region), fwd = r.forward_through;
+  return { min: `${r.first_year}-01-01`, max: fwd && fwd > r.data_through ? fwd : r.data_through };
 }
 
 /** Result of loading series.json in the browser. "missing" = the file is not published yet (ML-004). */
