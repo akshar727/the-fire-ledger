@@ -327,3 +327,26 @@
 }
 [data-chapter][id]::before { left: 0; border-width: 1px 0 0 1px; }
 [data-chapter][id]::after { right: 0; border-width: 1px 1px 0 0; }
+
+/* FE-026 globe tooltip (globe.gl puts the polygon label in a .float-tooltip-kap that follows the pointer). */
+.float-tooltip-kap:has(.globe-tip) {
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+.globe-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 18rem;
+  padding: 8px 10px;
+  background: var(--popover);
+  border: 1px solid var(--tick);
+  color: var(--popover-foreground);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.globe-tip b { font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+.globe-tip span { color: var(--muted-foreground); }
+.globe-tip em { color: var(--primary); font-style: normal; padding-top: 2px; }
