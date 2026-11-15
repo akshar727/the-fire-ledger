@@ -8,6 +8,7 @@ import numpy as np, pandas as pd
 import statsmodels.api as sm
 from patsy import dmatrix
 from calendar_stats import calendar_block
+from trend_stats import trend_block
 try:
     import resource   # not on Windows
 except ImportError:
@@ -245,6 +246,19 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
     bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws, through)
+    # trend (ML-020, F-7): naive stitched record (raw MODIS for weeks before VIIRS_START, raw VIIRS after, so 2012
+    # has no fake dip; same rule as the monthly viirs ?? modis) vs harmonized, complete years only. The bootstrap range
+    # puts each draw in place of the model mean in the back-cast weeks (observed VIIRS fixed).
+    full = [i for i, yr in enumerate(years) if complete[yr]]
+    m = bundle["monthly"]
+    stitched = ysum(np.where(wk_nov, wk_modis, wk_viirs))
+    out["trend"] = trend_block(
+        [years[i] for i in full],
+        [float(stitched[i]) for i in full],
+        [float(ann.harmonized.iloc[i]) for i in full],
+        ysum(np.where(wk_nov, draws, wk_viirs))[:, full],
+        [mo if v is None else v for v, mo in zip(m["viirs"], m["modis"])],
+        [p if v is None else v for v, p in zip(m["viirs"], m["pred"])], m["start_year"])
     write_json(os.path.join(out_dir, region_id, "annual.json"), out)
     write_json(os.path.join(out_dir, region_id, "series.json"), bundle)
 
