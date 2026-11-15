@@ -71,9 +71,8 @@ export function SeasonOutlook({ data, regionId, region }: { data: Annual; region
           This fire season so far
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Running total of detections through each fire season in {region}, on the harmonized (VIIRS-scale) record. A
-          season starts in the quietest week of the year, so one that runs across New Year is not cut in two. Always the
-          latest season: the dates above do not change it.
+          Each line is one fire season&apos;s running total in {region} (harmonized record, starting in the quietest week, so
+          a season across New Year stays whole); always the latest season, whatever the dates above.
         </p>
       </div>
       {cur == null ? (

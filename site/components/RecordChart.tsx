@@ -33,7 +33,8 @@ import { compact } from "@/lib/series";
 
 type Mode = "raw" | "harm";
 
-const W = 800, H = 380, L = 55, R = 15, T = 18, B = 30;
+// FE-025: 330 high (was 380): with the controls beside it, the whole chart fits on a 1366 × 768 laptop screen
+const W = 800, H = 330, L = 55, R = 15, T = 18, B = 30;
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
 /** Gridline step: the 1, 2 or 5 times a power of ten nearest to max / 5 (Portugal keeps its 5k lines). */
