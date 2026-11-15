@@ -67,7 +67,7 @@ export function WorldScoreboard({ rows }: { rows: ScoreRow[] }) {
           {dir === "asc" ? "ascending" : "descending"}
         </p>
       </div>
-      <div className="max-h-[32rem] scroll-pt-10 overflow-auto rounded-xl border">
+      <div className="relative max-h-[32rem] scroll-pt-10 overflow-auto rounded-xl border">
         <table className="w-full min-w-[40rem] text-sm">
           <caption className="sr-only">
             Hold-out check per place. Column headers are buttons that sort the
