@@ -221,6 +221,6623 @@
       "point_rows": 2611870,
       "first_year": 2001,
       "forward_through": "2026-11-14"
+    },
+    {
+      "id": "democratic-republic-of-the-congo",
+      "name": "Democratic Republic of the Congo",
+      "bbox": [
+        12.0,
+        -13.5,
+        31.5,
+        5.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "COD",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 1.0,
+      "ship_caveat": "Only 2 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "australia",
+      "name": "Australia",
+      "bbox": [
+        113.25,
+        -43.75,
+        153.75,
+        -9.0
+      ],
+      "fire_type": "Savanna burning in the north (Apr–Nov), forest fire in the south-east (Dec–Feb)",
+      "tier": "country",
+      "iso_a3": "AUS",
+      "season": "Savanna burning in the north (Apr to Nov), forest fire in the south-east (Dec to Feb).",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 2.0,
+      "ship_caveat": "Only 2 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "brazil",
+      "name": "Brazil",
+      "bbox": [
+        -74.0,
+        -33.75,
+        -32.25,
+        5.25
+      ],
+      "fire_type": "Deforestation and Cerrado savanna burning (peak Aug–Oct)",
+      "tier": "country",
+      "iso_a3": "BRA",
+      "season": "Deforestation and Cerrado savanna burning (peak Aug to Oct).",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 2.0,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "angola",
+      "name": "Angola",
+      "bbox": [
+        11.75,
+        -18.25,
+        24.25,
+        -4.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "AGO",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.6% vs 7.2% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "zambia",
+      "name": "Zambia",
+      "bbox": [
+        21.75,
+        -18.25,
+        33.75,
+        -8.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ZMB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.8% vs 7.9% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "mozambique",
+      "name": "Mozambique",
+      "bbox": [
+        30.0,
+        -27.0,
+        41.0,
+        -10.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MOZ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 1 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "central-african-republic",
+      "name": "Central African Republic",
+      "bbox": [
+        14.25,
+        2.25,
+        27.5,
+        11.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CAF",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 0 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "south-sudan",
+      "name": "South Sudan",
+      "bbox": [
+        24.0,
+        3.25,
+        36.0,
+        12.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SSD",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.6% vs 7.9% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "russia",
+      "name": "Russia",
+      "bbox": [
+        -180.0,
+        41.0,
+        180.0,
+        81.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "RUS",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-15",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-25",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.2% vs 11.2% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "india",
+      "name": "India",
+      "bbox": [
+        68.5,
+        6.75,
+        97.5,
+        35.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "IND",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (4.4% vs 4.6% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "china",
+      "name": "China",
+      "bbox": [
+        73.5,
+        18.0,
+        135.0,
+        53.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CHN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 2.0
+    },
+    {
+      "id": "united-states",
+      "name": "United States",
+      "bbox": [
+        -176.75,
+        18.75,
+        179.75,
+        70.5
+      ],
+      "fire_type": "Western wildfire (Jul–Oct) and south-eastern prescribed and crop burning (Feb–Apr)",
+      "tier": "country",
+      "iso_a3": "USA",
+      "season": "Western wildfire (Jul to Oct) and south-eastern prescribed and crop burning (Feb to Apr).",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.5% vs 5.9% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "indonesia",
+      "name": "Indonesia",
+      "bbox": [
+        95.0,
+        -11.0,
+        141.0,
+        6.0
+      ],
+      "fire_type": "Peat and land-clearing fire (peak Aug–Oct, worst in El Niño years)",
+      "tier": "country",
+      "iso_a3": "IDN",
+      "season": "Peat and land-clearing fire (peak Aug to Oct, worst in El Niño years).",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.4% vs 7.6% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "bolivia",
+      "name": "Bolivia",
+      "bbox": [
+        -69.75,
+        -23.0,
+        -57.25,
+        -9.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BOL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (4.4% vs 5.4% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "mexico",
+      "name": "Mexico",
+      "bbox": [
+        -118.5,
+        14.5,
+        -86.5,
+        32.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MEX",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (2.7% vs 3.9% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "tanzania",
+      "name": "Tanzania",
+      "bbox": [
+        29.5,
+        -11.75,
+        40.5,
+        -0.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TZA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "nigeria",
+      "name": "Nigeria",
+      "bbox": [
+        2.5,
+        4.25,
+        14.75,
+        14.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NGA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
+    },
+    {
+      "id": "myanmar",
+      "name": "Myanmar",
+      "bbox": [
+        92.0,
+        9.75,
+        101.25,
+        28.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MMR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-25",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
+    },
+    {
+      "id": "venezuela",
+      "name": "Venezuela",
+      "bbox": [
+        -73.5,
+        0.75,
+        -59.75,
+        12.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "VEN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (3.0% vs 4.2% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "guinea",
+      "name": "Guinea",
+      "bbox": [
+        -15.25,
+        7.0,
+        -7.5,
+        12.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GIN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 1 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "madagascar",
+      "name": "Madagascar",
+      "bbox": [
+        43.0,
+        -25.75,
+        50.5,
+        -11.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MDG",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.3% vs 6.7% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "thailand",
+      "name": "Thailand",
+      "bbox": [
+        97.25,
+        5.5,
+        105.75,
+        20.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "THA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
+    },
+    {
+      "id": "ethiopia",
+      "name": "Ethiopia",
+      "bbox": [
+        32.75,
+        3.25,
+        47.75,
+        15.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ETH",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 1.0
+    },
+    {
+      "id": "ghana-country",
+      "name": "Ghana",
+      "bbox": [
+        -3.5,
+        4.5,
+        1.25,
+        11.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GHA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-19",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
+    },
+    {
+      "id": "chad",
+      "name": "Chad",
+      "bbox": [
+        13.25,
+        7.25,
+        24.0,
+        23.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TCD",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "kazakhstan",
+      "name": "Kazakhstan",
+      "bbox": [
+        46.25,
+        40.5,
+        87.0,
+        55.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "KAZ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-09",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.2% vs 9.4% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "iraq",
+      "name": "Iraq",
+      "bbox": [
+        38.75,
+        29.0,
+        48.75,
+        37.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "IRQ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-25",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
+    },
+    {
+      "id": "canada",
+      "name": "Canada",
+      "bbox": [
+        -141.25,
+        41.75,
+        -52.5,
+        82.75
+      ],
+      "fire_type": "Boreal forest wildfire (peak Jun–Aug)",
+      "tier": "country",
+      "iso_a3": "CAN",
+      "season": "Boreal forest wildfire (peak Jun to Aug).",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 4.0
+    },
+    {
+      "id": "cameroon",
+      "name": "Cameroon",
+      "bbox": [
+        8.5,
+        1.5,
+        16.25,
+        13.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CMR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 1 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
+    },
+    {
+      "id": "argentina",
+      "name": "Argentina",
+      "bbox": [
+        -73.25,
+        -55.0,
+        -53.5,
+        -21.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ARG",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "south-africa",
+      "name": "South Africa",
+      "bbox": [
+        16.25,
+        -35.0,
+        33.0,
+        -22.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ZAF",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.4% vs 9.1% average error), so the years before 2012 are MODIS times that ratio."
+    },
+    {
+      "id": "cambodia",
+      "name": "Cambodia",
+      "bbox": [
+        102.25,
+        10.25,
+        107.75,
+        14.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "KHM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "paraguay",
+      "name": "Paraguay",
+      "bbox": [
+        -62.75,
+        -27.75,
+        -54.25,
+        -19.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PRY",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "sudan",
+      "name": "Sudan",
+      "bbox": [
+        21.75,
+        8.5,
+        38.5,
+        22.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SDN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "mali",
+      "name": "Mali",
+      "bbox": [
+        -12.25,
+        10.0,
+        4.25,
+        25.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MLI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "iran",
+      "name": "Iran",
+      "bbox": [
+        44.0,
+        25.25,
+        63.25,
+        40.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "IRN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "colombia",
+      "name": "Colombia",
+      "bbox": [
+        -81.75,
+        -4.25,
+        -66.75,
+        13.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "COL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "zimbabwe",
+      "name": "Zimbabwe",
+      "bbox": [
+        25.0,
+        -22.5,
+        33.25,
+        -15.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ZWE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "ukraine",
+      "name": "Ukraine",
+      "bbox": [
+        22.0,
+        44.25,
+        40.25,
+        52.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "UKR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-08",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-25",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "sierra-leone",
+      "name": "Sierra Leone",
+      "bbox": [
+        -13.5,
+        6.75,
+        -10.25,
+        10.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SLE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-21",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "republic-of-congo",
+      "name": "Republic of Congo",
+      "bbox": [
+        11.0,
+        -5.25,
+        18.75,
+        3.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "COG",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "algeria",
+      "name": "Algeria",
+      "bbox": [
+        -8.5,
+        19.25,
+        10.25,
+        37.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "DZA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "senegal",
+      "name": "Senegal",
+      "bbox": [
+        -17.75,
+        12.25,
+        -11.25,
+        16.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SEN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "vietnam",
+      "name": "Vietnam",
+      "bbox": [
+        102.0,
+        8.5,
+        109.5,
+        23.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "VNM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "peru",
+      "name": "Peru",
+      "bbox": [
+        -81.5,
+        -18.5,
+        -68.5,
+        0.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PER",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "benin",
+      "name": "Benin",
+      "bbox": [
+        0.75,
+        6.0,
+        4.0,
+        12.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BEN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-17",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "uganda",
+      "name": "Uganda",
+      "bbox": [
+        29.5,
+        -1.5,
+        35.0,
+        4.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "UGA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "laos",
+      "name": "Laos",
+      "bbox": [
+        100.0,
+        13.75,
+        107.75,
+        22.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LAO",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-31",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "burkina-faso",
+      "name": "Burkina Faso",
+      "bbox": [
+        -5.75,
+        9.25,
+        2.5,
+        15.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BFA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-10-03",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "honduras",
+      "name": "Honduras",
+      "bbox": [
+        -89.5,
+        12.75,
+        -83.0,
+        16.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "HND",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-08",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "malawi",
+      "name": "Malawi",
+      "bbox": [
+        32.5,
+        -17.25,
+        36.0,
+        -9.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MWI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-05",
+          "last_date": "2025-12-09",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-14",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-30",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "pakistan",
+      "name": "Pakistan",
+      "bbox": [
+        61.0,
+        24.0,
+        76.75,
+        37.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PAK",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "liberia",
+      "name": "Liberia",
+      "bbox": [
+        -11.5,
+        4.25,
+        -7.25,
+        8.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LBR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-12",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-10-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "togo",
+      "name": "Togo",
+      "bbox": [
+        -0.25,
+        6.0,
+        2.0,
+        11.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TGO",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-09-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "bbox": [
+        116.75,
+        4.5,
+        126.75,
+        21.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PHL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-07",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "libya",
+      "name": "Libya",
+      "bbox": [
+        9.25,
+        21.25,
+        25.25,
+        33.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LBY",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-07",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "turkey",
+      "name": "Turkey",
+      "bbox": [
+        25.5,
+        35.75,
+        45.0,
+        42.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TUR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "guatemala",
+      "name": "Guatemala",
+      "bbox": [
+        -92.25,
+        13.5,
+        -88.0,
+        18.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GTM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-11",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "botswana",
+      "name": "Botswana",
+      "bbox": [
+        19.75,
+        -27.0,
+        29.5,
+        -17.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BWA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "nicaragua",
+      "name": "Nicaragua",
+      "bbox": [
+        -87.75,
+        10.5,
+        -83.0,
+        15.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NIC",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-22",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "syria",
+      "name": "Syria",
+      "bbox": [
+        35.5,
+        32.25,
+        42.5,
+        37.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SYR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-18",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "papua-new-guinea",
+      "name": "Papua New Guinea",
+      "bbox": [
+        140.75,
+        -11.75,
+        156.0,
+        -1.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PNG",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-18",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "saudi-arabia",
+      "name": "Saudi Arabia",
+      "bbox": [
+        34.5,
+        16.25,
+        55.5,
+        32.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SAU",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "chile",
+      "name": "Chile",
+      "bbox": [
+        -109.5,
+        -54.0,
+        -67.0,
+        -17.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CHL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "cote-divoire",
+      "name": "Côte d'Ivoire",
+      "bbox": [
+        -8.75,
+        4.25,
+        -2.5,
+        10.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CIV",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-03",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "nepal",
+      "name": "Nepal",
+      "bbox": [
+        80.0,
+        26.25,
+        88.25,
+        30.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NPL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-18",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "namibia",
+      "name": "Namibia",
+      "bbox": [
+        11.75,
+        -29.0,
+        25.5,
+        -16.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NAM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-14",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "japan",
+      "name": "Japan",
+      "bbox": [
+        123.75,
+        24.25,
+        145.75,
+        45.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "JPN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-12-16",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-08",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-24",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "egypt",
+      "name": "Egypt",
+      "bbox": [
+        25.0,
+        21.75,
+        35.75,
+        31.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "EGY",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-07",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "turkmenistan",
+      "name": "Turkmenistan",
+      "bbox": [
+        52.5,
+        35.0,
+        66.75,
+        43.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TKM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "italy",
+      "name": "Italy",
+      "bbox": [
+        6.75,
+        35.5,
+        18.75,
+        47.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ITA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "romania",
+      "name": "Romania",
+      "bbox": [
+        20.25,
+        43.5,
+        29.75,
+        48.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ROU",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-11-22",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-19",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "guinea-bissau",
+      "name": "Guinea-Bissau",
+      "bbox": [
+        -16.75,
+        10.75,
+        -13.5,
+        12.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GNB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "malaysia",
+      "name": "Malaysia",
+      "bbox": [
+        99.5,
+        0.75,
+        119.5,
+        7.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MYS",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-22",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "oman",
+      "name": "Oman",
+      "bbox": [
+        52.25,
+        16.5,
+        60.0,
+        26.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "OMN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-07",
+          "last_date": "2025-12-25",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "cuba",
+      "name": "Cuba",
+      "bbox": [
+        -85.0,
+        19.75,
+        -74.0,
+        23.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CUB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "kenya",
+      "name": "Kenya",
+      "bbox": [
+        33.75,
+        -4.75,
+        42.0,
+        5.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "KEN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "germany",
+      "name": "Germany",
+      "bbox": [
+        5.75,
+        47.25,
+        15.25,
+        55.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "DEU",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-11-04",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-11-06",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "uzbekistan",
+      "name": "Uzbekistan",
+      "bbox": [
+        56.0,
+        37.0,
+        73.25,
+        45.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "UZB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "france",
+      "name": "France",
+      "bbox": [
+        -5.0,
+        41.25,
+        9.75,
+        51.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "FRA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-11-12",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "spain",
+      "name": "Spain",
+      "bbox": [
+        -18.25,
+        27.5,
+        4.5,
+        43.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ESP",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-22",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "panama",
+      "name": "Panama",
+      "bbox": [
+        -83.25,
+        7.0,
+        -77.25,
+        9.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PAN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-24",
+          "last_date": "2025-11-12",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-19",
+          "last_date": "2025-12-20",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "serbia",
+      "name": "Serbia",
+      "bbox": [
+        18.75,
+        42.0,
+        23.0,
+        46.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SRB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-10-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-06",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-21",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "bulgaria",
+      "name": "Bulgaria",
+      "bbox": [
+        22.25,
+        41.0,
+        28.75,
+        44.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BGR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-11-02",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "ecuador",
+      "name": "Ecuador",
+      "bbox": [
+        -91.75,
+        -5.25,
+        -75.25,
+        1.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ECU",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "bangladesh",
+      "name": "Bangladesh",
+      "bbox": [
+        88.0,
+        20.75,
+        92.75,
+        26.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BGD",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-09-19",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "gabon",
+      "name": "Gabon",
+      "bbox": [
+        8.5,
+        -4.0,
+        14.5,
+        2.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GAB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-03",
+          "last_date": "2025-12-25",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "swaziland",
+      "name": "Swaziland",
+      "bbox": [
+        30.75,
+        -27.5,
+        32.25,
+        -25.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SWZ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "belarus",
+      "name": "Belarus",
+      "bbox": [
+        23.25,
+        51.25,
+        32.75,
+        56.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BLR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-10-13",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-10-04",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-01",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "guyana",
+      "name": "Guyana",
+      "bbox": [
+        -61.5,
+        1.25,
+        -57.0,
+        8.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GUY",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-11",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "azerbaijan",
+      "name": "Azerbaijan",
+      "bbox": [
+        44.75,
+        38.25,
+        50.5,
+        42.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "AZE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-20",
+          "last_date": "2025-12-03",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-03",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "belize",
+      "name": "Belize",
+      "bbox": [
+        -89.25,
+        15.75,
+        -87.75,
+        18.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BLZ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-10-04",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-13",
+          "last_date": "2025-11-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "dominican-republic",
+      "name": "Dominican Republic",
+      "bbox": [
+        -72.0,
+        17.5,
+        -68.25,
+        20.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "DOM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "united-kingdom",
+      "name": "United Kingdom",
+      "bbox": [
+        -8.25,
+        49.75,
+        1.75,
+        60.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GBR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-13",
+          "last_date": "2025-11-08",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-11-09",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "qatar",
+      "name": "Qatar",
+      "bbox": [
+        50.75,
+        24.5,
+        51.75,
+        26.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "QAT",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-05",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-22",
+          "last_date": "2025-12-12",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "niger",
+      "name": "Niger",
+      "bbox": [
+        0.0,
+        11.5,
+        15.75,
+        22.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NER",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-13",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "kuwait",
+      "name": "Kuwait",
+      "bbox": [
+        46.5,
+        28.5,
+        48.5,
+        30.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "KWT",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-07",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "costa-rica",
+      "name": "Costa Rica",
+      "bbox": [
+        -86.0,
+        8.0,
+        -82.5,
+        11.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CRI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-26",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "timor-leste",
+      "name": "Timor-Leste",
+      "bbox": [
+        124.0,
+        -9.5,
+        127.5,
+        -8.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TLS",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-15",
+          "last_date": "2025-11-03",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-11-04",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-28",
+          "last_date": "2025-12-15",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "el-salvador",
+      "name": "El Salvador",
+      "bbox": [
+        -90.25,
+        13.0,
+        -87.5,
+        14.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SLV",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-15",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "sri-lanka",
+      "name": "Sri Lanka",
+      "bbox": [
+        79.5,
+        5.75,
+        82.0,
+        10.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LKA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-11-03",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-25",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "poland",
+      "name": "Poland",
+      "bbox": [
+        14.0,
+        49.0,
+        24.25,
+        55.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "POL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-10-04",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-10-03",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "mongolia",
+      "name": "Mongolia",
+      "bbox": [
+        87.75,
+        41.75,
+        120.0,
+        52.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MNG",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-17",
+          "last_date": "2025-11-02",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-02",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-17",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "greece",
+      "name": "Greece",
+      "bbox": [
+        19.5,
+        34.75,
+        28.25,
+        41.75
+      ],
+      "fire_type": "Mediterranean forest and shrub wildfire (peak Jul–Sep)",
+      "tier": "country",
+      "iso_a3": "GRC",
+      "season": "Mediterranean forest and shrub wildfire (peak Jul to Sep).",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-21",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "new-zealand",
+      "name": "New Zealand",
+      "bbox": [
+        -176.75,
+        -47.0,
+        178.5,
+        -34.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NZL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-03",
+          "last_date": "2025-12-14",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "belgium",
+      "name": "Belgium",
+      "bbox": [
+        2.5,
+        49.5,
+        6.5,
+        51.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BEL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-03",
+          "last_date": "2025-09-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-11",
+          "last_date": "2025-11-05",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-24",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "portugal-country",
+      "name": "Portugal",
+      "bbox": [
+        -29.0,
+        32.5,
+        -6.0,
+        42.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PRT",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-11-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-27",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "yemen",
+      "name": "Yemen",
+      "bbox": [
+        42.5,
+        12.0,
+        54.5,
+        18.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "YEM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-21",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "united-arab-emirates",
+      "name": "United Arab Emirates",
+      "bbox": [
+        51.5,
+        22.5,
+        56.5,
+        26.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ARE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-19",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-11",
+          "last_date": "2025-11-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "the-gambia",
+      "name": "The Gambia",
+      "bbox": [
+        -17.0,
+        13.0,
+        -13.75,
+        14.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GMB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-25",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "uruguay",
+      "name": "Uruguay",
+      "bbox": [
+        -58.5,
+        -35.0,
+        -53.0,
+        -30.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "URY",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "bosnia-and-herzegovina",
+      "name": "Bosnia and Herzegovina",
+      "bbox": [
+        15.5,
+        42.5,
+        19.75,
+        45.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BIH",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "georgia",
+      "name": "Georgia",
+      "bbox": [
+        40.0,
+        41.0,
+        46.75,
+        43.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GEO",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-08",
+          "last_date": "2025-11-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-11",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-06",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "suriname",
+      "name": "Suriname",
+      "bbox": [
+        -58.0,
+        1.75,
+        -53.75,
+        6.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SUR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-13",
+          "last_date": "2025-12-16",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-25",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "new-caledonia",
+      "name": "New Caledonia",
+      "bbox": [
+        163.5,
+        -22.75,
+        168.25,
+        -19.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NCL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-05",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-13",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "sweden",
+      "name": "Sweden",
+      "bbox": [
+        11.0,
+        55.25,
+        24.25,
+        68.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SWE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-23",
+          "last_date": "2025-09-25",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-09-28",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-24",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "lesotho",
+      "name": "Lesotho",
+      "bbox": [
+        27.0,
+        -30.75,
+        29.5,
+        -28.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LSO",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-05-28",
+          "last_date": "2025-10-01",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-11-13",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-06",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "netherlands",
+      "name": "Netherlands",
+      "bbox": [
+        -68.5,
+        12.0,
+        7.25,
+        53.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NLD",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-05",
+          "last_date": "2025-09-19",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-09-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-22",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "austria",
+      "name": "Austria",
+      "bbox": [
+        9.5,
+        46.25,
+        17.25,
+        49.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "AUT",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-02-28",
+          "last_date": "2025-09-27",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-09-18",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-21",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "morocco",
+      "name": "Morocco",
+      "bbox": [
+        -17.0,
+        22.0,
+        -1.5,
+        36.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MAR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-10",
+          "last_date": "2025-12-20",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-12",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "tunisia",
+      "name": "Tunisia",
+      "bbox": [
+        7.5,
+        30.0,
+        11.5,
+        37.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TUN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-02-01",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-27",
+          "last_date": "2025-11-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "moldova",
+      "name": "Moldova",
+      "bbox": [
+        26.5,
+        45.25,
+        30.25,
+        48.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MDA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-15",
+          "last_date": "2025-09-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-10-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-08",
+          "last_date": "2025-11-04",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "kyrgyzstan",
+      "name": "Kyrgyzstan",
+      "bbox": [
+        69.25,
+        39.25,
+        80.0,
+        43.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "KGZ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-10-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-03-02",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "burundi",
+      "name": "Burundi",
+      "bbox": [
+        28.75,
+        -4.5,
+        31.0,
+        -2.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BDI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-12-08",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-14",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-22",
+          "last_date": "2025-12-14",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "hungary",
+      "name": "Hungary",
+      "bbox": [
+        16.0,
+        45.5,
+        23.0,
+        48.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "HUN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-10-29",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-11-06",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "albania",
+      "name": "Albania",
+      "bbox": [
+        19.25,
+        39.5,
+        21.25,
+        42.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ALB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-15",
+          "last_date": "2025-10-14",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-21",
+          "last_date": "2025-12-22",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-22",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "somalia",
+      "name": "Somalia",
+      "bbox": [
+        40.75,
+        -1.75,
+        51.25,
+        12.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SOM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-03",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "slovakia",
+      "name": "Slovakia",
+      "bbox": [
+        16.75,
+        47.75,
+        22.5,
+        49.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SVK",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-09-19",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-08",
+          "last_date": "2025-10-26",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-25",
+          "last_date": "2025-11-27",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "croatia",
+      "name": "Croatia",
+      "bbox": [
+        13.5,
+        42.25,
+        19.5,
+        46.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "HRV",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-06",
+          "last_date": "2025-10-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-10-22",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "haiti",
+      "name": "Haiti",
+      "bbox": [
+        -74.5,
+        18.0,
+        -71.5,
+        20.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "HTI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-09",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "kosovo",
+      "name": "Kosovo",
+      "bbox": [
+        20.0,
+        41.75,
+        22.0,
+        43.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "XKX",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-15",
+          "last_date": "2025-11-20",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-07",
+          "last_date": "2025-11-16",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-03-15",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "armenia",
+      "name": "Armenia",
+      "bbox": [
+        43.25,
+        38.75,
+        46.75,
+        41.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ARM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-12",
+          "last_date": "2025-11-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-14",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-21",
+          "last_date": "2025-12-20",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "mauritania",
+      "name": "Mauritania",
+      "bbox": [
+        -17.25,
+        14.75,
+        -5.25,
+        26.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MRT",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-21",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "czech-republic",
+      "name": "Czech Republic",
+      "bbox": [
+        12.0,
+        48.5,
+        19.0,
+        51.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CZE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-12",
+          "last_date": "2025-11-06",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-11-11",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-03",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "taiwan",
+      "name": "Taiwan",
+      "bbox": [
+        118.25,
+        21.75,
+        122.0,
+        25.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TWN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-12",
+          "last_date": "2025-12-05",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-11-22",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-22",
+          "last_date": "2025-12-24",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "montenegro",
+      "name": "Montenegro",
+      "bbox": [
+        18.25,
+        41.75,
+        20.5,
+        43.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MNE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-15",
+          "last_date": "2025-12-15",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-11-01",
+          "last_date": "2025-10-04",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-31",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "eritrea",
+      "name": "Eritrea",
+      "bbox": [
+        36.25,
+        12.5,
+        43.25,
+        17.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ERI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "south-korea",
+      "name": "South Korea",
+      "bbox": [
+        124.5,
+        33.0,
+        131.0,
+        38.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "KOR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-11-24",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-11",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "bahrain",
+      "name": "Bahrain",
+      "bbox": [
+        50.25,
+        25.75,
+        50.75,
+        26.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BHR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2004-01-14",
+          "last_date": "2025-09-18",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2008-04-14",
+          "last_date": "2024-08-15",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 6 sensor-year(s) (2000, 2001, 2002, 2003, 2006, 2012); those count as no fire."
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "bbox": [
+        34.25,
+        29.5,
+        36.0,
+        33.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "ISR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-02",
+          "last_date": "2025-12-08",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-12-15",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-27",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "norway",
+      "name": "Norway",
+      "bbox": [
+        -9.0,
+        57.75,
+        31.25,
+        71.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "NOR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-24",
+          "last_date": "2025-08-29",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-29",
+          "last_date": "2025-09-26",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-20",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "fiji",
+      "name": "Fiji",
+      "bbox": [
+        -180.0,
+        -19.25,
+        180.0,
+        -16.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "FJI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-07",
+          "last_date": "2025-12-04",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-19",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "jamaica",
+      "name": "Jamaica",
+      "bbox": [
+        -78.5,
+        17.5,
+        -76.0,
+        18.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "JAM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-07",
+          "last_date": "2025-11-19",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-05",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "trinidad-and-tobago",
+      "name": "Trinidad and Tobago",
+      "bbox": [
+        -62.0,
+        10.0,
+        -60.5,
+        11.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TTO",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-24",
+          "last_date": "2025-10-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-09-16",
+          "last_date": "2025-04-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-26",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "bahamas",
+      "name": "Bahamas",
+      "bbox": [
+        -79.5,
+        20.75,
+        -72.75,
+        27.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BHS",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-07",
+          "last_date": "2025-10-18",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-14",
+          "last_date": "2025-09-16",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-28",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "french-guiana",
+      "name": "French Guiana",
+      "bbox": [
+        -54.5,
+        2.0,
+        -51.5,
+        5.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GUF",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-07",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-21",
+          "last_date": "2025-12-03",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-03-12",
+          "last_date": "2025-12-10",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "vanuatu",
+      "name": "Vanuatu",
+      "bbox": [
+        166.5,
+        -20.25,
+        170.0,
+        -13.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "VUT",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-05",
+          "last_date": "2025-03-04",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-13",
+          "last_date": "2025-11-17",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-09",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "rwanda",
+      "name": "Rwanda",
+      "bbox": [
+        28.75,
+        -3.0,
+        31.0,
+        -1.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "RWA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-26",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-23",
+          "last_date": "2025-12-11",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "equatorial-guinea",
+      "name": "Equatorial Guinea",
+      "bbox": [
+        8.25,
+        0.75,
+        11.5,
+        4.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GNQ",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-12",
+          "last_date": "2025-08-19",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-12",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-30",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "finland",
+      "name": "Finland",
+      "bbox": [
+        20.75,
+        59.75,
+        31.75,
+        70.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "FIN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-04-17",
+          "last_date": "2025-09-07",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-10-09",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-08",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "afghanistan",
+      "name": "Afghanistan",
+      "bbox": [
+        60.5,
+        29.25,
+        74.5,
+        38.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "AFG",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-12-17",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-13",
+          "last_date": "2025-12-12",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-21",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "denmark",
+      "name": "Denmark",
+      "bbox": [
+        8.0,
+        54.5,
+        15.25,
+        57.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "DNK",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-05-02",
+          "last_date": "2025-09-13",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-16",
+          "last_date": "2025-10-30",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-13",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "tajikistan",
+      "name": "Tajikistan",
+      "bbox": [
+        67.25,
+        36.5,
+        74.75,
+        41.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "TJK",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-01",
+          "last_date": "2025-10-16",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-27",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "luxembourg",
+      "name": "Luxembourg",
+      "bbox": [
+        5.75,
+        49.25,
+        6.5,
+        50.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LUX",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-08",
+          "last_date": "2017-11-19",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-09-29",
+          "last_date": "2017-10-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-03-23",
+          "last_date": "2025-11-06",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated."
+    },
+    {
+      "id": "bhutan",
+      "name": "Bhutan",
+      "bbox": [
+        88.75,
+        26.5,
+        92.25,
+        28.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BTN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-03",
+          "last_date": "2025-12-21",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-09-12",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-22",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "palestine",
+      "name": "Palestine",
+      "bbox": [
+        34.0,
+        31.0,
+        35.75,
+        32.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PSE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-24",
+          "last_date": "2025-11-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-12-26",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "jordan",
+      "name": "Jordan",
+      "bbox": [
+        34.75,
+        29.25,
+        39.25,
+        32.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "JOR",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-03",
+          "last_date": "2025-12-01",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-23",
+          "last_date": "2025-12-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "lebanon",
+      "name": "Lebanon",
+      "bbox": [
+        35.0,
+        33.0,
+        36.75,
+        34.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LBN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-13",
+          "last_date": "2025-11-23",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-11-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-25",
+          "last_date": "2025-12-29",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "switzerland",
+      "name": "Switzerland",
+      "bbox": [
+        5.75,
+        45.75,
+        10.25,
+        47.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CHE",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-31",
+          "last_date": "2025-10-15",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-18",
+          "last_date": "2025-09-17",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-25",
+          "last_date": "2025-10-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "puerto-rico",
+      "name": "Puerto Rico",
+      "bbox": [
+        -67.5,
+        17.75,
+        -65.25,
+        18.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "PRI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-04",
+          "last_date": "2025-10-12",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-09-05",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-16",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "ireland",
+      "name": "Ireland",
+      "bbox": [
+        -10.5,
+        51.25,
+        -6.0,
+        55.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "IRL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-05-05",
+          "last_date": "2025-09-12",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-26",
+          "last_date": "2025-08-21",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-22",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "greenland",
+      "name": "Greenland",
+      "bbox": [
+        -69.5,
+        60.0,
+        -15.75,
+        83.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "GRL",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-07-12",
+          "last_date": "2025-08-27",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-21",
+          "last_date": "2025-08-02",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-21",
+          "last_date": "2025-12-18",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "lithuania",
+      "name": "Lithuania",
+      "bbox": [
+        21.0,
+        53.75,
+        27.0,
+        56.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LTU",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-27",
+          "last_date": "2025-09-24",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-04",
+          "last_date": "2025-09-10",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-03-04",
+          "last_date": "2025-10-20",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "latvia",
+      "name": "Latvia",
+      "bbox": [
+        21.0,
+        55.5,
+        28.25,
+        58.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "LVA",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-21",
+          "last_date": "2025-10-29",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-06",
+          "last_date": "2025-09-07",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-11-15",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "cyprus",
+      "name": "Cyprus",
+      "bbox": [
+        32.25,
+        34.5,
+        34.25,
+        35.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CYP",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-11",
+          "last_date": "2025-11-26",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-14",
+          "last_date": "2025-11-23",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-20",
+          "last_date": "2025-12-19",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "brunei-darussalam",
+      "name": "Brunei Darussalam",
+      "bbox": [
+        114.0,
+        4.0,
+        115.5,
+        5.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "BRN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-10",
+          "last_date": "2025-10-16",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-09-05",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-21",
+          "last_date": "2025-12-13",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "estonia",
+      "name": "Estonia",
+      "bbox": [
+        21.75,
+        57.5,
+        28.25,
+        59.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "EST",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-30",
+          "last_date": "2025-07-27",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-09",
+          "last_date": "2025-07-26",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-03-06",
+          "last_date": "2025-10-08",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "comoros",
+      "name": "Comoros",
+      "bbox": [
+        43.0,
+        -12.5,
+        44.75,
+        -11.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "COM",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-08-24",
+          "last_date": "2025-08-28",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-08-21",
+          "last_date": "2025-10-01",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-05-13",
+          "last_date": "2025-11-18",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "mauritius",
+      "name": "Mauritius",
+      "bbox": [
+        57.25,
+        -20.75,
+        63.5,
+        -19.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "MUS",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-11-15",
+          "last_date": "2025-12-27",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-07",
+          "last_date": "2025-11-01",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-01-27",
+          "last_date": "2025-12-22",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+    },
+    {
+      "id": "slovenia",
+      "name": "Slovenia",
+      "bbox": [
+        13.5,
+        45.25,
+        16.5,
+        47.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SVN",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-10",
+          "last_date": "2025-09-22",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-07-10",
+          "last_date": "2025-09-06",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-16",
+          "last_date": "2025-12-21",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "solomon-islands",
+      "name": "Solomon Islands",
+      "bbox": [
+        156.5,
+        -11.75,
+        167.0,
+        -7.0
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SLB",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2000-12-05",
+          "last_date": "2024-10-03",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2002-10-24",
+          "last_date": "2025-11-29",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-23",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio"
+    },
+    {
+      "id": "djibouti",
+      "name": "Djibouti",
+      "bbox": [
+        41.75,
+        10.75,
+        43.5,
+        12.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "DJI",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-23",
+          "last_date": "2025-05-01",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2003-04-01",
+          "last_date": "2025-12-08",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-18",
+          "last_date": "2025-12-15",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "sao-tome-and-principe",
+      "name": "Sao Tome and Principe",
+      "bbox": [
+        6.5,
+        0.25,
+        7.0,
+        0.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "STP",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-09-24",
+          "last_date": "2024-08-22",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2004-07-05",
+          "last_date": "2025-08-09",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-07-02",
+          "last_date": "2025-09-18",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated. FIRMS has no file for 2 sensor-year(s) (2000, 2002); those count as no fire."
+    },
+    {
+      "id": "singapore",
+      "name": "Singapore",
+      "bbox": [
+        103.5,
+        1.25,
+        104.0,
+        1.5
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "SGP",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-04-02",
+          "last_date": "2017-10-07",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2004-06-01",
+          "last_date": "2017-07-25",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-04-05",
+          "last_date": "2025-05-28",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "cape-verde",
+      "name": "Cape Verde",
+      "bbox": [
+        -25.25,
+        14.75,
+        -22.5,
+        17.25
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "CPV",
+      "data_through": "2025-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-03-25",
+          "last_date": "2025-03-06",
+          "data_through": "2025-12-31"
+        },
+        "aqua": {
+          "first_date": "2003-07-12",
+          "last_date": "2025-11-22",
+          "data_through": "2025-12-31"
+        },
+        "viirs": {
+          "first_date": "2012-02-21",
+          "last_date": "2025-12-31",
+          "data_through": "2025-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "ratio",
+      "method": "ratio",
+      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+    },
+    {
+      "id": "andorra",
+      "name": "Andorra",
+      "bbox": [
+        1.5,
+        42.5,
+        1.75,
+        42.75
+      ],
+      "fire_type": "",
+      "tier": "country",
+      "iso_a3": "AND",
+      "data_through": "2024-12-31",
+      "sensors": {
+        "terra": {
+          "first_date": "2001-07-22",
+          "last_date": "2017-06-11",
+          "data_through": "2024-12-31"
+        },
+        "aqua": {
+          "first_date": "2013-08-08",
+          "last_date": "2020-05-25",
+          "data_through": "2024-12-31"
+        },
+        "viirs": {
+          "first_date": "2016-04-07",
+          "last_date": "2022-11-23",
+          "data_through": "2024-12-31"
+        }
+      },
+      "point_years": [],
+      "point_rows": 0,
+      "first_year": 2001,
+      "forward_through": null,
+      "ship": "sparse",
+      "method": "ratio",
+      "ship_caveat": "Too little fire to check: a year of 2012-2025 has no VIIRS detections or 2012-2019 has fewer than 1,000, so the years before 2012 are MODIS times the 2012-2019 ratio and are not validated. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 26 sensor-year(s) (2000, 2002, 2003, 2004, 2006, 2007, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2017, 2018, 2019, 2020, 2021, 2023, 2024, 2025); those count as no fire."
     }
   ]
 }
