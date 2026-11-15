@@ -43,6 +43,12 @@ python weather.py             # all regions (~1 min the first time; then reads t
 python weather.py --refresh   # fetch again to extend to yesterday
 ```
 
+Peak fire days (`peaks.py`, DP-016): `site/public/data/<region>/peaks.json` lists, for every month from 2001-01, the day with the most raw fire detections and the month's top 3 days (all cells, day and night), so the site can show that day's satellite image. Counts are raw, not harmonized; the sensor depends on the date (MODIS before 2012-01-20, VIIRS S-NPP to the archive end, NOAA-20 after) and is recorded per day. Reads `data/grid` only.
+
+```bash
+python peaks.py [region_id ...]   # default: all regions
+```
+
 ### Data outputs (written by `build.py`)
 
 - `regions.json` (hand-edited input): one entry per region: `id`, `name`, FIRMS `country` file name, `bbox` [west, south, east, north] (west/south edges inclusive, east/north exclusive; edge cells can stick out slightly when an edge isn't a multiple of 0.25°), `fire_type`. After editing a region's entry, rebuild that region (`python build.py <id>`) so its grid and the index match. The `punjab` box also covers part of Pakistani Punjab, but only India's FIRMS file is used for 2000–2025, so that side is empty. 2026 comes from the area API (whole box), so `build.py` keeps a 2026 detection only if its 0.05° sub-cell (~5.5 km) had a detection in the 2000–2025 archive. With whole 0.25° cells, about 6% of 2026 detections fell on ground with no detection in 2000–2024 (the neighbour's side of border cells, plus untyped NRT static sources); the 0.05° filter drops at most ~0.3% of genuine detections.
@@ -158,6 +164,7 @@ Website (`site/`, versions pinned in `site/package-lock.json`)
 Code
 - `site/fixtures/series.portugal.sample.json`: test fixture built from this repo's Portugal grid (then `fire_grid_daily.csv`, now `data/grid/fire_grid_daily_portugal.csv`; NASA FIRMS data above); its harmonized values are placeholders, not model output.
 - The burn calendar (`/calendar`) reads this project's own model export, `site/public/data/<region>/series.json` (harmonized monthly counts from `model.py`, month medians, middle half and unusual-month flags from `calendar_stats.py`; NASA FIRMS data above). The fire-season line per region is reworded from `site/public/data/index.json` (team-written region notes). No new library, data source or asset.
+- `peaks.py`: no new data source (reads `data/grid`; NASA FIRMS data above).
 - The record chart in `site/components/RecordChart.tsx` is ported from this project's own proof-of-concept page (`web/index.html`, commit `051327a`).
 - Region switcher, date range and downloads (`site/components/RegionSwitcher.tsx`, `DateRange.tsx`, `DownloadCsv.tsx`, `site/lib/selection.ts`): the region list and dates come from this project's own `site/public/data/index.json`; "Download CSV" and "Download analytics" call this project's own `/api/hotspots` and `/api/series` route handlers; the whole-year links point to this project's own `site/public/data/<region>/points/<year>.csv` files (all NASA FIRMS data above, with the FIRMS acknowledgment shown next to the buttons). Uses the browser's built-in date and select inputs; no new library, data source or asset.
 - Latitude/longitude box for the hotspot CSV (`site/components/BoxFilter.tsx`, box helpers in `site/lib/selection.ts`, `useBox` in `site/lib/use-selection.ts`): four typed edges, kept in the URL as `?bbox=w,s,e,n` and passed to this project's own `/api/hotspots` `bbox` filter; the region boxes it checks against come from this project's own `regions.json` via `site/public/data/index.json` (NASA FIRMS data above). Plain text inputs; no new library, data source or asset.
