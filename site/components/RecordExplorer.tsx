@@ -63,7 +63,7 @@ export function RecordExplorer() {
         </h2>
         <div className="flex flex-col gap-4 border-b pb-5 lg:border-r lg:border-b-0 lg:pr-6 lg:pb-0">
           <div className="w-full max-w-sm lg:max-w-none">
-            <RegionSwitcher orientation="vertical" />
+            <RegionSwitcher className="w-full" />
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {FIRE_SEASON[sel.region]}
