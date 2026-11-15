@@ -133,6 +133,9 @@ export type CalendarCell = {
   partial: boolean; // the period has a value but the data stop before its last day
   value: number | null; // harmonized = viirs ?? pred; null = no data for this month
   observed: boolean; // true when the value is a VIIRS observation, false when it is the model's back-cast
+  // FE-009: back-cast (MODIS model), observed (S-NPP) or forward (S-NPP to its end + the NOAA-20/21 link after). From
+  // the bundle's `source` when present (ML-017), else from `observed`.
+  source: Source;
   flag: Flag;
   anomaly: number | null;
   inRange: boolean; // inside the selected dates (sliceGrid); always true from buildGrid
@@ -147,6 +150,7 @@ export type CalendarGrid = {
   partialYears: number[]; // years with at least one month missing
   latest: CalendarCell | null; // last period that has a value
   firstObserved: CalendarCell | null; // first period whose value is a VIIRS observation (earlier ones are back-cast)
+  firstForward: CalendarCell | null; // first period with forward-link days (FE-009); null when the bundle has none
 };
 
 const DAY_MS = 86_400_000;
@@ -204,6 +208,7 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
   const nYears = Math.ceil(n / cols);
   const years: number[] = [], rows: CalendarCell[][] = [], partialYears: number[] = [];
   let max = 0, latest: CalendarCell | null = null, firstObserved: CalendarCell | null = null;
+  let firstForward: CalendarCell | null = null;
   for (let y = 0; y < nYears; y++) {
     const year = s.start_year + y, row: CalendarCell[] = [];
     for (let col = 0; col < cols; col++) {
@@ -226,6 +231,7 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
         partial: value != null && days < span.length,
         value,
         observed: v != null,
+        source: (i < n && s.source?.[i]) || (v != null ? "observed" : "backcast"),
         flag: (!week && i < n && b.calendar?.flag[i]) || 0,
         anomaly: !week && i < n && b.calendar ? b.calendar.anomaly[i] : null,
         inRange: true,
@@ -234,6 +240,7 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
         max = Math.max(max, value);
         latest = cell;
         if (cell.observed && !firstObserved) firstObserved = cell;
+        if (cell.source === "forward" && !firstForward) firstForward = cell;
       }
       row.push(cell);
     }
@@ -241,7 +248,91 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
     years.push(year);
     rows.push(row);
   }
-  return { view, cols, years, rows, max, partialYears, latest, firstObserved };
+  return { view, cols, years, rows, max, partialYears, latest, firstObserved, firstForward };
+}
+
+/** Month-to-date comparison for a partial month (FE-009): this month so far against the same days in past years. */
+export type MonthToDate = {
+  year: number;
+  month: number; // 1-12
+  days: number; // days with data in this month: 1..days
+  value: number; // harmonized detections, days 1..days
+  median: number; // median over `years` of harmonized detections on the same days
+  p25: number;
+  p75: number;
+  ratio: number | null; // value / median; null when the median is 0
+  years: [number, number]; // past years compared (the calendar baseline years, or every earlier year without one)
+  n: number; // how many of them had weekly data
+  // the same days in the 3 years before `year` (oldest first), so a long-run median isn't the only yardstick
+  recent: { year: number; value: number }[];
+};
+
+const median = (v: number[], q = 0.5) => {
+  const s = [...v].sort((a, b) => a - b), k = (s.length - 1) * q, lo = Math.floor(k);
+  return s[lo] + (s[Math.ceil(k)] - s[lo]) * (k - lo);
+};
+
+/**
+ * Harmonized detections (`viirs ?? pred`) on days `fromDay`..`toDay` of `month` in `year`, from the weekly series:
+ * each week counts by the share of its days inside that window (model.py's day-share rule for monthly values, so a
+ * whole month gives the monthly value back). null when the weekly series does not cover every week touched.
+ */
+export function weeklyWindow(w: Weekly, year: number, month: number, fromDay: number, toDay: number): number | null {
+  const mm = String(month).padStart(2, "0");
+  const a = Date.parse(`${year}-${mm}-${String(fromDay).padStart(2, "0")}T00:00:00Z`);
+  const z = Date.parse(`${year}-${mm}-${String(toDay).padStart(2, "0")}T00:00:00Z`);
+  let sum = 0;
+  for (let wk = 0; wk < 52; wk++) {
+    const span = weekSpan(year, wk);
+    const s = Date.parse(`${span.start}T00:00:00Z`), e = Date.parse(`${span.end}T00:00:00Z`);
+    const overlap = (Math.min(e, z) - Math.max(s, a)) / DAY_MS + 1;
+    if (overlap <= 0) continue;
+    const i = (year - w.start_year) * 52 + wk;
+    if (i < 0 || i >= w.modis.length) return null;
+    sum += (w.viirs[i] ?? w.pred[i]) * (overlap / span.length);
+  }
+  return sum;
+}
+
+/**
+ * When the last month of the record is partial (`monthly.last_month_days`, ML-017: the forward month to date), compares
+ * it with the same days of that month in the baseline years: median and middle half of their harmonized detections on
+ * days 1..N, from the weekly series. A partial month is never compared with whole months, and is not flagged. null when
+ * the last month is complete or the bundle has no weekly series.
+ */
+export function monthToDate(b: SeriesBundle): MonthToDate | null {
+  const m = b.monthly, n = m.modis.length, w = b.weekly;
+  const year = m.start_year + Math.floor((n - 1) / 12), month = ((n - 1) % 12) + 1;
+  const days = m.last_month_days;
+  if (!w || days == null || days >= monthSpan(year, month).length) return null;
+  const [y0, y1] = b.calendar?.baseline_years ?? [m.start_year, year - 1];
+  const past: number[] = [];
+  for (let y = y0; y <= Math.min(y1, year - 1); y++) {
+    const v = weeklyWindow(w, y, month, 1, days);
+    if (v != null) past.push(v);
+  }
+  if (past.length === 0) return null;
+  const recent = [year - 3, year - 2, year - 1].flatMap((y) => {
+    const v = y >= m.start_year ? weeklyWindow(w, y, month, 1, days) : null;
+    return v == null ? [] : [{ year: y, value: v }];
+  });
+  // this month's own value is the monthly one: model.py places forward days in their month exactly, while the weekly
+  // window would split the week that straddles the month start by day share
+  const value = m.viirs[n - 1] ?? m.pred[n - 1];
+  const med = median(past);
+  return {
+    year,
+    month,
+    days,
+    value,
+    median: med,
+    p25: median(past, 0.25),
+    p75: median(past, 0.75),
+    ratio: med > 0 ? value / med : null,
+    years: [y0, Math.min(y1, year - 1)],
+    n: past.length,
+    recent,
+  };
 }
 
 /**

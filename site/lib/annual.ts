@@ -11,7 +11,31 @@ export type Score = {
   alpha: number;
   weekly_r: number;
   sigma_year: number; // year-level error (RMS of log obs/pred, leave-one-year-out on the training years); sizes the band
+  forward?: ForwardScore | null; // ML-017: hold-out score of the NOAA-20/21 forward link; null without NOAA data
 };
+
+/**
+ * Hold-out score of the forward link (ML-017, registry §3 "Annual series as JSON" `score.forward`): S-NPP-equivalent
+ * counts from NOAA-20/21, trained `train`, scored on `hold` against observed S-NPP, applied on `forward` days.
+ */
+export type ForwardScore = {
+  mape_month: number; // mean absolute % error over complete hold-out months with at least `min_month` S-NPP detections
+  mape_ratio_month: number; // same, for NOAA-20 times one constant ratio
+  coverage_month: number; // those months whose observed total is inside the 5-95% band
+  n_month: number;
+  min_month: number;
+  mape_year: number; // complete hold-out years
+  coverage_year: number;
+  n_year: number;
+  sensors: string[];
+  train: string[]; // [first, last] day
+  hold: string[]; // [first, last] day
+  forward: string[]; // [first, last] forward day
+  outage_days_forward: string[]; // forward days with a NOAA outage (filled by the model)
+};
+
+/** Where a year's value comes from (ML-017): MODIS back-cast, observed S-NPP, or partly the NOAA-20/21 link. */
+export type YearSource = "backcast" | "observed" | "forward";
 
 /**
  * Annual series, one entry per year. `viirs` is null before VIIRS starts and is the raw total (2012 starts 20 Jan).
@@ -31,7 +55,25 @@ export type Annual = {
   // ML-009: published record = observed VIIRS weeks + model for weeks before VIIRS started (2012 weeks 0-2)
   harmonized: number[];
   viirs_partial: number[]; // 1 = blended year: observed VIIRS for part of it, model for the rest
+  // ML-017: `harmonized` (and pred/lo/hi) of a "forward" year add S-NPP-equivalent counts from NOAA-20/21 for the days
+  // after `data_through` up to `forward_through`; raw modis/viirs still stop at `data_through`
+  source?: YearSource[];
+  forward_through?: string | null;
 };
+
+/** True when year i's harmonized value runs past the S-NPP end on the NOAA-20/21 link (FE-009). */
+export const isForward = (D: Annual, i: number) => D.source?.[i] === "forward" && !!D.forward_through;
+
+/** "2026 to 14 Nov" for a forward year's harmonized value (to `forward_through`); partialLabel otherwise. */
+export function harmonizedLabel(D: Annual, i: number): string {
+  return isForward(D, i) ? `${D.years[i]} to ${dayLabel(D.forward_through!, false)}` : partialLabel(D, i);
+}
+
+/** "3 Nov" (the day after `data_through`, first forward day) for copy about the forward segment; null without one. */
+export function forwardFrom(D: Annual): string | null {
+  if (!D.forward_through) return null;
+  return dayLabel(new Date(Date.parse(`${D.data_through}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10), false);
+}
 
 /**
  * Model years from model.py (registry §1 "Model years"): VIIRS S-NPP starts 2012-01-20, training is VIIRS_FROM to

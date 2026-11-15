@@ -65,9 +65,13 @@ export function recordSpan() {
   return spanOf(REGION_LIST.map((r) => ANNUAL[r.id]), REGION_LIST.map((r) => REGIONS[r.id]));
 }
 
-/** Selectable dates: from the first year of the annual record to the end of the downloaded archive. */
+/**
+ * Selectable dates: from the first year of the annual record to the end of the downloaded archive, or to the end of
+ * the NOAA-20/21 forward link when there is one (FE-009: its weeks and points run past the Suomi NPP end).
+ */
 export function regionBounds(region: RegionId): Bounds {
-  return { min: `${ANNUAL[region].years[0]}-01-01`, max: regionInfo(region).data_through };
+  const through = regionInfo(region).data_through, fwd = ANNUAL[region].forward_through;
+  return { min: `${ANNUAL[region].years[0]}-01-01`, max: fwd && fwd > through ? fwd : through };
 }
 
 /** Result of loading series.json in the browser. "missing" = the file is not published yet (ML-004). */

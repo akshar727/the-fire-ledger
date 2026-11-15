@@ -5,6 +5,9 @@
 // FE-015: "Download picture" saves the visible rows as PNG or SVG (lib/picture.ts calendarBody).
 // FE-016: Month / Week toggle; the week view draws 52 columns from `weekly` (no medians or flags: those are per month).
 // FE-013: PlayCalendar ("Hear the 2012 satellite jump") sets `data-playing` on the sounding cell; this file only styles it.
+// FE-009: third source state, `forward` (S-NPP ended; S-NPP-equivalent counts from NOAA-20/21 after): a bar along the
+// cell's bottom edge, named in the legend, readout and picture; the latest-month card compares a partial month with
+// the same days of past years (monthToDate) instead of whole months.
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, WarningCircleIcon } from "@phosphor-icons/react";
@@ -13,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { PlayCalendar } from "@/components/PlayCalendar";
-import { fetchSeries, type RegionId, type SeriesResult } from "@/lib/data";
+import { fetchSeries, regionInfo, type RegionId, type SeriesResult } from "@/lib/data";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
 import { REGIONS } from "@/lib/regions";
@@ -25,6 +28,7 @@ import {
   dayMonth,
   MONTHS,
   MONTHS_LONG,
+  monthToDate,
   periodLabel,
   rampColor,
   remapColumn,
@@ -35,9 +39,13 @@ import {
   type CalendarCell,
   type CalendarGrid,
   type CalendarStats,
+  type MonthToDate,
 } from "@/lib/series";
 
 const WEEK_GROUPS = weekMonthGroups();
+// forward-link period (FE-009): a bar along the bottom edge in the cell's ink colour, so it contrasts on every shade
+const FORWARD_BAR =
+  "after:pointer-events-none after:absolute after:inset-x-1 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-current";
 // sounding cell (FE-013): a thick ring that wins over the focus ring, a small pop only when motion is welcome, and room
 // for the sticky readout when it is scrolled into view
 const PLAYING =
@@ -102,6 +110,8 @@ export function BurnCalendar({
       key={`${region}:${from}:${to}`}
       grid={sliceGrid(week ? buildGrid(bundle, "week") : monthGrid, from, to)}
       latestMonth={monthGrid.latest}
+      mtd={monthToDate(bundle)}
+      snppEnd={regionInfo(region).data_through}
       raw={rawValues(bundle, week ? "week" : "month")}
       stats={bundle.calendar}
       label={{ region, from, to }}
@@ -115,6 +125,8 @@ type Label = { region: RegionId; from: string; to: string };
 function CalendarView({
   grid,
   latestMonth,
+  mtd,
+  snppEnd,
   raw,
   stats: monthStats,
   label,
@@ -122,6 +134,8 @@ function CalendarView({
 }: {
   grid: CalendarGrid;
   latestMonth: CalendarCell | null;
+  mtd: MonthToDate | null;
+  snppEnd: string; // last Suomi NPP day (index.json data_through); forward-link days follow it
   raw: (number | null)[];
   stats?: CalendarStats;
   label: Label;
@@ -147,6 +161,8 @@ function CalendarView({
   }
   const color = (v: number) => rampColor(rampPosition(v, grid.max), mode);
   const partialCell = grid.rows.flat().find((c) => c.partial && c.inRange) ?? null;
+  // legend, caption and picture name the forward link only when a forward period is in the selected dates
+  const shownForward = grid.rows.flat().find((c) => c.source === "forward" && c.inRange && c.value != null) ?? null;
 
   const makePicture = () => {
     const theme = pageTheme();
@@ -166,7 +182,7 @@ function CalendarView({
         : []),
       { color: theme.muted, label: "no data yet", kind: "swatch" },
     ];
-    const first = grid.firstObserved;
+    const first = grid.firstObserved, fwd = shownForward;
     return composePicture({
       title: `Burn calendar, ${REGIONS[label.region]}`,
       subtitle: `Harmonized fire detections per ${unit} (VIIRS scale), ${label.from} to ${label.to}`,
@@ -176,6 +192,7 @@ function CalendarView({
       bodyHeight: body.height,
       note: [
         first && `Before ${periodName(first)}: model back-cast from MODIS. From ${periodName(first)}: VIIRS observed.`,
+        fwd && `${forwardSentence(snppEnd)} Bar along the bottom: ${unit}s with forward-link days.`,
         stats && `Median and middle half over ${stats.baseline_years[0]}-${stats.baseline_years[1]}.`,
         week && "Week w of a year is days 7w+1 to 7w+7; the last week runs to 31 December.",
         partialCell && `Dashed outline: ${describePartial(partialCell)}.`,
@@ -209,8 +226,22 @@ function CalendarView({
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
-        {latestMonth && <LatestCard cell={latestMonth} stats={monthStats} />}
-        <Legend max={grid.max} mode={mode} unit={unit} hasFlags={!!stats} firstObserved={grid.firstObserved} partial={partialCell} />
+        {latestMonth &&
+          (mtd && latestMonth.partial ? (
+            <MonthToDateCard cell={latestMonth} mtd={mtd} snppEnd={snppEnd} />
+          ) : (
+            <LatestCard cell={latestMonth} stats={monthStats} />
+          ))}
+        <Legend
+          max={grid.max}
+          mode={mode}
+          unit={unit}
+          hasFlags={!!stats}
+          firstObserved={grid.firstObserved}
+          firstForward={shownForward}
+          snppEnd={snppEnd}
+          partial={partialCell}
+        />
       </div>
 
       <section aria-labelledby="calendar-heading" className="rounded-xl border bg-card p-4 sm:p-6">
@@ -244,7 +275,7 @@ function CalendarView({
           <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
         </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
+          {active ? describe(active, stats, snppEnd) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
@@ -259,6 +290,7 @@ function CalendarView({
             <caption className="sr-only">
               Harmonized {week ? "weekly" : "monthly"} fire detections. Values are VIIRS observations from{" "}
               {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and model back-casts before.
+              {shownForward && ` ${forwardSentence(snppEnd)}`}
             </caption>
             {week && (
               // fixed layout + one <col> per week keeps all 52 columns the same width (the month headers span several)
@@ -317,7 +349,7 @@ function CalendarView({
                           onFocus={() => {
                             setFocus([r, c]);
                             setActive(cell);
-                            setAnnounce(describe(cell, stats));
+                            setAnnounce(describe(cell, stats, snppEnd));
                           }}
                           className={`${week ? "h-5" : "h-8"} rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                         >
@@ -334,14 +366,15 @@ function CalendarView({
                         onFocus={() => {
                           setFocus([r, c]);
                           setActive(cell);
-                          setAnnounce(describe(cell, stats));
+                          setAnnounce(describe(cell, stats, snppEnd));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className={`relative ${week ? "h-5" : "h-8"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
+                        className={`relative ${week ? "h-5" : "h-8"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                       >
                         {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
                         {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
                         {cell.partial && <span className="sr-only">, partial</span>}
+                        {cell.source === "forward" && <span className="sr-only">, includes NOAA-20/21 forward link</span>}
                         {cell.flag !== 0 && <FlagMark flag={cell.flag} />}
                       </td>
                     );
@@ -419,12 +452,25 @@ const periodName = (cell: CalendarCell) => (cell.week == null ? monthName(cell) 
 const describePartial = (cell: CalendarCell) =>
   `${cell.week == null ? "partial month" : "partial week"}, data for ${cell.days} of its ${cell.length} days`;
 
-function describe(cell: CalendarCell, stats?: CalendarStats): string {
+/** "Suomi NPP data end 2 Nov 2026; after that, S-NPP-equivalent counts from NOAA-20 and NOAA-21 (forward link)." */
+const forwardSentence = (snppEnd: string) =>
+  `Suomi NPP data end ${dayMonth(snppEnd)} ${snppEnd.slice(0, 4)}; after that, S-NPP-equivalent counts from NOAA-20 and NOAA-21 (forward link).`;
+
+/** Where a cell's value comes from, for the readout. */
+function sourceText(cell: CalendarCell, snppEnd: string): string {
+  if (cell.source === "observed") return "VIIRS observed";
+  if (cell.source === "backcast") return "model back-cast";
+  // forward: S-NPP for the days up to snppEnd, the NOAA-20/21 link after
+  return cell.start > snppEnd
+    ? "S-NPP equivalent from NOAA-20/21"
+    : `VIIRS observed to ${dayMonth(snppEnd)}, S-NPP equivalent from NOAA-20/21 after`;
+}
+
+function describe(cell: CalendarCell, stats: CalendarStats | undefined, snppEnd: string): string {
   const long = cell.week != null && cell.length > 7 ? ` (${cell.length} days)` : "";
   const when = `${periodLabel(cell)}${long}${cell.inRange ? "" : " (outside the selected dates)"}`;
   if (cell.value == null) return `${when}: no data in the record yet.`;
-  const src = cell.observed ? "VIIRS observed" : "model back-cast";
-  let s = `${when}: ${fmt(cell.value)} harmonized detections (${src}).`;
+  let s = `${when}: ${fmt(cell.value)} harmonized detections (${sourceText(cell, snppEnd)}).`;
   if (cell.partial) s += ` Partial ${cell.week == null ? "month" : "week"}: data for ${cell.days} of ${cell.length} days.`;
   if (stats && cell.anomaly != null) {
     s += ` ${times(cell.anomaly)} the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
@@ -479,12 +525,55 @@ function LatestCard({ cell, stats }: { cell: CalendarCell; stats?: CalendarStats
   );
 }
 
+/**
+ * Latest-month card for a month still running (FE-009): detections on days 1..N against the same days of past years
+ * (median, middle half, the last three years). Never against a whole month, and never marked unusual.
+ */
+function MonthToDateCard({ cell, mtd, snppEnd }: { cell: CalendarCell; mtd: MonthToDate; snppEnd: string }) {
+  const name = MONTHS_LONG[mtd.month - 1];
+  const days = mtd.days === 1 ? `1 ${name}` : `1-${mtd.days} ${name}`;
+  // read the clock once per mount, as LatestCard does (render stays pure; the card renders after the client fetch)
+  const [today] = useState(() => new Date());
+  const isNow = today.getUTCFullYear() === mtd.year && today.getUTCMonth() + 1 === mtd.month;
+  return (
+    <div className="flex flex-col gap-3 rounded-xl bg-accent p-5">
+      <p className="text-sm text-muted-foreground">
+        {isNow ? "This month so far" : "Latest month, still incomplete"}: {days} {mtd.year}
+      </p>
+      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="font-mono text-4xl font-semibold tracking-tight tabular-nums">{fmt(mtd.value)}</span>
+        <span className="text-sm text-muted-foreground">detections</span>
+      </p>
+      <div className="flex flex-col gap-1 text-sm">
+        {mtd.ratio != null && (
+          <p>
+            About <span className="font-mono font-semibold text-primary tabular-nums">{times(mtd.ratio)}</span> the median for{" "}
+            {days} ({fmt(mtd.median)}, {mtd.years[0]}-{mtd.years[1]}; middle half {fmt(mtd.p25)} to {fmt(mtd.p75)})
+          </p>
+        )}
+        {mtd.recent.length > 0 && (
+          <p className="text-muted-foreground">
+            Same days in {mtd.recent.map((r) => r.year).join(", ")}:{" "}
+            <span className="font-mono tabular-nums">{mtd.recent.map((r) => fmt(r.value)).join(", ")}</span>
+          </p>
+        )}
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        The month isn&apos;t over, so it is compared only with the same days of other years and not marked unusual.
+        {cell.source === "forward" && ` ${forwardSentence(snppEnd)}`}
+      </p>
+    </div>
+  );
+}
+
 function Legend({
   max,
   mode,
   unit,
   hasFlags,
   firstObserved,
+  firstForward,
+  snppEnd,
   partial,
 }: {
   max: number;
@@ -492,6 +581,8 @@ function Legend({
   unit: "month" | "week";
   hasFlags: boolean;
   firstObserved: CalendarCell | null;
+  firstForward: CalendarCell | null;
+  snppEnd: string;
   partial: CalendarCell | null;
 }) {
   const steps = Array.from({ length: 24 }, (_, i) => rampColor(i / 23, mode).bg);
@@ -543,9 +634,16 @@ function Legend({
             {describePartial(partial)} (to {dayMonth(partial.through)})
           </li>
         )}
+        {firstForward && (
+          <li className="flex items-center gap-1.5">
+            <span className="relative size-3 rounded-sm bg-muted-foreground text-card after:absolute after:inset-x-0.5 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-current" aria-hidden />
+            {unit} with forward-link days
+          </li>
+        )}
         {firstObserved && (
           <li className="basis-full">
             Before {periodName(firstObserved)}: model back-cast. From {periodName(firstObserved)}: VIIRS observed.
+            {firstForward && ` ${forwardSentence(snppEnd)}`}
           </li>
         )}
       </ul>

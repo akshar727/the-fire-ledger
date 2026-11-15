@@ -7,6 +7,8 @@
 // joined to the lines, not part of the hold-out and not in the era means.
 // ML-009: the Harmonized view draws `harmonized` from 2012 (2012 = observed VIIRS from 20 Jan + model for 1-19 Jan).
 // FE-015: "Download picture" saves the chart as drawn (view, years, legend, note) as PNG or SVG.
+// FE-009: in the Harmonized view a forward year (ML-017: S-NPP ended, NOAA-20/21 link after) puts its partial-year ring at
+// `harmonized` (to forward_through) and marks the forward segment with a dashed stem down to the S-NPP-only value.
 import { useRef, useState, type KeyboardEvent } from "react";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -14,8 +16,11 @@ import {
   completeEnd,
   dayLabel,
   eraMeans,
+  forwardFrom,
+  harmonizedLabel,
   HOLD_FROM,
   holdoutYears,
+  isForward,
   isPartial,
   lastCompleteYear,
   partialLabel,
@@ -126,7 +131,16 @@ export function RecordChart({
           { color: "var(--viirs)", label: `VIIRS observed (1-19 Jan ${VIIRS_FROM} from the model)` },
           { color: "var(--primary)", label: `Hold-out prediction ${h0}-${h1}`, kind: "dash" },
         ];
-  for (const i of tail) legend.push({ color: "var(--viirs)", label: `${partialLabel(D, i)}, partial year`, kind: "ring" });
+  for (const i of tail) {
+    const fwd = mode === "harm" && isForward(D, i);
+    legend.push({ color: "var(--viirs)", label: `${fwd ? harmonizedLabel(D, i) : partialLabel(D, i)}, partial year`, kind: "ring" });
+    if (fwd) legend.push({ color: "var(--viirs)", label: `from ${forwardFrom(D)}: NOAA-20/21 forward link`, kind: "dash" });
+  }
+  const fwdTail = mode === "harm" ? tail.find((i) => isForward(D, i)) : undefined;
+  const fwdNote =
+    fwdTail == null
+      ? ""
+      : ` Suomi NPP data end ${dayLabel(D.data_through)}; ${harmonizedLabel(D, fwdTail)} adds S-NPP-equivalent counts from NOAA-20 and NOAA-21 for ${forwardFrom(D)} onwards (dashed stem).`;
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "ArrowRight") setHover(Math.min(b, (hover ?? a - 1) + 1));
@@ -151,7 +165,7 @@ export function RecordChart({
       body: chart.body,
       bodyWidth: chart.width,
       bodyHeight: chart.height,
-      note,
+      note: note + fwdNote,
       theme,
     });
   };
@@ -269,10 +283,20 @@ export function RecordChart({
 
             {/* partial year: observed so far, drawn apart so the line doesn't seem to fall off a cliff */}
             {tail.map((i) => {
-              const v = i < i2012 ? D.modis[i] : (D.viirs[i] ?? D.pred[i]);
-              const cy = y(v), below = cy + 20 < H - B - 4;
+              const raw = i < i2012 ? D.modis[i] : (D.viirs[i] ?? D.pred[i]);
+              // forward year, Harmonized view: ring at the harmonized total, dashed stem down to the S-NPP-only value
+              const fwd = mode === "harm" && isForward(D, i);
+              const cy = y(fwd ? D.harmonized[i] : raw);
+              // a forward year keeps its label above the ring: the stem and the S-NPP-only dot sit below it
+              const below = !fwd && cy + 20 < H - B - 4;
               return (
                 <g key={`partial-${i}`} className="chart-fade">
+                  {fwd && (
+                    <>
+                      <line x1={x(i)} x2={x(i)} y1={cy + 5} y2={Math.max(cy + 5, y(raw))} stroke="var(--viirs)" strokeWidth={2} strokeDasharray="3 2" />
+                      <circle cx={x(i)} cy={y(raw)} r={2.5} fill="var(--viirs)" />
+                    </>
+                  )}
                   <circle cx={x(i)} cy={cy} r={5} fill="var(--card)" stroke="var(--viirs)" strokeWidth={2} />
                   <text
                     x={n === 1 ? x(i) : x(i) + 6}
@@ -280,7 +304,7 @@ export function RecordChart({
                     textAnchor={n === 1 ? "middle" : "end"}
                     className="fill-muted-foreground"
                   >
-                    {partialLabel(D, i)}
+                    {fwd ? harmonizedLabel(D, i) : partialLabel(D, i)}
                   </text>
                 </g>
               );
@@ -332,6 +356,7 @@ export function RecordChart({
 
       <p className="max-w-[75ch] text-sm leading-relaxed text-muted-foreground" aria-live="polite">
         {note}
+        {fwdNote}
       </p>
 
       <DownloadPicture
@@ -345,6 +370,8 @@ export function RecordChart({
         <caption>
           Annual active-fire detections, {region}
           {tail.length > 0 && `. ${tail.map((i) => D.years[i]).join(", ")} is a partial year, data to ${dayLabel(D.data_through)}.`}
+          {tail.some((i) => isForward(D, i)) &&
+            ` Its harmonized record adds S-NPP-equivalent counts from NOAA-20/21 to ${dayLabel(D.forward_through!)}.`}
         </caption>
         <thead>
           <tr>
@@ -363,7 +390,13 @@ export function RecordChart({
               <th scope="row">{isPartial(D, i) ? `${yr} (partial year, to ${dayLabel(D.data_through)})` : yr}</th>
               <td>{fmt(D.modis[i])}</td>
               <td>{D.viirs[i] == null ? "none" : fmt(D.viirs[i]!)}</td>
-              {isPartial(D, i) ? (
+              {isPartial(D, i) && isForward(D, i) ? (
+                <>
+                  <td>not shown: partial year</td>
+                  <td>{fmt(D.harmonized[i])} (to {dayLabel(D.forward_through!)}, with the NOAA-20/21 forward link)</td>
+                  <td colSpan={2}>not shown: partial year</td>
+                </>
+              ) : isPartial(D, i) ? (
                 <td colSpan={4}>not shown: partial year, outside the hold-out</td>
               ) : (
                 <>
@@ -390,6 +423,11 @@ function Dot({ cx, cy, color }: { cx: number; cy: number; color: string }) {
 function readoutRows(D: Annual, i: number, mode: Mode, hold: boolean): [string, string][] {
   const v = D.viirs[i], blended = D.viirs_partial[i] === 1;
   const through: [string, string][] = isPartial(D, i) ? [["Data through", dayLabel(D.data_through)]] : [];
+  if (mode === "harm" && isForward(D, i))
+    return [
+      [`VIIRS observed to ${dayLabel(D.data_through, false)}`, fmt(v ?? 0)],
+      [`With NOAA-20/21 to ${dayLabel(D.forward_through!, false)}`, fmt(D.harmonized[i])],
+    ];
   if (mode === "raw") {
     const rows: [string, string][] = [["MODIS", fmt(D.modis[i])]];
     if (v != null) rows.push(["VIIRS", fmt(v)]);

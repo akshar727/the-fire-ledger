@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { dayLabel, HOLD_FROM, holdoutYears, isPartial, VIIRS_FROM, type Annual } from "@/lib/annual";
+import { dayLabel, HOLD_FROM, holdoutYears, isPartial, VIIRS_FROM, type Annual, type ForwardScore } from "@/lib/annual";
 import { loadAnnual, loadReferee, recordSpan, REGION_LIST, REGIONS } from "@/lib/data";
 import { backcastOffset, nearLevel, stepLabel, stepRange } from "@/lib/referee";
 
@@ -26,6 +26,11 @@ const THROUGH = REGION_LIST.map((r) => r.data_through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
 
 const pct = (v: number) => `${v.toFixed(1)}%`;
+// FE-009: regions whose annual.json carries the NOAA-20/21 forward link (ML-017), with its hold-out score
+const FORWARD = RECORDS.flatMap((r) => (r.D.score.forward && r.D.forward_through ? [{ ...r, F: r.D.score.forward }] : []));
+const span = ([a, b]: string[]) => `${dayLabel(a)} to ${dayLabel(b)}`;
+const forwardText = (name: string, F: ForwardScore) =>
+  `${name} ${pct(F.mape_month)} (one constant ratio: ${pct(F.mape_ratio_month)}; ${F.coverage_month} of ${F.n_month} months inside the band)`;
 const coverageText = (D: Annual) => `${D.score.coverage} of ${D.score.n_hold}`;
 
 const DATA_SOURCES = [
@@ -45,6 +50,18 @@ const DATA_SOURCES = [
     name: `NASA FIRMS area API, VIIRS Suomi NPP (VIIRS_SNPP_SP, then VIIRS_SNPP_NRT), 1 Jan to ${dayLabel(THROUGH)}, each region's box`,
     url: AREA_API_URL,
   },
+  ...(FORWARD.length > 0
+    ? [
+        {
+          name: `NASA FIRMS, VIIRS 375 m active fire (NOAA-20), country yearly archives from April 2018, and the area API (VIIRS_NOAA20_SP, then _NRT) to ${dayLabel(FORWARD[0].D.forward_through!)}`,
+          url: "https://doi.org/10.5067/VIIRS/VJ114IMG.002",
+        },
+        {
+          name: `NASA FIRMS area API, VIIRS 375 m active fire (NOAA-21, VIIRS_NOAA21_SP, then _NRT), 1 Jan 2024 to ${dayLabel(FORWARD[0].D.forward_through!)}`,
+          url: "https://doi.org/10.5067/VIIRS/VJ214IMG.002",
+        },
+      ]
+    : []),
   {
     name: `MODIS burned area, ${REF.product_short}, 0.25° monthly (University of Maryland), for the independent check`,
     url: "https://doi.org/10.5067/MODIS/MCD64A1.006",
@@ -218,6 +235,24 @@ export default function MethodPage() {
               ))}
             </p>
           )}
+          {FORWARD.length > 0 && (
+            <p id="forward-link">
+              <span className="font-medium text-foreground">After Suomi NPP.</span> The Suomi NPP record ends on{" "}
+              {dayLabel(FORWARD[0].D.data_through)}. NOAA-20 and NOAA-21 carry the same VIIRS instrument in the same
+              orbit, about 50 minutes apart, so a second, much smaller model carries the record on: one ratio per region
+              and day or night pass that turns their detections into Suomi-NPP-equivalent counts, fitted on{" "}
+              {span(FORWARD[0].F.train)} and tested on {span(FORWARD[0].F.hold)}, where Suomi NPP is there to check
+              against. On the months of that test with at least {FORWARD[0].F.min_month} detections, its mean monthly
+              error is {FORWARD.map((r) => forwardText(r.name, r.F)).join(", ")}.{" "}
+              {FORWARD.filter((r) => r.F.mape_month >= r.F.mape_ratio_month).length > 0 &&
+                `In ${FORWARD.filter((r) => r.F.mape_month >= r.F.mape_ratio_month)
+                  .map((r) => r.name)
+                  .join(" and ")} the simple NOAA-20 ratio does as well, so the link adds little there beyond using both NOAA satellites. `}
+              Days after {dayLabel(FORWARD[0].D.data_through, false)}, up to{" "}
+              {dayLabel(FORWARD[0].D.forward_through!)}, are marked in the calendar with a bar and in the record chart
+              with a dashed stem; the month still running is compared only with the same days of other years.
+            </p>
+          )}
           <p>
             This is a forward test: it shows whether the model carries over to later years. It cannot directly prove
             accuracy for {SPAN.first}-{VIIRS_FROM - 1}, because no VIIRS data exists then to check against; the next
@@ -353,8 +388,11 @@ export default function MethodPage() {
               </span>{" "}
               {lastPartial && (
                 <>
-                  The record ends with {lastYear}, counted so far to {dayLabel(last.data_through)}. It is outside the
-                  hold-out and is never compared with full years.{" "}
+                  The record ends with {lastYear}, counted so far to {dayLabel(last.data_through)}
+                  {last.forward_through
+                    ? ` from Suomi NPP and to ${dayLabel(last.forward_through)} with the NOAA-20/21 link (see the hold-out section)`
+                    : ""}
+                  . It is outside the hold-out and is never compared with full years.{" "}
                 </>
               )}
               Up to {ARCHIVE_END} the data are the FIRMS yearly country archives; {ARCHIVE_END + 1} comes from the FIRMS
