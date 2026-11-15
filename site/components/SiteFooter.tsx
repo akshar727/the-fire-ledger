@@ -9,7 +9,7 @@ export function SiteFooter() {
         <div className="flex flex-col gap-2 md:items-end md:text-right">
           <p>NASA Space Apps Challenge 2026</p>
           <p>
-            Built with help from AI (Claude). See{" "}
+            See{" "}
             <Link className="underline decoration-primary underline-offset-2 hover:text-foreground" href="/method#sources">
               sources
             </Link>
