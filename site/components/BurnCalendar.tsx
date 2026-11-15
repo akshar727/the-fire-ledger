@@ -2,12 +2,17 @@
 
 // Burn calendar: year x month heatmap of harmonized monthly detections from series.json (Series bundle contract),
 // with per-month median / spread and anomaly marks when the ML-005 `calendar` section is present.
+// FE-015: "Download picture" saves the visible rows as PNG or SVG (lib/picture.ts calendarBody).
 import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DownloadPicture } from "@/components/DownloadPicture";
 import { fetchSeries, type RegionId, type SeriesResult } from "@/lib/data";
+import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
+import { pageTheme, solidColor } from "@/lib/picture-dom";
+import { REGIONS } from "@/lib/regions";
 import {
   buildGrid,
   compact,
@@ -64,17 +69,57 @@ export function BurnCalendar({ region, from, to }: { region: RegionId; from: str
       key={`${region}:${from}:${to}`}
       grid={sliceGrid(buildGrid(result.bundle), from, to)}
       stats={result.bundle.calendar}
+      label={{ region, from, to }}
     />
   );
 }
 
-function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarStats }) {
+type Label = { region: RegionId; from: string; to: string };
+
+function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: CalendarStats; label: Label }) {
   const mode = useColorMode();
   const [active, setActive] = useState<CalendarCell | null>(null);
   const [focus, setFocus] = useState<[number, number]>([grid.rows.length - 1, 0]);
   const [announce, setAnnounce] = useState(""); // screen readers hear keyboard moves only, not every mouse hover
   const color = (v: number) => rampColor(rampPosition(v, grid.max), mode);
   const latest = grid.latest;
+
+  const makePicture = () => {
+    const theme = pageTheme();
+    const cell = (v: number) => {
+      const c = color(v);
+      return { bg: solidColor(c.bg, theme.bg), ink: c.ink };
+    };
+    const body = calendarBody(grid, stats, { cell, theme });
+    const legend: LegendItem[] = [
+      { color: cell(0).bg, label: "few", kind: "swatch" },
+      { color: cell(grid.max).bg, label: `many (${compact(grid.max)} max), log scale`, kind: "swatch" },
+      ...(stats
+        ? [
+            { color: theme.fg, label: "unusually high month", kind: "up" as const },
+            { color: theme.fg, label: "unusually low month", kind: "down" as const },
+          ]
+        : []),
+      { color: theme.muted, label: "no data yet", kind: "swatch" },
+    ];
+    const first = grid.firstObserved;
+    return composePicture({
+      title: `Burn calendar, ${REGIONS[label.region]}`,
+      subtitle: `Harmonized fire detections per month (VIIRS scale), ${label.from} to ${label.to}`,
+      legend,
+      body: body.body,
+      bodyWidth: body.width,
+      bodyHeight: body.height,
+      note: [
+        first && `Before ${monthName(first)}: model back-cast from MODIS. From ${monthName(first)}: VIIRS observed.`,
+        stats && `Median and middle half over ${stats.baseline_years[0]}-${stats.baseline_years[1]}.`,
+        grid.rows.some((r) => r.some((c) => !c.inRange && c.value != null)) && "Faded months are outside the selected dates.",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      theme,
+    });
+  };
 
   const onKey = (e: KeyboardEvent<HTMLTableElement>) => {
     const [r, c] = focus;
@@ -224,6 +269,13 @@ function CalendarView({ grid, stats }: { grid: CalendarGrid; stats?: CalendarSta
             Monthly medians and unusual-month marks will appear once the calendar statistics are published.
           </p>
         )}
+        <div className="mt-5">
+          <DownloadPicture
+            make={makePicture}
+            name={pictureName("calendar", label.region, label.from, label.to)}
+            what="burn calendar"
+          />
+        </div>
       </section>
     </div>
   );

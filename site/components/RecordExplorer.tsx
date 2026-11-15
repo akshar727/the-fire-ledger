@@ -49,7 +49,7 @@ export function RecordExplorer() {
           <DateRange />
           <p className="text-xs text-muted-foreground">The chart shows whole years; downloads use the exact dates.</p>
         </div>
-        <RecordChart data={data} region={REGIONS[sel.region]} years={years} />
+        <RecordChart data={data} region={REGIONS[sel.region]} regionId={sel.region} years={years} />
       </section>
 
       <section aria-labelledby="holdout-heading" className="flex flex-col gap-6">

@@ -6,7 +6,9 @@
 // FE-006: a partial year (the year still running, `partial` = 1) is a hollow dot with a "2026 to 28 Oct" label, not
 // joined to the lines, not part of the hold-out and not in the era means.
 // ML-009: the Harmonized view draws `harmonized` from 2012 (2012 = observed VIIRS from 20 Jan + model for 1-19 Jan).
-import { useState, type KeyboardEvent } from "react";
+// FE-015: "Download picture" saves the chart as drawn (view, years, legend, note) as PNG or SVG.
+import { useRef, useState, type KeyboardEvent } from "react";
+import { DownloadPicture } from "@/components/DownloadPicture";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   completeEnd,
@@ -20,6 +22,8 @@ import {
   VIIRS_FROM,
   type Annual,
 } from "@/lib/annual";
+import { composePicture, pictureName } from "@/lib/picture";
+import { cssVar, pageTheme, serializeChart } from "@/lib/picture-dom";
 import { compact } from "@/lib/series";
 
 type Mode = "raw" | "harm";
@@ -43,9 +47,20 @@ function MarkerLabel({ at, children }: { at: number; children: string }) {
   );
 }
 
-export function RecordChart({ data, region, years }: { data: Annual; region: string; years: [number, number] }) {
+export function RecordChart({
+  data,
+  region,
+  regionId,
+  years,
+}: {
+  data: Annual;
+  region: string; // display name, used in the picture title
+  regionId: string; // stable id, used in the picture file name (same as the calendar's)
+  years: [number, number];
+}) {
   const [mode, setMode] = useState<Mode>("raw");
   const [hoverAt, setHover] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const D = data;
   // visible years: full-record indexes a..b (inclusive); every index below is a full-record index
@@ -123,6 +138,24 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
 
   const readout = hover == null ? null : readoutRows(D, hover, mode, inHold(hover));
 
+  const y0 = D.years[a], y1 = D.years[b];
+  const makePicture = () => {
+    if (!svgRef.current) return null;
+    const theme = pageTheme();
+    const color = (c: string) => (c.startsWith("var(") ? cssVar(c.slice(4, -1), theme.bg) : c);
+    const chart = serializeChart(svgRef.current, theme.bg);
+    return composePicture({
+      title: `Annual active-fire detections, ${region}`,
+      subtitle: `${mode === "raw" ? "Raw (naively stitched) record" : "Harmonized record, VIIRS scale"}, ${y0 === y1 ? y0 : `${y0}-${y1}`}`,
+      legend: legend.map((l) => ({ ...l, color: color(l.color), kind: l.kind ?? "line" })),
+      body: chart.body,
+      bodyWidth: chart.width,
+      bodyHeight: chart.height,
+      note,
+      theme,
+    });
+  };
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -170,7 +203,7 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
           onMouseLeave={(e) => e.currentTarget !== document.activeElement && setHover(null)}
           onBlur={() => setHover(null)}
         >
-          <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full text-[11px]" aria-hidden>
+          <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full text-[11px]" aria-hidden>
             {ticks.map((v) => (
               <g key={v}>
                 <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="stroke-border" />
@@ -254,7 +287,7 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
             })}
 
             {hover != null && (
-              <line x1={x(hover)} x2={x(hover)} y1={T} y2={H - B} className="stroke-foreground/40" />
+              <line x1={x(hover)} x2={x(hover)} y1={T} y2={H - B} className="stroke-foreground/40" data-no-export />
             )}
             {D.years.map((yr, i) =>
               visible(i) ? (
@@ -300,6 +333,12 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
       <p className="max-w-[75ch] text-sm leading-relaxed text-muted-foreground" aria-live="polite">
         {note}
       </p>
+
+      <DownloadPicture
+        make={makePicture}
+        name={pictureName("record", regionId,mode === "raw" ? "raw" : "harmonized", y0 === y1 ? y0 : `${y0}-${y1}`)}
+        what="record chart"
+      />
 
       <div className="sr-only">
       <table>
