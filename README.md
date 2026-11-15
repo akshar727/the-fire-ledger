@@ -159,6 +159,7 @@ Python libraries (precompute; exact versions in `requirements.txt`)
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
 - Next.js 16: web framework. https://nextjs.org . MIT
+  - `turbopackFileSystemCache` docs (https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopackFileSystemCache): basis for turning off Turbopack's on-disk build cache in `site/next.config.ts`, after a restored Vercel build cache shipped stale theme CSS.
 - React 19, React DOM: UI library. https://react.dev . MIT
 - TypeScript: type checking. https://www.typescriptlang.org . Apache-2.0
 - Tailwind CSS 4 (with @tailwindcss/turbopack): styling. https://tailwindcss.com . MIT
@@ -168,7 +169,7 @@ Website (`site/`, versions pinned in `site/package-lock.json`)
 - class-variance-authority: component variants. https://cva.style . Apache-2.0
 - tw-animate-css: animation utilities used by shadcn/ui. https://github.com/Wombosvideo/tw-animate-css . MIT
 - Phosphor Icons (`@phosphor-icons/react`): icons. https://phosphoricons.com . MIT
-- Geist and Geist Mono typefaces (via `next/font/google`): page typography. https://vercel.com/font . SIL Open Font License 1.1
+- Work Sans (https://fonts.google.com/specimen/Work+Sans) and IBM Plex Mono (https://fonts.google.com/specimen/IBM+Plex+Mono) typefaces (via `next/font/google`): page typography for the red "Thermal console" theme (design from Mission Control `reference/Ideas_2026-11-15.md` §4, scheme A). SIL Open Font License 1.1
 - ESLint, eslint-config-next, babel-plugin-react-compiler: linting and build tooling. https://eslint.org , https://react.dev/learn/react-compiler . MIT
 
 Code

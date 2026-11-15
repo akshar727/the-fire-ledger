@@ -1,16 +1,31 @@
-// Run with `npm test`. DP-009: the region list is read from index.json + annual-all.json; these tests check the site
-// against those files, and that annual-all.json is not stale against each region's own annual.json.
+// Run with `npm test`. DP-009 / DP-018: the region list is read from index.json alone; these tests check the site against
+// that file, that its record fields match each region's annual.json, and the country notes on a fixture.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { buildRegions, countryNote, DEFAULT_REGION, FIRE_SEASON, isCountry, isRegionId, REGION_CAVEAT, REGION_IDS, REGIONS, TIER } from "./regions.ts";
+import {
+  buildRegions,
+  COUNTRY_NO_POINTS,
+  countryNote,
+  DEFAULT_REGION,
+  FIRE_SEASON,
+  FIRMS_COUNTRY_ARCHIVE,
+  isCountry,
+  isRegionId,
+  REGION_CAVEAT,
+  REGION_IDS,
+  REGIONS,
+  shipLabel,
+  TIER,
+} from "./regions.ts";
 
-const read = (p: string) => JSON.parse(readFileSync(new URL(`../public/data/${p}`, import.meta.url), "utf8"));
-const index = read("index.json") as { regions: { id: string; name: string; short_name?: string; tier?: string }[] };
-const bundle = read("annual-all.json") as Record<string, unknown>;
+const url = (p: string) => new URL(`../public/data/${p}`, import.meta.url);
+const read = (p: string) => JSON.parse(readFileSync(url(p), "utf8"));
+type Row = { id: string; name: string; short_name?: string; tier?: string; first_year?: number; forward_through?: string | null; ship?: string };
+const index = read("index.json") as { regions: Row[] };
 
-test("the site lists every modelled index.json region, in index.json order", () => {
-  const ids = index.regions.map((r) => r.id).filter((id) => id in bundle);
+test("the site lists every index.json region with a record, in index.json order", () => {
+  const ids = index.regions.filter((r) => typeof r.first_year === "number").map((r) => r.id);
   assert.deepEqual([...REGION_IDS], ids);
   assert.deepEqual(Object.keys(REGIONS), ids);
   assert.deepEqual(Object.keys(FIRE_SEASON), ids);
@@ -18,19 +33,25 @@ test("the site lists every modelled index.json region, in index.json order", () 
   assert.equal(DEFAULT_REGION, ids[0]);
 });
 
-test("annual-all.json holds index.json regions only, and leaves out only regions not modelled yet", () => {
-  const ids = index.regions.map((r) => r.id);
-  for (const id of Object.keys(bundle)) assert.ok(ids.includes(id), `${id} in annual-all.json but not in index.json`);
-  for (const id of ids.filter((x) => !(x in bundle)))
-    assert.ok(!existsSync(new URL(`../public/data/${id}/annual.json`, import.meta.url)), `${id}: annual.json exists, rerun site_bundle.py`);
+test("index.json record fields match each region's annual.json (rerun site_bundle.py after model.py)", () => {
+  for (const r of index.regions) {
+    if (!existsSync(url(`${r.id}/annual.json`))) {
+      assert.equal(r.first_year, undefined, `${r.id}: record fields but no annual.json`);
+      continue;
+    }
+    const a = read(`${r.id}/annual.json`);
+    assert.equal(r.first_year, a.years[0], `${r.id} first_year`);
+    assert.equal(r.forward_through ?? null, a.forward_through ?? null, `${r.id} forward_through`);
+    if (r.tier === "country") assert.equal(r.ship, a.ship, `${r.id} ship`);
+  }
 });
 
-test("annual-all.json matches each region's annual.json (rerun site_bundle.py after model.py)", () => {
-  for (const id of Object.keys(bundle)) assert.deepEqual(bundle[id], read(`${id}/annual.json`), id);
+test("no per-region bundle is published any more (DP-018)", () => {
+  assert.equal(existsSync(url("annual-all.json")), false);
 });
 
 test("display names use short_name when there is one", () => {
-  for (const r of index.regions) assert.equal(REGIONS[r.id], r.short_name || r.name, r.id);
+  for (const r of index.regions.filter((x) => x.id in REGIONS)) assert.equal(REGIONS[r.id], r.short_name || r.name, r.id);
   assert.equal(REGIONS.punjab, "NW India (Punjab, Haryana)");
 });
 
@@ -40,10 +61,6 @@ test("the three cell regions keep their page copy", () => {
   assert.match(REGION_CAVEAT.punjab ?? "", /^Before July 2002 only the Terra satellite was flying/);
   assert.equal(REGION_CAVEAT.portugal, undefined);
   for (const id of ["portugal", "ghana", "punjab"]) assert.equal(TIER[id], "region", id);
-});
-
-test("tier comes from index.json and defaults to region", () => {
-  for (const r of index.regions) assert.equal(TIER[r.id], r.tier === "country" ? "country" : "region", r.id);
   assert.equal(isCountry("ghana"), false);
 });
 
@@ -51,34 +68,49 @@ test("a whole country says what it leaves out, and when its record ends", () => 
   const s = countryNote("2025-12-31");
   assert.match(s, /ending in December 2025\./);
   for (const w of ["per-detection download", "fire weather", "forward link", "burned-area check"]) assert.ok(s.includes(w), w);
-  for (const r of index.regions.filter((x) => x.tier === "country")) assert.ok(REGION_CAVEAT[r.id]?.includes("Whole-country record"), r.id);
 });
 
 const fixture = {
   regions: [
-    { id: "ghana", name: "Ghana", tier: "region", season: "Savanna burning." },
-    { id: "greece", name: "Greece", tier: "country", season: "Summer wildfire.", data_through: "2025-12-31" },
-    { id: "brazil", name: "Brazil", tier: "country", data_through: "2025-12-31" },
-    { id: "chad", name: "Chad", tier: "country", data_through: "2025-12-31" },
-    { id: "nauru", name: "Nauru", tier: "country", data_through: "2025-12-31" },
-    { id: "laos", name: "Laos", tier: "country", data_through: "2025-12-31" },
+    { id: "ghana", name: "Ghana", tier: "region", season: "Savanna burning.", first_year: 2001 },
+    { id: "greece", name: "Greece", tier: "country", season: "Summer wildfire.", data_through: "2025-12-31", first_year: 2001, ship: "ratio" },
+    { id: "brazil", name: "Brazil", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "caveat", ship_caveat: "Cloudy in the wet season." },
+    { id: "chad", name: "Chad", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "model" },
+    { id: "nauru", name: "Nauru", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "sparse", ship_caveat: "Too little fire to check." },
+    { id: "laos", name: "Laos", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "model", ship_caveat: "FIRMS has no file for 2 sensor-year(s)." },
+    { id: "india", name: "India", tier: "country", data_through: "2025-12-31", first_year: 2001, ship: "ratio", ship_caveat: "One constant ratio was closer than the model." },
     { id: "built-only", name: "Built, not modelled" },
   ],
 };
-const fixtureBundle = { ghana: {}, greece: { ship: "ratio" }, brazil: { ship: "caveat", caveat: "Cloudy in the wet season." }, chad: { ship: "model" }, nauru: { ship: "sparse", caveat: "Too little fire to check." }, laos: { ship: "model", caveat: "FIRMS has no file for 2 sensor-year(s)." } };
 
-test("buildRegions: countries get their tier, ship sentence and what they leave out; unmodelled regions are hidden", () => {
-  const b = buildRegions(fixture, fixtureBundle);
-  assert.deepEqual(b.ids, ["ghana", "greece", "brazil", "chad", "nauru", "laos"]);
-  assert.deepEqual(b.tier, { ghana: "region", greece: "country", brazil: "country", chad: "country", nauru: "country", laos: "country" });
+test("buildRegions: countries get their tier, ship label and note; unmodelled regions are hidden", () => {
+  const b = buildRegions(fixture);
+  assert.deepEqual(b.ids, ["ghana", "greece", "brazil", "chad", "nauru", "laos", "india"]);
+  assert.deepEqual(b.tier, { ghana: "region", greece: "country", brazil: "country", chad: "country", nauru: "country", laos: "country", india: "country" });
+  assert.deepEqual(b.label, { greece: "constant-ratio estimate", nauru: "too little fire to check", india: "constant-ratio estimate" });
   assert.equal(b.caveat.ghana, undefined);
-  assert.match(b.caveat.greece!, /^The harmonized line here is a constant-ratio estimate .* not the model\. Whole-country record .* ending in December 2025\./);
+  assert.match(b.caveat.greece!, /^Constant-ratio estimate: .* not the model\. Whole-country record .* ending in December 2025\./);
   assert.match(b.caveat.brazil!, /^Cloudy in the wet season\. Whole-country record/);
   assert.match(b.caveat.chad!, /^Whole-country record/);
-  assert.match(b.caveat.nauru!, /^The harmonized line here is a constant-ratio estimate .* not the model\. Too little fire to check\. Whole-country record/);
+  assert.match(b.caveat.nauru!, /^Too little fire to check: /);
+  assert.doesNotMatch(b.caveat.nauru!, /Too little fire to check\. /);   // the fixed line, not the pipeline's twice
   assert.match(b.caveat.laos!, /^FIRMS has no file for 2 sensor-year\(s\)\. Whole-country record/);
+  assert.match(b.caveat.india!, /^Constant-ratio estimate: .* not the model\. One constant ratio was closer than the model\. Whole-country record/);
   assert.equal(b.season.brazil, "");
   for (const s of Object.values(b.caveat)) assert.doesNotMatch(s ?? "", /[–—]/);
+});
+
+test("ship labels", () => {
+  assert.equal(shipLabel("model"), null);
+  assert.equal(shipLabel("caveat"), null);
+  assert.equal(shipLabel(undefined), null);
+  assert.equal(shipLabel("ratio"), "constant-ratio estimate");
+  assert.equal(shipLabel("sparse"), "too little fire to check");
+});
+
+test("the hotspots answer for a country points at the FIRMS archive", () => {
+  assert.ok(COUNTRY_NO_POINTS.includes(FIRMS_COUNTRY_ARCHIVE));
+  assert.doesNotMatch(COUNTRY_NO_POINTS, /[–—]/);
 });
 
 test("isRegionId accepts only listed ids", () => {

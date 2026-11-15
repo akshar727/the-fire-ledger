@@ -9,7 +9,7 @@
 // cell's bottom edge, named in the legend, readout and picture; the latest-month card compares a partial month with
 // the same days of past years (monthToDate) instead of whole months.
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, GlobeHemisphereWestIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,18 +55,9 @@ const PLAYING =
   "data-playing:relative data-playing:z-10 data-playing:ring-[3px]! data-playing:ring-foreground! data-playing:ring-offset-2! data-playing:ring-offset-card! data-playing:motion-safe:scale-110 scroll-mt-32";
 
 type Mode = "light" | "dark";
-const darkQuery = "(prefers-color-scheme: dark)";
-const subscribe = (cb: () => void) => {
-  const mq = window.matchMedia(darkQuery);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-};
+/** The site is dark only (red Thermal console theme), so the calendar always uses the dark ramp. */
 function useColorMode(): Mode {
-  return useSyncExternalStore(
-    subscribe,
-    () => (window.matchMedia(darkQuery).matches ? "dark" : "light"),
-    () => "dark",
-  );
+  return "dark";
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
@@ -162,26 +153,24 @@ function CalendarView({
 }) {
   const mode = useColorMode();
   const week = grid.view === "week";
-  // DP-009: a whole country has no peaks.json, so it gets no "see it from space" (the button would open nothing)
-  const noSpace = week || isCountry(label.region);
+  // DP-009: a whole country has no peaks.json, so it gets no "see it from space" (the view would show nothing). Week cells
+  // are not months, so in the week view a click on a cell does not change the month shown (the view itself stays).
+  const hasSpace = !isCountry(label.region);
+  const noSpace = week || !hasSpace;
   const stats = week ? undefined : monthStats; // medians and flags are per month
   const unit = week ? "week" : "month";
   const [active, setActive] = useState<CalendarCell | null>(null);
   const [focus, setFocus] = useState<[number, number]>([grid.rows.length - 1, 0]);
   const [announce, setAnnounce] = useState(""); // screen readers hear keyboard moves only, not every mouse hover
-  // "see it from space" (FE-024): the month shown, opened by a click or Enter on a month cell or the latest-month card
-  // (no view for a month without data); `opened` bumps on every open so re-opening scrolls and focuses again, and
-  // Close returns focus to whatever opened it
-  const [space, setSpace] = useState<{ year: number; month: number; opened: number } | null>(null);
-  const spaceTrigger = useRef<HTMLElement | null>(null);
-  const openSpace = (cell: CalendarCell) => {
-    if (noSpace || cell.value == null) return;
-    spaceTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setSpace((s) => ({ year: cell.year, month: cell.month, opened: (s?.opened ?? 0) + 1 }));
-  };
-  const closeSpace = () => {
-    setSpace(null);
-    spaceTrigger.current?.focus();
+  // "see it from space" (FE-024): always shown under the calendar, starting on the latest month without scrolling to it
+  // (opened 0); a click or Enter on a month cell, or the latest-month card's button, picks the month and scrolls to the
+  // view (no view for a month without data). `opened` bumps on every pick so picking the same month scrolls again.
+  const [picked, setPicked] = useState<{ year: number; month: number; opened: number } | null>(null);
+  const space =
+    picked ?? (latestMonth && latestMonth.value != null ? { year: latestMonth.year, month: latestMonth.month, opened: 0 } : null);
+  const openSpace = (cell: CalendarCell, fromCard = false) => {
+    if ((!fromCard && noSpace) || !hasSpace || cell.value == null) return;
+    setPicked((s) => ({ year: cell.year, month: cell.month, opened: (s?.opened ?? 0) + 1 }));
   };
   const table = useRef<HTMLTableElement>(null);
   const [shownView, setShownView] = useState(grid.view);
@@ -190,7 +179,6 @@ function CalendarView({
     // belongs to the other grid, and the focused column maps month <-> first week of that month
     setShownView(grid.view);
     setActive(null);
-    setSpace(null);
     setAnnounce(`Showing the ${week ? "weekly" : "monthly"} view.`);
     const [r, c] = focus;
     setFocus([Math.min(r, grid.rows.length - 1), remapColumn(c, week ? "week" : "month")]);
@@ -277,10 +265,10 @@ function CalendarView({
               mtd={mtd}
               snppEnd={snppEnd}
               weather={weather}
-              onSpace={noSpace ? undefined : () => openSpace(latestMonth)}
+              onSpace={hasSpace ? () => openSpace(latestMonth, true) : undefined}
             />
           ) : (
-            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={noSpace ? undefined : () => openSpace(latestMonth)} />
+            <LatestCard cell={latestMonth} stats={monthStats} weather={weather} onSpace={hasSpace ? () => openSpace(latestMonth, true) : undefined} />
           ))}
         <Legend
           max={grid.max}
@@ -294,7 +282,7 @@ function CalendarView({
         />
       </div>
 
-      <section aria-labelledby="calendar-heading" className="rounded-xl border bg-card p-4 sm:p-6">
+      <section aria-labelledby="calendar-heading" className="panel p-4 sm:p-6">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <h2 id="calendar-heading" className="text-sm font-medium">
             Harmonized detections by year and {unit}
@@ -313,7 +301,7 @@ function CalendarView({
                 <ToggleGroupItem
                   key={v}
                   value={v}
-                  className="h-8 px-3 capitalize data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]"
+                  className="h-8 px-3 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]"
                 >
                   {v}
                 </ToggleGroupItem>
@@ -487,9 +475,7 @@ function CalendarView({
         </div>
       </section>
       </div>
-      {!noSpace && space && (
-        <SpaceView region={label.region} year={space.year} month={space.month} opened={space.opened} onClose={closeSpace} />
-      )}
+      {hasSpace && space && <SpaceView region={label.region} year={space.year} month={space.month} opened={space.opened} />}
       {!week && summary && <WeatherSummaryBlock summary={summary} region={label.region} />}
     </div>
   );
@@ -514,7 +500,7 @@ function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; 
   ];
   const pct = (a: number, b: number) => (b > 0 ? ` (${Math.round((100 * a) / b)}%)` : "");
   return (
-    <section aria-labelledby="weather-heading" className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:p-6">
+    <section aria-labelledby="weather-heading" className="flex flex-col gap-4 panel p-4 sm:p-6">
       <div className="flex max-w-[65ch] flex-col gap-2">
         <h3 id="weather-heading" className="text-lg font-semibold tracking-tight">
           Was it the weather?
@@ -640,7 +626,7 @@ function LatestCard({
   const isRecent = cell.year * 12 + cell.month - 1 >= lastComplete;
   const Mark = cell.flag === 1 ? CaretUpIcon : CaretDownIcon;
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-accent p-5">
+    <div className="flex flex-col gap-3 border-l-2 border-primary bg-accent p-5">
       <p className="text-sm text-muted-foreground">
         {isRecent ? "Last month" : "Latest complete month in the record"}: {monthName(cell)}
       </p>
@@ -664,7 +650,8 @@ function LatestCard({
       )}
       <WeatherLine weather={weather} year={cell.year} month={cell.month} flag={cell.flag} />
       {onSpace && (
-        <Button variant="outline" size="sm" className="self-start" onClick={onSpace}>
+        // wraps inside the narrow card column instead of running past the button's edge
+        <Button variant="outline" size="sm" className="h-auto min-h-7 max-w-full self-start py-1.5 text-left leading-snug whitespace-normal" onClick={onSpace}>
           <GlobeHemisphereWestIcon aria-hidden /> See this month from space
         </Button>
       )}
@@ -701,7 +688,7 @@ function MonthToDateCard({
   const [today] = useState(() => new Date());
   const isNow = today.getUTCFullYear() === mtd.year && today.getUTCMonth() + 1 === mtd.month;
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-accent p-5">
+    <div className="flex flex-col gap-3 border-l-2 border-primary bg-accent p-5">
       <p className="text-sm text-muted-foreground">
         {isNow ? "This month so far" : "Latest month, still incomplete"}: {days} {mtd.year}
       </p>
@@ -725,7 +712,8 @@ function MonthToDateCard({
       </div>
       <WeatherLine weather={weather} year={mtd.year} month={mtd.month} flag={0} />
       {onSpace && (
-        <Button variant="outline" size="sm" className="self-start" onClick={onSpace}>
+        // wraps inside the narrow card column instead of running past the button's edge
+        <Button variant="outline" size="sm" className="h-auto min-h-7 max-w-full self-start py-1.5 text-left leading-snug whitespace-normal" onClick={onSpace}>
           <GlobeHemisphereWestIcon aria-hidden /> See this month from space
         </Button>
       )}
@@ -829,7 +817,7 @@ export function CalendarSkeleton() {
         <div className="h-40 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
         <div className="h-16 animate-pulse self-end rounded-md bg-muted motion-reduce:animate-none xl:self-stretch" />
       </div>
-      <div className="grid grid-cols-[5rem_repeat(12,minmax(0,1fr))] gap-[3px] rounded-xl border bg-card p-4 sm:p-6">
+      <div className="grid grid-cols-[5rem_repeat(12,minmax(0,1fr))] gap-[3px] panel p-4 sm:p-6">
         {Array.from({ length: 13 * 10 }, (_, i) => (
           <div key={i} className="h-8 animate-pulse rounded-sm bg-muted motion-reduce:animate-none" />
         ))}

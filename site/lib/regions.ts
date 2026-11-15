@@ -1,10 +1,9 @@
-// DP-009: the region list comes from the pipeline's files, so adding a region (or a whole country) needs no edit
-// under site/ except data files. index.json (build.py + site_bundle.py) gives the ids, names, page copy and tier;
-// annual-all.json (site_bundle.py) says which of them have been modelled. A region in index.json without a record yet is
-// left out until model.py has run. Relative JSON imports only, so client components and `node --test` both use it
-// (lib/data.ts bundles the same annual-all.json, so this adds nothing to a page). `buildRegions` is pure, so tests can
-// feed it a whole country without one being published.
-import annualAll from "../public/data/annual-all.json" with { type: "json" };
+// DP-009 / DP-018: the region list comes from the pipeline's index.json (build.py + site_bundle.py), so adding a region
+// (or one of ~180 whole countries) needs no edit under site/ except data files. Entries carry the ids, names, page copy,
+// tier and the record fields the site needs before it fetches a region's annual.json (`first_year`; for a country
+// `ship` and `ship_caveat`); an entry without `first_year` has no record yet and is left out. No per-region file is
+// imported here (WORLD PLAN). Relative JSON import, so client components and `node --test` both use it. `buildRegions`
+// is pure, so tests can feed it whole countries without one being published.
 import regionIndex from "../public/data/index.json" with { type: "json" };
 
 /** A region id from index.json (lowercase letters, digits, '-'). */
@@ -23,10 +22,17 @@ export type IndexEntry = {
   season?: string;
   caveat?: string;
   data_through?: string | null;
+  first_year?: number;
+  /** a country's ship rule (registry "Country-tier outputs", ML-024 / ML-023), copied from its annual.json */
+  ship?: string;
+  ship_caveat?: string;
 };
 
-/** The annual.json fields read here: a country's ship rule (registry "Country-tier outputs", ML-024 / ML-023). */
-export type AnnualHead = { ship?: string; caveat?: string };
+/** NASA FIRMS country yearly archive: where a whole country's per-detection files are (none are published here). */
+export const FIRMS_COUNTRY_ARCHIVE = "https://firms.modaps.eosdis.nasa.gov/country/";
+
+/** /api/hotspots answer for a whole country (DP-018). */
+export const COUNTRY_NO_POINTS = `Per-detection files are not published for whole countries on this site. The FIRMS country archive has them: ${FIRMS_COUNTRY_ARCHIVE}`;
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -39,20 +45,28 @@ export function countryNote(through: string): string {
   );
 }
 
-/** What a country's label adds to its note (ML-023): "ratio" ships MODIS scaled by one constant factor, which must not
- * pass for the model, so it always says so; every label then adds the pipeline's own sentence when there is one
- * ("caveat": the band is too narrow; "sparse": too little fire to check; any label: missing FIRMS files or a high
- * 2001-2002 back-cast). */
-export function shipNote(a: AnnualHead | undefined): string | undefined {
-  const ratio =
-    a?.ship === "ratio" || a?.ship === "sparse"
-      ? "The harmonized line here is a constant-ratio estimate (MODIS times this country's 2012 to 2019 VIIRS/MODIS ratio), not the model."
-      : undefined;
-  return [ratio, a?.caveat].filter(Boolean).join(" ") || undefined;
+/** What a country's ship rule adds to its note: "caveat" ships the model with the pipeline's sentence; "ratio" ships
+ * MODIS scaled by one constant factor, which must not pass for the model; "sparse" has too little fire to check.
+ * ML-023: the pipeline's own sentence (`ship_caveat`: missing FIRMS files, a high 2001-2002 back-cast, the ratio beat
+ * the model) is shown for every label except "sparse", whose fixed line already says it all. */
+export function shipNote(e: Pick<IndexEntry, "ship" | "ship_caveat">): string | undefined {
+  if (e.ship === "ratio")
+    return ["Constant-ratio estimate: the harmonized line here is MODIS times this country's 2012 to 2019 VIIRS/MODIS ratio, not the model.", e.ship_caveat]
+      .filter(Boolean)
+      .join(" ");
+  if (e.ship === "sparse")
+    return "Too little fire to check: the hold-out has too few detections to test the conversion here, so treat the harmonized line as unchecked.";
+  return e.ship_caveat || undefined;
 }
 
-export function buildRegions(index: { regions: IndexEntry[] }, bundle: Record<string, AnnualHead>) {
-  const entries = index.regions.filter((r) => Object.hasOwn(bundle, r.id));
+/** The short label shown next to a country's record, or null for the model (a "caveat" country shows its sentence in
+ * the note instead) and for deep dives. */
+export function shipLabel(ship: string | undefined): string | null {
+  return ship === "ratio" ? "constant-ratio estimate" : ship === "sparse" ? "too little fire to check" : null;
+}
+
+export function buildRegions(index: { regions: IndexEntry[] }) {
+  const entries = index.regions.filter((r) => typeof r.first_year === "number");
   const ids = entries.map((r) => r.id);
   const country = (r: IndexEntry) => r.tier === "country";
   return {
@@ -61,6 +75,10 @@ export function buildRegions(index: { regions: IndexEntry[] }, bundle: Record<st
     /** Display names: `short_name` when the full name is too long for a button, else `name`. */
     names: Object.fromEntries(entries.map((r) => [r.id, r.short_name || r.name])) as Record<RegionId, string>,
     tier: Object.fromEntries(entries.map((r) => [r.id, country(r) ? "country" : "region"])) as Record<RegionId, Tier>,
+    /** A country's ship label ("constant-ratio estimate", ...); absent for the model and for deep dives. */
+    label: Object.fromEntries(entries.flatMap((r) => (country(r) && shipLabel(r.ship) ? [[r.id, shipLabel(r.ship)!]] : []))) as Partial<
+      Record<RegionId, string>
+    >,
     /** Fire type and season, one sentence per region (index.json `season`; empty when the pipeline has none). */
     season: Object.fromEntries(entries.map((r) => [r.id, r.season ?? ""])) as Record<RegionId, string>,
     /** Extra caveat (index.json `caveat`, e.g. NW India's Terra-only 2001 to mid-2002 back-cast, ML-006); for a whole
@@ -68,7 +86,7 @@ export function buildRegions(index: { regions: IndexEntry[] }, bundle: Record<st
     caveat: Object.fromEntries(
       entries.flatMap((r) => {
         const parts = country(r)
-          ? [r.caveat, shipNote(bundle[r.id]), r.data_through ? countryNote(r.data_through) : undefined]
+          ? [r.caveat, shipNote(r), r.data_through ? countryNote(r.data_through) : undefined]
           : [r.caveat];
         const text = parts.filter(Boolean).join(" ");
         return text ? [[r.id, text]] : [];
@@ -77,7 +95,7 @@ export function buildRegions(index: { regions: IndexEntry[] }, bundle: Record<st
   };
 }
 
-const built = buildRegions(regionIndex as { regions: IndexEntry[] }, annualAll as Record<string, AnnualHead>);
+const built = buildRegions(regionIndex as { regions: IndexEntry[] });
 
 export const REGION_IDS: readonly RegionId[] = built.ids;
 export const REGIONS: Readonly<Record<RegionId, string>> = built.names;
@@ -88,3 +106,5 @@ export const TIER: Readonly<Record<RegionId, Tier>> = built.tier;
 export const isCountry = (id: RegionId) => TIER[id] === "country";
 export const FIRE_SEASON: Readonly<Record<RegionId, string>> = built.season;
 export const REGION_CAVEAT: Readonly<Partial<Record<RegionId, string>>> = built.caveat;
+/** A country's ship label, shown next to its record (DP-018); absent when the model shipped. */
+export const SHIP_LABEL: Readonly<Partial<Record<RegionId, string>>> = built.label;

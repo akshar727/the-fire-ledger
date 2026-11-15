@@ -17,7 +17,7 @@ const LINKS = [
 export function NavLinks({ query = "" }: { query?: string }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="flex items-center gap-1">
+    <nav aria-label="Main" className="flex items-stretch">
       {LINKS.map(({ href, label }) => {
         const active = pathname === href;
         return (
@@ -26,8 +26,11 @@ export function NavLinks({ query = "" }: { query?: string }) {
             href={query ? `${href}?${query}` : href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:text-foreground",
-              active ? "font-medium text-foreground" : "text-muted-foreground",
+              // status-strip tab: mono caps, hairline divider, red underline when current
+              "relative flex items-center border-l px-2 font-mono text-[10px] tracking-[0.06em] uppercase sm:text-[11px] sm:tracking-[0.14em] transition-colors hover:bg-primary/8 hover:text-foreground sm:px-[18px]",
+              active
+                ? "text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-primary"
+                : "text-muted-foreground",
             )}
           >
             {label}

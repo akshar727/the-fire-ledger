@@ -146,6 +146,25 @@ class SiteDataTests(unittest.TestCase):
                 for k in ("short_name", "season", "caveat"):
                     self.assertTrue(k not in r or (isinstance(r[k], str) and r[k]), f"{p}:{rid}: {k}")
 
+    def test_index_record_fields_match_annual(self):
+        """DP-018: the site reads first_year / forward_through / ship from index.json before it fetches annual.json;
+        a stale copy means site_bundle.py was not run after model.py."""
+        self.assertFalse((DATA / "annual-all.json").exists(), "annual-all.json is gone since DP-018")
+        for r in self.index()["regions"]:
+            rid = r["id"]
+            a = DATA / rid / "annual.json"
+            with self.subTest(region=rid):
+                if not a.is_file():
+                    self.assertNotIn("first_year", r, f"{rid}: record fields but no annual.json")
+                    continue
+                d = load_json(a)
+                self.assertEqual(r.get("first_year"), d["years"][0], f"{rid}: first_year (rerun site_bundle.py)")
+                self.assertEqual(r.get("forward_through"), d.get("forward_through"), f"{rid}: forward_through")
+                if r.get("tier") == "country":
+                    self.assertEqual(r.get("ship"), d.get("ship"), f"{rid}: ship")
+                    # None until ML-023 writes the ship rule into country annual.json
+                    self.assertIn(r.get("ship"), ("model", "caveat", "ratio", "sparse", None), f"{rid}: ship label")
+
     def test_folders_match_regions(self):
         ids = set(self.region_ids())
         for d in sorted(x for x in DATA.iterdir() if x.is_dir()):
@@ -298,18 +317,23 @@ class SiteDataTests(unittest.TestCase):
             found = True
             with self.subTest(file=str(p)):
                 c = load_json(p)
-                self.assertEqual(c.get("schema"), 1, f"{p}: schema")
+                # ML-018: schema 2 = monthly (cell c, month m at c * n_months + m), integers = value * scale
+                self.assertEqual(c.get("schema"), 2, f"{p}: schema")
                 self.assertEqual(c.get("region"), rid, f"{p}: region != folder name")
                 self.assertEqual(c.get("cell_deg"), 0.25, f"{p}: cell_deg")
-                self.assertTrue(isinstance(c.get("years"), list) and all(map(is_int, c["years"])), f"{p}: years")
+                for k in ("scale", "start_year", "n_months", "viirs_from"):
+                    self.assertTrue(is_int(c.get(k)) and c[k] >= 0, f"{p}: {k}")
+                for k in ("alpha", "sigma_year"):
+                    self.assertTrue(is_num(c.get(k)) and c[k] >= 0, f"{p}: {k}")
                 lat, lon = c.get("lat"), c.get("lon")
                 self.assertTrue(isinstance(lat, list) and isinstance(lon, list), f"{p}: lat/lon lists")
                 self.assertEqual(len(lat), len(lon), f"{p}: len(lat) != len(lon)")
                 self.assertTrue(all(map(is_num, lat + lon)), f"{p}: lat/lon numbers")
-                want = len(lat) * len(c["years"])
+                want = len(lat) * c["n_months"]
                 for k in ("modis", "viirs", "pred"):
                     self.assertIsInstance(c.get(k), list, f"{p}: {k}")
                     self.assertEqual(len(c[k]), want, f"{p}: {k} length {len(c[k])} != {want}")
+                    self.assertTrue(all(is_int(v) and v >= 0 for v in c[k]), f"{p}: {k} values")
         if not found:
             self.skipTest("no cells.json produced yet")
 

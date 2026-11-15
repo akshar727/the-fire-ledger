@@ -18,7 +18,7 @@ export function CalendarExplorer() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <RegionSwitcher />
+          <RegionSwitcher className="w-full sm:w-72" />
           <DateRange />
         </div>
         <p className="max-w-[90ch] text-sm leading-relaxed text-muted-foreground">

@@ -14,7 +14,7 @@ import { Disclosure } from "@/components/Disclosure";
 import { FirmsAcknowledgment } from "@/components/FirmsAcknowledgment";
 import { Button } from "@/components/ui/button";
 import { regionInfo } from "@/lib/data";
-import { isCountry, REGIONS } from "@/lib/regions";
+import { FIRMS_COUNTRY_ARCHIVE, isCountry, REGIONS } from "@/lib/regions";
 import {
   boxesOverlap,
   boxLabel,
@@ -30,7 +30,6 @@ import {
 import { useBox, useSelection } from "@/lib/use-selection";
 
 const fmt = (v: number) => v.toLocaleString("en-US");
-const FIRMS_COUNTRY_ARCHIVE = "https://firms.modaps.eosdis.nasa.gov/country/";
 
 export function DownloadCsv() {
   const { sel, bounds } = useSelection();
@@ -45,7 +44,7 @@ export function DownloadCsv() {
   const box = !country && urlBox && boxesOverlap(urlBox, rbox) ? urlBox : null;
 
   return (
-    <section aria-labelledby="download-heading" className="grid gap-8 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
+    <section aria-labelledby="download-heading" className="grid gap-8 panel p-5 sm:p-6 md:grid-cols-[3fr_2fr]">
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <h2 id="download-heading" className="text-xl font-semibold tracking-tight">

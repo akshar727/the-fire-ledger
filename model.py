@@ -15,6 +15,7 @@ from patsy import dmatrix
 from calendar_stats import calendar_block
 from trend_stats import trend_block
 from forward_link import run_forward
+from cells import cells_bundle
 import site_bundle
 import globe
 try:
@@ -256,17 +257,21 @@ def series_bundle(region_id, weeks, wk, draws, through=None, fwd=None):
     return {"schema": 1, "region": region_id, "monthly": monthly, "weekly": weekly,
             "calendar": calendar_block(harmonized, monthly["start_year"])}
 
-def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None,
+def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data", points_dir=None, write_cells=False,
         cell_deg=None, method="model", tier=None, model_score=None):
     """Fit one region and write annual.json + series.json. Returns dict: weeks (list of (year, week)), modis/viirs/pred
     (per-week region totals, arrays), draws (nboot x n_weeks bootstrap draw sums), ann (annual DataFrame), score.
     points_dir (default <out_dir>/<region_id>/points, written by build.py) feeds only the overpass fields.
+    write_cells (ML-018): also write cells.json (per-cell monthly back-cast, cells.py). Off by default; the CLI
+    (main) turns it on for the regions.json regions only.
     Whole countries (ML-023): cell_deg sums the grid to coarser cells (None = as built, the 3 regions unchanged);
     method="ratio" skips the fit (pred = MODIS x the 2012-2019 VIIRS/MODIS ratio, by day/night, Terra-only ratio
     before Aqua); tier="country" adds tier/cell_deg/method/ship/caveat to both files, and a model that loses to one
     constant ratio on the hidden years is re-run as the ratio (model_score keeps the model's score)."""
     if method not in ("model", "ratio"):
         raise ValueError(f"method must be 'model' or 'ratio', not {method!r}")
+    if write_cells and method != "model":
+        raise ValueError("write_cells needs the cell model (method='model')")
     args = dict(nboot=nboot, grid_dir=grid_dir, out_dir=out_dir, points_dir=points_dir, cell_deg=cell_deg, tier=tier)
     t0 = time.time()
     rng = np.random.default_rng(0)   # per region, so output doesn't depend on which other regions ran
@@ -409,6 +414,9 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     wk_modis = np.bincount(widx, weights=w.modis_n.values, minlength=nw)
     wk_viirs = np.bincount(widx, weights=y, minlength=nw)
     wk_pred = np.bincount(widx, weights=mu, minlength=nw)
+    # ML-018: per-cell monthly back-cast, built here while `weeks` is still the back-cast weeks (no forward padding)
+    cb = cells_bundle(region_id, w.lat.values, w.lon.values, widx, weeks, through, w.modis_n.values, y, mu,
+                      a_full, sigma_year, VIIRS_START) if write_cells else None
     # forward link (ML-017): weeks run on to the last NOAA day; the back-cast arrays get zeros there (wk_bc, draws: what
     # series_bundle splits over months), the forward days are added per week for the annual totals (wk_pred, draws_all)
     end = fwd["dates"][-1] if fwd else pd.Timestamp(through)
@@ -510,6 +518,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
         bundle.update({k: country[k] for k in ("tier", "cell_deg", "method", "ship")})
     write_json(os.path.join(out_dir, region_id, "annual.json"), out)
     write_json(os.path.join(out_dir, region_id, "series.json"), bundle)
+    if cb is not None:
+        write_json(os.path.join(out_dir, region_id, "cells.json"), cb)
 
     mem = ""
     if resource:
@@ -545,9 +555,9 @@ def main(argv=None):
                 print(f"{r}: burning cells by size {counts}: {cell} deg", flush=True)
             run(r, a.nboot or COUNTRY_NBOOT, grid_dir=COUNTRY_GRID, cell_deg=cell, method=a.method, tier="country")
         else:
-            run(r, a.nboot or NBOOT)
+            run(r, a.nboot or NBOOT, write_cells=True)   # ML-018: cells.json for the deep dives
     if not a.no_bundle:
-        site_bundle.main()  # DP-009: refresh index.json countries and annual-all.json from the files just written
+        site_bundle.main()  # DP-009 / DP-018: refresh index.json countries and record fields from the files just written
         globe.main()        # ML-023: refresh globe.json
 
 if __name__ == "__main__":

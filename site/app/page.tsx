@@ -12,7 +12,7 @@ import { StoryLegend, StoryLine } from "@/components/story/StoryLine";
 import { StoryMotion } from "@/components/story/StoryMotion";
 import { StorySceneGate } from "@/components/story/StorySceneGate";
 import { dayLabel, HOLD_FROM, VIIRS_FROM } from "@/lib/annual";
-import { recordSpan } from "@/lib/data";
+import { recordSpan } from "@/lib/data-server";
 import { FIRE_SEASON } from "@/lib/regions";
 import { rampColor } from "@/lib/series";
 import { bigCount, jumpVerb, PIXEL_M, STORY_FIRE } from "@/lib/story";
@@ -28,16 +28,15 @@ const longDay = (iso: string) => {
 };
 const monthYear = (iso: string) => `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
-const primaryLink =
-  "inline-flex h-11 shrink-0 items-center gap-2 rounded-md bg-primary px-5 text-sm font-medium whitespace-nowrap text-primary-foreground transition-transform hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.98]";
-const quietLink =
-  "inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
+// Thermal console buttons (globals.css `btn-console`, `btn-quiet`)
+const primaryLink = "btn-console";
+const quietLink = "btn-quiet";
 
 /** Fewer-to-more key under the story calendar: the same ramp, light and dark colours picked by CSS. */
 function CalendarKey() {
   const steps = [0, 0.25, 0.5, 0.75, 1];
   return (
-    <p className="mx-auto flex items-center gap-2 text-sm text-muted-foreground">
+    <p className="mx-auto flex items-center gap-2 font-mono text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
       fewer
       <svg width="110" height="12" aria-hidden>
         {steps.map((t, i) => (
@@ -70,13 +69,13 @@ function Chapter({
       className={cn("grid min-h-[85svh] scroll-mt-16 content-center gap-10 border-t py-20 md:grid-cols-12 md:gap-12", className)}
     >
       <div className="story-reveal story-text flex flex-col gap-5 md:col-span-5">
-        <p className="font-mono text-xs tracking-[0.16em] text-primary uppercase">
+        <p className="kicker">
           {String(n).padStart(2, "0")} · {kicker}
         </p>
-        <h2 id={`${id}-h`} className="max-w-[20ch] text-3xl leading-[1.08] font-semibold tracking-tighter text-balance md:text-4xl">
+        <h2 id={`${id}-h`} className="max-w-[18ch] text-3xl leading-[0.92] text-balance md:text-[42px]">
           {title}
         </h2>
-        <div className="flex max-w-[52ch] flex-col gap-4 text-lg leading-relaxed text-muted-foreground">{children}</div>
+        <div className="flex max-w-[52ch] flex-col gap-4 text-base leading-[1.65] text-muted-foreground">{children}</div>
       </div>
       {figure && <div className="story-reveal story-figure md:col-span-7">{figure}</div>}
     </section>
@@ -104,13 +103,13 @@ export default function StoryPage() {
         {/* 1 · title */}
         <section data-chapter aria-labelledby="story-title" className="flex min-h-[calc(100svh-4rem)] flex-col justify-center gap-8 py-16">
           <div className="story-reveal story-text flex flex-col gap-6">
-            <p className="font-mono text-xs tracking-[0.16em] text-primary uppercase">
+            <p className="kicker">
               01 · NASA satellite fire detections, {span.first} to {dayLabel(span.through)}
             </p>
-            <h1 id="story-title" className="max-w-[16ch] text-5xl leading-[1.02] font-semibold tracking-tighter text-balance md:text-7xl">
+            <h1 id="story-title" className="max-w-[14ch] text-5xl leading-[0.92] text-balance md:text-[80px]">
               Fire belongs here. What changes is how much, and when.
             </h1>
-            <p className="max-w-[58ch] text-xl leading-relaxed text-muted-foreground">
+            <p className="max-w-[58ch] text-lg leading-[1.65] text-muted-foreground">
               NASA&apos;s MODIS instruments have watched for fire from orbit since {monthYear(terraSince)}, and VIIRS since{" "}
               {VIIRS_FROM}. They count it differently, so the record breaks in {VIIRS_FROM}. One Fire Record mends it for{" "}
               {span.regions}.
@@ -146,17 +145,17 @@ export default function StoryPage() {
             </>
           }
           figure={
-            <dl className="grid gap-px overflow-hidden rounded-xl border bg-border">
+            <dl className="grid gap-px overflow-hidden border bg-border">
               {s.counts.map((c) => (
                 <div key={c.id} className="flex items-baseline justify-between gap-4 bg-background px-5 py-5">
-                  <dt className="text-base">{c.name}</dt>
-                  <dd className="font-mono text-3xl font-semibold tracking-tight tabular-nums md:text-4xl">
+                  <dt className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">{c.name}</dt>
+                  <dd className="font-mono text-3xl font-semibold tracking-tight tabular-nums [text-shadow:0_0_18px_color-mix(in_oklch,var(--primary)_45%,transparent)] md:text-4xl">
                     <span aria-hidden data-count={c.rows}>{c.rows.toLocaleString("en-US")}</span>
                     <span className="sr-only">{c.rows.toLocaleString("en-US")}</span>
                   </dd>
                 </div>
               ))}
-              <div className="flex items-baseline justify-between gap-4 bg-muted px-5 py-4 text-sm text-muted-foreground">
+              <div className="flex items-baseline justify-between gap-4 bg-card px-5 py-4 font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
                 <dt>All three, to {dayLabel(top.through)}</dt>
                 <dd className="font-mono tabular-nums">{total.toLocaleString("en-US")}</dd>
               </div>
@@ -179,8 +178,8 @@ export default function StoryPage() {
         >
           <p>
             The day after the Pedrógão Grande fire started, {sat(modis)} passed over the fires around it and counted{" "}
-            <strong className="font-semibold text-foreground">{modis.points.length}</strong> hot pixels. {gapMinutes} minutes
-            later, {sat(viirs)} counted <strong className="font-semibold text-foreground">{viirs.points.length}</strong>.
+            <strong className="font-semibold text-primary">{modis.points.length}</strong> hot pixels. {gapMinutes} minutes
+            later, {sat(viirs)} counted <strong className="font-semibold text-primary">{viirs.points.length}</strong>.
           </p>
           <p>
             Nothing burned {ratio.toFixed(1)} times faster in between. A VIIRS pixel is {PIXEL_M.viirs} m across, a MODIS
@@ -240,7 +239,7 @@ export default function StoryPage() {
           </p>
           <p>
             Tested on {h0} to {h1}, years the model never saw, it missed by{" "}
-            <strong className="font-semibold text-foreground">{s.score.mape_model.toFixed(1)}%</strong> a year on average,
+            <strong className="font-semibold text-primary">{s.score.mape_model.toFixed(1)}%</strong> a year on average,
             against {s.score.mape_ratio.toFixed(1)}% for one constant factor; {s.score.coverage} of {s.score.n_hold} years
             fell inside the band.
           </p>

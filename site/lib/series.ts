@@ -377,11 +377,12 @@ export const RAMP: Record<"light" | "dark", Oklch[]> = {
     [0.64, 0.19, 40],
     [0.42, 0.16, 25],
   ],
+  // red thermal ramp (site theme): ember red through orange to pale gold; same lightness steps as before
   dark: [
-    [0.25, 0.02, 40],
-    [0.45, 0.13, 35],
-    [0.67, 0.18, 48],
-    [0.91, 0.14, 92],
+    [0.25, 0.03, 25],
+    [0.45, 0.15, 22],
+    [0.67, 0.19, 32],
+    [0.91, 0.12, 75],
   ],
 };
 
