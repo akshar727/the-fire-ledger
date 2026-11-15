@@ -1,12 +1,13 @@
 "use client";
 
-// One Fire Record view for the selected region and dates (?region=&from=&to=): hero stat, the record chart, hold-out
+// One Fire Record view for the selected region and dates (?region=&from=&to=): hero stat, the record chart and its trend (FE-014), hold-out
 // scores and downloads. All three regions' annual.json are bundled (about 5 KB each), so switching needs no fetch.
 import { DateRange } from "@/components/DateRange";
 import { DownloadCsv } from "@/components/DownloadCsv";
 import { HoldoutStats } from "@/components/HoldoutStats";
 import { RecordChart } from "@/components/RecordChart";
 import { RegionSwitcher } from "@/components/RegionSwitcher";
+import { TrendSummary } from "@/components/TrendSummary";
 import { eraMeans, HOLD_FROM, holdoutYears, lastCompleteYear, VIIRS_FROM } from "@/lib/annual";
 import { loadAnnual } from "@/lib/data";
 import { FIRE_SEASON, REGION_CAVEAT, REGIONS } from "@/lib/regions";
@@ -50,6 +51,7 @@ export function RecordExplorer() {
           <p className="text-xs text-muted-foreground">The chart shows whole years; downloads use the exact dates.</p>
         </div>
         <RecordChart data={data} region={REGIONS[sel.region]} regionId={sel.region} years={years} />
+        <TrendSummary data={data} regionId={sel.region} years={years} />
       </section>
 
       <section aria-labelledby="holdout-heading" className="flex flex-col gap-6">
