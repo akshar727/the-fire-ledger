@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { dayLabel, HOLD_FROM, holdoutYears, isPartial, VIIRS_FROM, type Annual, type ForwardScore } from "@/lib/annual";
 import { loadAnnual, loadReferee, recordSpan, REGION_LIST, REGIONS } from "@/lib/data";
 import { backcastOffset, nearLevel, stepLabel, stepRange } from "@/lib/referee";
+import { SAT } from "@/components/story/FireFootprints";
+import { PIXEL_M, SCENE_BBOX, STORY_FIRE, utc } from "@/lib/story";
+import { loadStory } from "@/lib/story-data";
 
 export const metadata: Metadata = { title: "Method" };
 
 const SECTIONS = [
+  { id: "scene", title: "The opening scene" },
   { id: "problem", title: "The problem" },
   { id: "harmonization", title: "How the conversion works" },
   { id: "holdout", title: "What the hold-out shows" },
@@ -24,6 +29,11 @@ const REF = loadReferee();
 // End of the downloaded record (index.json archive_through, the same for every region), e.g. 2026-11-02.
 const THROUGH = REGION_LIST.map((r) => r.data_through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
+
+// FE-019: the landing page's scroll scene, described from the same files it is drawn from
+const STORY = loadStory();
+const deg = (v: number, pos: string, neg: string) => `${Math.abs(v)}° ${v >= 0 ? pos : neg}`;
+const SCENE_AREA = `${deg(SCENE_BBOX.s, "N", "S")} to ${deg(SCENE_BBOX.n, "N", "S")}, ${deg(SCENE_BBOX.w, "E", "W")} to ${deg(SCENE_BBOX.e, "E", "W")}`;
 
 const pct = (v: number) => `${v.toFixed(1)}%`;
 // FE-009: regions whose annual.json carries the NOAA-20/21 forward link (ML-017), with its hold-out score
@@ -63,6 +73,10 @@ const DATA_SOURCES = [
       ]
     : []),
   {
+    name: `NASA SRTM GL3 elevation (about 90 m), ${SCENE_AREA}, for the landing-page scene`,
+    url: "https://doi.org/10.5067/MEASURES/SRTM/SRTMGL3.003",
+  },
+  {
     name: `MODIS burned area, ${REF.product_short}, 0.25° monthly (University of Maryland), for the independent check`,
     url: "https://doi.org/10.5067/MODIS/MCD64A1.006",
   },
@@ -74,6 +88,7 @@ const SOFTWARE = [
   ["Next.js, React", "This website"],
   ["Tailwind CSS, shadcn/ui, Radix UI", "Styling and interface components"],
   ["Phosphor Icons, Geist", "Icons and typeface"],
+  ["Blender", "Rendering the landing-page scene"],
 ] as const;
 
 export default function MethodPage() {
@@ -110,6 +125,48 @@ export default function MethodPage() {
             How we turn two satellite fire records into one, and how far the result can be trusted.
           </p>
         </header>
+
+        <section id="scene">
+          <h2>The opening scene</h2>
+          <p>
+            On a wide screen, the{" "}
+            <Link className="underline underline-offset-2 hover:text-foreground" href="/">
+              landing page
+            </Link>{" "}
+            scrolls over a 3D scene: hills at sunset, a fire on the ridge ahead, two satellites passing overhead, then
+            thousands of small squares that fall into a calendar. It is not a made-up landscape. It is a real place on
+            a real day, built from the same NASA data as the rest of this site.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">The fire is the Pedrógão Grande fire</span> in central
+            Portugal, which started on 17 June {STORY.scene.year}. The scene opens at the end of that afternoon, looking
+            at the hills where it burned. On {dayLabel(STORY_FIRE.date)}, {SAT[STORY.fire.modis.satellite] ?? STORY.fire.modis.satellite}{" "}
+            passed over at {utc(STORY.fire.modis.time)} and recorded {STORY.fire.modis.points.length} hot pixels there;{" "}
+            {STORY.fire.gapMinutes} minutes later {SAT[STORY.fire.viirs.satellite] ?? STORY.fire.viirs.satellite}{" "}
+            recorded {STORY.fire.viirs.points.length}. Those are the two passes the scene shows, each square appearing
+            under the scan line of the satellite that made it.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">The ground is real.</span> The terrain is NASA Shuttle Radar
+            Topography Mission elevation (SRTM, about 90 m) for {SCENE_AREA}, the area around the fire. Heights are
+            stretched 2.5 times so the hills read from far above.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Every square is a real detection.</span> As you scroll, all{" "}
+            {STORY.scene.detections.toLocaleString("en-US")} FIRMS fire detections in that area in {STORY.scene.year}{" "}
+            switch on in date order at the place they were seen, each drawn at its sensor&apos;s pixel size (MODIS{" "}
+            {PIXEL_M.modis / 1000} km, VIIRS {PIXEL_M.viirs} m). They then stack into one column per day of the year,
+            and finally settle into a 26-year by 12-month grid in proportion to Portugal&apos;s harmonized monthly
+            record, the one described below.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">What is decoration.</span> The trees, grass, smoke, embers,
+            clouds, sky, sun and the satellite models are simple shapes drawn by our script to make the place readable;
+            they carry no data. The frames are rendered in Blender from this project&apos;s own files, with no
+            imported models, textures or AI-generated images. On small screens, or with reduced motion turned on, the
+            scene is left out and the page tells the same story with plain charts.
+          </p>
+        </section>
 
         <section id="problem">
           <h2>The problem</h2>
