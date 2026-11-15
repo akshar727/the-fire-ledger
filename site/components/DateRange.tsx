@@ -2,10 +2,11 @@
 
 // From / to date filter (UTC days, both included) plus a whole-year shortcut. A date is written to the URL only once it
 // is a complete date inside the record, so typing a year digit by digit doesn't jump the field to the first year.
+// Either end can cross the other; the other end then moves to the same day (moveEnd).
 import { useId, useState } from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { isDate, yearRange, yearsIn, type Bounds } from "@/lib/selection";
+import { isDate, moveEnd, yearRange, yearsIn, type Bounds } from "@/lib/selection";
 import { useSelection } from "@/lib/use-selection";
 
 const field =
@@ -66,8 +67,20 @@ export function DateRange() {
   });
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <DateField label="From" value={sel.from} min={bounds.min} max={sel.to} onCommit={(from) => update({ from })} />
-      <DateField label="To" value={sel.to} min={sel.from} max={bounds.max} onCommit={(to) => update({ to })} />
+      <DateField
+        label="From"
+        value={sel.from}
+        min={bounds.min}
+        max={bounds.max}
+        onCommit={(v) => update(moveEnd(sel, "from", v))}
+      />
+      <DateField
+        label="To"
+        value={sel.to}
+        min={bounds.min}
+        max={bounds.max}
+        onCommit={(v) => update(moveEnd(sel, "to", v))}
+      />
       <div className="flex flex-col gap-1.5">
         <label htmlFor={yearId} className="text-xs font-medium text-muted-foreground">
           Or one year

@@ -7,12 +7,14 @@ import {
   hotspotsUrl,
   isDate,
   MAX_SPAN_DAYS,
+  moveEnd,
   parseSelection,
   pointFileUrl,
   seriesUrl,
   spanDays,
   withSelection,
   yearRange,
+  yearsBefore,
   yearsIn,
   type Bounds,
 } from "./selection.ts";
@@ -78,4 +80,17 @@ test("every published region has a point file for each year in point_years", () 
       assert.ok(existsSync(new URL(`../public${pointFileUrl(r.id, y)}`, import.meta.url)), `${r.id} ${y}`);
     }
   }
+});
+
+test("moveEnd: an end that crosses the other one pulls it along", () => {
+  const sel = { from: "2010-03-01", to: "2010-06-30" };
+  assert.deepEqual(moveEnd(sel, "from", "2010-04-15"), { from: "2010-04-15", to: "2010-06-30" });
+  assert.deepEqual(moveEnd(sel, "from", "2015-01-01"), { from: "2015-01-01", to: "2015-01-01" });
+  assert.deepEqual(moveEnd(sel, "to", "2010-05-01"), { from: "2010-03-01", to: "2010-05-01" });
+  assert.deepEqual(moveEnd(sel, "to", "2005-07-01"), { from: "2005-07-01", to: "2005-07-01" });
+});
+
+test("yearsBefore: point files older than the selectable record", () => {
+  assert.deepEqual(yearsBefore(B, [2003, 2000, 2001, 2002]), [2000]);
+  assert.deepEqual(yearsBefore(B, [2001, 2002]), []);
 });

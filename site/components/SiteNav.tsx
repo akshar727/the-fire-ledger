@@ -5,22 +5,25 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Record", keepsSelection: true },
-  { href: "/calendar", label: "Calendar", keepsSelection: true },
-  { href: "/method", label: "Method", keepsSelection: false },
+  { href: "/", label: "Record" },
+  { href: "/calendar", label: "Calendar" },
+  { href: "/method", label: "Method" },
 ] as const;
 
-/** Nav links; the data views carry the current ?region=&from=&to= so switching view keeps the selection. */
+/**
+ * Nav links. Every link carries the current ?region=&from=&to=, Method included (it ignores them), so a visit to
+ * Method and back keeps the selection.
+ */
 export function NavLinks({ query = "" }: { query?: string }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Main" className="flex items-center gap-1">
-      {LINKS.map(({ href, label, keepsSelection }) => {
+      {LINKS.map(({ href, label }) => {
         const active = pathname === href;
         return (
           <Link
             key={href}
-            href={keepsSelection && query ? `${href}?${query}` : href}
+            href={query ? `${href}?${query}` : href}
             aria-current={active ? "page" : undefined}
             className={cn(
               "rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:text-foreground",
