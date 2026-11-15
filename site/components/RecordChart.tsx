@@ -5,6 +5,7 @@
 // FE-004: draws only the years in `years` (the selected dates); the sentences under it still describe the whole record.
 // FE-006: a partial year (the year still running, `partial` = 1) is a hollow dot with a "2026 to 28 Oct" label, not
 // joined to the lines, not part of the hold-out and not in the era means.
+// ML-009: the Harmonized view draws `harmonized` from 2012 (2012 = observed VIIRS from 20 Jan + model for 1-19 Jan).
 import { useState, type KeyboardEvent } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -54,7 +55,7 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
   const visible = (i: number) => i >= a && i <= b;
   const hover = hoverAt != null && visible(hoverAt) ? hoverAt : null;
 
-  const inView = D.years.flatMap((_, i) => (visible(i) ? [D.hi[i], D.modis[i], D.viirs[i] ?? 0] : []));
+  const inView = D.years.flatMap((_, i) => (visible(i) ? [D.hi[i], D.modis[i], D.viirs[i] ?? 0, D.harmonized[i]] : []));
   const max = Math.max(1, ...inView) * 1.05;
   const step = (W - L - R) / Math.max(1, n - 1);
   const x = (i: number) => (n === 1 ? (L + W - R) / 2 : L + (i - a) * step);
@@ -82,19 +83,21 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
     const c = clip(from, to);
     return c ? "M" + [...pts(D.hi, ...c), ...pts(D.lo, ...c).reverse()].join("L") + "Z" : "";
   };
-  // back-cast line runs into the first VIIRS year so the two segments join
-  const backcast = D.pred.map((p, i) => (i < i2012 ? p : i === i2012 ? D.viirs[i] : null));
+  // back-cast line runs into the first VIIRS year so the two segments join; from 2012 the Harmonized view draws
+  // `harmonized` (ML-009: 2012 = observed VIIRS from 20 Jan + model for 1-19 Jan), Raw draws the raw `viirs`
+  const backcast = D.pred.map((p, i) => (i < i2012 ? p : i === i2012 ? D.harmonized[i] : null));
 
   const ticks: number[] = [];
   for (let v = 0, s = Math.max(1, tickStep(max / 1.05)); v <= max; v += s) ticks.push(v);
   const labelEvery = n <= 8 ? 1 : n <= 16 ? 2 : 3;
 
-  // Sentences under the chart: same formulas as the proof of concept, complete years only.
+  // Sentences under the chart: same formulas as the proof of concept, complete years only. The VIIRS-era mean is from
+  // `harmonized` (eraMeans, as JumpStat), so a 2012 that starts 20 Jan doesn't pull it down.
   const era = eraMeans(D);
   const s = D.score;
   const note =
     mode === "raw"
-      ? `Naively stitched record. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years): ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire changed.`
+      ? `Naively stitched record. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by the model): ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire changed.`
       : `Hold-out ${h0}-${h1} (the model never saw these years): mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for a single constant factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`;
 
   const legend: { color: string; label: string; kind?: "dash" | "ring" }[] =
@@ -105,7 +108,7 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
         ]
       : [
           { color: "var(--primary)", label: "Back-cast VIIRS-equivalent, 5-95% band" },
-          { color: "var(--viirs)", label: "VIIRS observed" },
+          { color: "var(--viirs)", label: `VIIRS observed (1-19 Jan ${VIIRS_FROM} from the model)` },
           { color: "var(--primary)", label: `Hold-out prediction ${h0}-${h1}`, kind: "dash" },
         ];
   for (const i of tail) legend.push({ color: "var(--viirs)", label: `${partialLabel(D, i)}, partial year`, kind: "ring" });
@@ -222,12 +225,12 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
                 <path d={band(0, i2012 + 1)} fill="var(--primary)" opacity={0.18} className="chart-fade" />
                 <path d={band(i2020, holdEnd)} fill="var(--primary)" opacity={0.18} className="chart-fade" />
                 <path d={path(backcast, 0, i2012 + 1)} pathLength={1} fill="none" stroke="var(--primary)" strokeWidth={2.25} className="chart-draw" />
-                <path d={path(D.viirs, i2012, end)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.25} className="chart-draw" />
+                <path d={path(D.harmonized, i2012, end)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.25} className="chart-draw" />
                 <path d={path(D.pred, i2020, holdEnd)} fill="none" stroke="var(--primary)" strokeWidth={2.25} strokeDasharray="5 4" className="chart-fade" />
                 {n === 1 && (a < i2012 || inHold(a)) && (
                   <line x1={x(a)} x2={x(a)} y1={y(D.lo[a])} y2={y(D.hi[a])} stroke="var(--primary)" strokeWidth={6} opacity={0.25} />
                 )}
-                {n === 1 && a < end && <Dot cx={x(a)} cy={y(a < i2012 ? D.pred[a] : (D.viirs[a] ?? 0))} color={a < i2012 ? "var(--primary)" : "var(--viirs)"} />}
+                {n === 1 && a < end && <Dot cx={x(a)} cy={y(a < i2012 ? D.pred[a] : D.harmonized[a])} color={a < i2012 ? "var(--primary)" : "var(--viirs)"} />}
               </g>
             )}
 
@@ -310,6 +313,7 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
             <th scope="col">MODIS</th>
             <th scope="col">VIIRS observed</th>
             <th scope="col">VIIRS-equivalent (model)</th>
+            <th scope="col">Harmonized record</th>
             <th scope="col">5th percentile</th>
             <th scope="col">95th percentile</th>
           </tr>
@@ -321,10 +325,11 @@ export function RecordChart({ data, region, years }: { data: Annual; region: str
               <td>{fmt(D.modis[i])}</td>
               <td>{D.viirs[i] == null ? "none" : fmt(D.viirs[i]!)}</td>
               {isPartial(D, i) ? (
-                <td colSpan={3}>not shown: partial year, outside the hold-out</td>
+                <td colSpan={4}>not shown: partial year, outside the hold-out</td>
               ) : (
                 <>
                   <td>{fmt(D.pred[i])}</td>
+                  <td>{fmt(D.harmonized[i])}{D.viirs_partial[i] === 1 ? " (observed VIIRS part year + model)" : ""}</td>
                   <td>{fmt(D.lo[i])}</td>
                   <td>{fmt(D.hi[i])}</td>
                 </>
@@ -344,7 +349,7 @@ function Dot({ cx, cy, color }: { cx: number; cy: number; color: string }) {
 }
 
 function readoutRows(D: Annual, i: number, mode: Mode, hold: boolean): [string, string][] {
-  const v = D.viirs[i];
+  const v = D.viirs[i], blended = D.viirs_partial[i] === 1;
   const through: [string, string][] = isPartial(D, i) ? [["Data through", dayLabel(D.data_through)]] : [];
   if (mode === "raw") {
     const rows: [string, string][] = [["MODIS", fmt(D.modis[i])]];
@@ -353,7 +358,9 @@ function readoutRows(D: Annual, i: number, mode: Mode, hold: boolean): [string, 
   }
   const band = `${fmt(D.lo[i])} - ${fmt(D.hi[i])}`;
   if (v == null) return [["VIIRS-equivalent", fmt(D.pred[i])], ["5-95% band", band], ...through];
-  const rows: [string, string][] = [["VIIRS observed", fmt(v)]];
+  const rows: [string, string][] = blended
+    ? [["Harmonized", fmt(D.harmonized[i])], ["VIIRS observed (part year)", fmt(v)]]
+    : [["VIIRS observed", fmt(v)]];
   if (hold) rows.push(["Model prediction", fmt(D.pred[i])], ["5-95% band", band]);
   return [...rows, ...through];
 }

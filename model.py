@@ -109,7 +109,8 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     nw = len(weeks)
     widx = (pd.Series(range(nw), index=pd.MultiIndex.from_tuples(weeks))
             .reindex(pd.MultiIndex.from_arrays([yrs, wks])).values)   # row -> kept-week index
-    no_viirs = np.array([week_start(*k) < VIIRS_START for k in weeks])[widx]
+    wk_nov = np.array([week_start(*k) < VIIRS_START for k in weeks])    # kept week starts before VIIRS existed
+    no_viirs = wk_nov[widx]
     istrain = w.year.isin(TRAIN).values & ~no_viirs                    # 2012 weeks 0-2 left out of training
 
     def fit(f, rows):
@@ -160,6 +161,10 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
     ann = pd.DataFrame({"modis_n": ysum(wk_modis), "viirs_n": ysum(wk_viirs), "mu": ysum(wk_pred)},
                        index=pd.Index(years, name="year"))
     ann["lo"], ann["hi"] = np.percentile(ysum(draws), [5, 95], axis=0)
+    # harmonized (ML-009): observed VIIRS for weeks starting on/after VIIRS_START, model mean for earlier weeks, so a
+    # year VIIRS only partly covers (2012: from 20 Jan) isn't published as a fake dip. Other years: viirs ?? pred.
+    ann["harmonized"] = ysum(np.where(wk_nov, wk_pred, wk_viirs))
+    ann["viirs_partial"] = (ysum(wk_nov.astype(int)) > 0) & (ysum((~wk_nov).astype(int)) > 0)   # 1 = blended year
     ann.loc[ann.index < 2012, "viirs_n"] = np.nan
     nweeks = np.array([(wyear == yr).sum() for yr in years])
 
@@ -181,7 +186,9 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
            "viirs": [None if np.isnan(v) else float(v) for v in ann.viirs_n],
            "pred": [float(v) for v in ann.mu.round(1)], "lo": [float(v) for v in ann.lo],
            "hi": [float(v) for v in ann.hi], "score": score,
-           "partial": [int(n < 52) for n in nweeks], "data_through": week_end(*weeks[-1]).strftime("%Y-%m-%d")}
+           "partial": [int(n < 52) for n in nweeks], "data_through": week_end(*weeks[-1]).strftime("%Y-%m-%d"),
+           "harmonized": [float(v) for v in ann.harmonized.round(1)],
+           "viirs_partial": [int(v) for v in ann.viirs_partial]}
     os.makedirs(os.path.join(out_dir, region_id), exist_ok=True)
     # build both files before writing either, so a failure can't leave annual.json new and series.json stale
     bundle = series_bundle(region_id, weeks, {"modis": wk_modis, "viirs": wk_viirs, "pred": wk_pred}, draws)

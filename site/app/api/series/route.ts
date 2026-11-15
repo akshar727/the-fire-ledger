@@ -4,7 +4,9 @@ import { ApiError, csvHeaders, errorResponse, fetchJson, parseRegion } from "@/l
 // in Next 16 (Node.js is the default runtime; reading `request` makes this dynamic).
 
 type Num = (number | null)[];
-type Block = { start_year: number; modis?: Num; viirs?: Num; pred?: Num; lo?: Num; hi?: Num };
+// harmonized: annual.json only (ML-009; 2012 blends model weeks before VIIRS started). series.json blocks have none:
+// their viirs is already null before 20 Jan 2012, so viirs ?? pred is the harmonized value there.
+type Block = { start_year: number; modis?: Num; viirs?: Num; pred?: Num; lo?: Num; hi?: Num; harmonized?: Num };
 
 /**
  * from/to accepted formats: annual -> YYYY; monthly -> YYYY-MM; weekly -> YYYY
@@ -78,7 +80,8 @@ export async function GET(request: Request) {
       if (to !== null && p.slice(0, to.length) > to) return;
       const viirs = cell(b.viirs, i);
       const pred = cell(b.pred, i);
-      const vals = [cell(b.modis, i), viirs, pred, cell(b.lo, i), cell(b.hi, i), viirs ?? pred];
+      const harmonized = cell(b.harmonized, i) ?? viirs ?? pred;
+      const vals = [cell(b.modis, i), viirs, pred, cell(b.lo, i), cell(b.hi, i), harmonized];
       lines.push([p, ...vals.map((v) => (v === null ? "" : String(v)))].join(","));
     });
     return new Response(lines.join("\n") + "\n", {

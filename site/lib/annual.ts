@@ -13,7 +13,11 @@ export type Score = {
   sigma_year: number; // year-level error (RMS of log obs/pred, leave-one-year-out on the training years); sizes the band
 };
 
-/** Annual series, one entry per year. `viirs` is null before VIIRS starts. */
+/**
+ * Annual series, one entry per year. `viirs` is null before VIIRS starts and is the raw total (2012 starts 20 Jan).
+ * Two different "partial" flags: `partial` is the year still running (FE-006), `viirs_partial` a year VIIRS only
+ * observed part of, filled by the model for the rest (ML-009).
+ */
 export type Annual = {
   years: number[];
   modis: number[];
@@ -24,6 +28,9 @@ export type Annual = {
   score: Score;
   partial: number[]; // 1 = fewer than 52 kept weeks (the year still running, e.g. 2026)
   data_through: string; // YYYY-MM-DD, last day of the last kept week
+  // ML-009: published record = observed VIIRS weeks + model for weeks before VIIRS started (2012 weeks 0-2)
+  harmonized: number[];
+  viirs_partial: number[]; // 1 = blended year: observed VIIRS for part of it, model for the rest
 };
 
 /**
@@ -87,11 +94,13 @@ const mean = (v: number[]) => v.reduce((p, c) => p + c, 0) / v.length;
 
 /**
  * Mean detections per year in the MODIS era (before VIIRS_FROM) and the VIIRS era, complete years only, and their
- * ratio: the apparent jump the harmonization removes. A partial year would pull the VIIRS mean down.
+ * ratio: the apparent jump the harmonization removes. A partial year would pull the VIIRS mean down, so the
+ * still-running year is left out (FE-006) and the VIIRS era uses `harmonized`, which fills 1-19 January 2012 from
+ * the model (ML-009).
  */
 export function eraMeans(D: Annual): { modis: number; viirs: number; jump: number } {
   const end = completeEnd(D);
   const modis = mean(D.modis.filter((_, i) => i < end && D.years[i] < VIIRS_FROM));
-  const viirs = mean(D.viirs.flatMap((v, i) => (i < end && v != null ? [v] : [])));
+  const viirs = mean(D.harmonized.filter((_, i) => i < end && D.years[i] >= VIIRS_FROM));
   return { modis, viirs, jump: viirs / modis };
 }

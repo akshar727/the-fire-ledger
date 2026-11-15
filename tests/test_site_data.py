@@ -181,6 +181,22 @@ class SiteDataTests(unittest.TestCase):
                     self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["partial"]), f"{p}: partial values")
                 if "data_through" in a:
                     self.assertTrue(iso(a["data_through"]), f"{p}: data_through")
+                # ML-009: harmonized (no nulls) and the blended-year flag; harmonized = viirs ?? pred except blended years
+                self.check_arrays(p, a, ["years", "harmonized", "viirs_partial"])
+                self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["viirs_partial"]), f"{p}: viirs_partial")
+                for i, (v, pr, h, bl) in enumerate(zip(a["viirs"], a["pred"], a["harmonized"], a["viirs_partial"])):
+                    if bl:
+                        # blended year = model for weeks with null weekly viirs + observed for the rest (series.json)
+                        self.assertIsNotNone(v, f"{p}: blended year {a['years'][i]} has no observed VIIRS")
+                        sp = d / "series.json"
+                        if sp.is_file():
+                            wk = load_json(sp)["weekly"]
+                            k = (a["years"][i] - wk["start_year"]) * 52
+                            want = sum(pw if vw is None else vw
+                                       for vw, pw in zip(wk["viirs"][k:k + 52], wk["pred"][k:k + 52]))
+                            self.assertAlmostEqual(h, want, delta=1, msg=f"{p}: blended {a['years'][i]} vs weekly")
+                    else:
+                        self.assertAlmostEqual(h, pr if v is None else v, delta=0.05, msg=f"{p}: harmonized {a['years'][i]}")
         if not ran:
             self.skipTest("no region has data yet")
 

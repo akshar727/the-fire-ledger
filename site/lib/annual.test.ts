@@ -18,10 +18,13 @@ import {
 
 const score = { mape_model: 1, mape_ratio: 2, coverage: 2, n_hold: 2, ratio: 3, alpha: 0.1, weekly_r: 0.9, sigma_year: 0.1 };
 
-/** 2010-2021: MODIS 100 a year, VIIRS 300 from 2012, last year partial with VIIRS 30. */
+/**
+ * 2010-2021: MODIS 100 a year, VIIRS 300 from 2012, last year partial with VIIRS 30. 2012 is blended (ML-009): raw
+ * VIIRS 280 from 20 Jan, harmonized 300 with the model filling 1-19 Jan.
+ */
 function sample(): Annual {
   const years = Array.from({ length: 12 }, (_, k) => 2010 + k);
-  const viirs = years.map((y) => (y < VIIRS_FROM ? null : y === 2021 ? 30 : 300));
+  const viirs = years.map((y) => (y < VIIRS_FROM ? null : y === 2021 ? 30 : y === VIIRS_FROM ? 280 : 300));
   return {
     years,
     modis: years.map((y) => (y === 2021 ? 10 : 100)),
@@ -32,6 +35,8 @@ function sample(): Annual {
     score,
     partial: years.map((y) => (y === 2021 ? 1 : 0)),
     data_through: "2021-03-04",
+    harmonized: years.map((y, i) => (y === VIIRS_FROM ? 300 : (viirs[i] ?? 290))),
+    viirs_partial: years.map((y) => (y === VIIRS_FROM ? 1 : 0)),
   };
 }
 
@@ -45,10 +50,11 @@ test("completeEnd and lastCompleteYear stop before trailing partial years", () =
   assert.equal(lastCompleteYear(full), 2021);
 });
 
-test("eraMeans leaves the partial year out", () => {
+test("eraMeans leaves the partial year out and uses the harmonized 2012", () => {
   const e = eraMeans(sample());
   assert.equal(e.modis, 100);
-  assert.equal(e.viirs, 300); // with 2021 in it would be (9 * 300 + 30) / 10 = 273
+  // with 2021 in it would be (9 * 300 + 30) / 10 = 273; with the raw 2012 it would be (280 + 8 * 300) / 9 = 297.8
+  assert.equal(e.viirs, 300);
   assert.equal(e.jump, 3);
 });
 
@@ -86,9 +92,11 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(h0, HOLD_FROM);
     assert.ok(h1 <= lastCompleteYear(D));
     assert.ok(D.years.includes(VIIRS_FROM) && D.viirs[D.years.indexOf(VIIRS_FROM) - 1] === null);
-    // the jump uses complete years only
+    // the jump uses complete years only, from the harmonized record (ML-009)
+    assert.equal(D.harmonized.length, D.years.length);
+    assert.equal(D.viirs_partial.length, D.years.length);
     const e = eraMeans(D);
-    const complete = D.viirs.filter((v, i) => v != null && i < end) as number[];
+    const complete = D.harmonized.filter((_, i) => D.years[i] >= VIIRS_FROM && i < end);
     assert.equal(e.viirs, complete.reduce((p, c) => p + c, 0) / complete.length);
   });
 }
