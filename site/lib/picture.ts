@@ -3,7 +3,7 @@
 // `calendarBody` draws the burn calendar table as SVG. Colours arrive already resolved (hex or rgb), so the file opens
 // the same in a browser, an image viewer or a vector editor. The browser half (serialising the live chart, PNG) is in
 // lib/picture-dom.ts.
-import { compact, MONTHS, type CalendarGrid, type CalendarStats } from "./series.ts";
+import { compact, MONTHS, weekMonthGroups, type CalendarGrid, type CalendarStats } from "./series.ts";
 
 /** Plain-text FIRMS acknowledgment (same words as components/FirmsAcknowledgment.tsx). */
 export const FIRMS_CREDIT =
@@ -147,23 +147,32 @@ export type CalendarColors = {
   theme: PictureTheme;
 };
 
-const CELL_W = 52, CELL_H = 24, GAP = 3, YEAR_W = 78, HEAD_H = 22;
+const YEAR_W = 78, HEAD_H = 22;
 
 /**
  * The burn calendar as SVG: one row per year, 12 month cells with the compact value, ▲/▼ for flagged months, a hatch
  * for months with no data, dimmed months outside the selected dates, and the median / middle-half rows when the
- * calendar statistics exist. Returns the body for composePicture.
+ * calendar statistics exist. Week view (FE-016): 52 narrow cells without labels, month names over the weeks that start
+ * in them, a dashed outline on the partial last week, no statistics rows. Returns the body for composePicture.
  */
 export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefined, colors: CalendarColors) {
   const t = colors.theme;
-  const width = YEAR_W + 12 * (CELL_W + GAP);
+  const week = grid.view === "week";
+  const CELL_W = week ? 14 : 52, CELL_H = week ? 14 : 24, GAP = week ? 2 : 3;
+  if (week) stats = undefined;
+  const width = YEAR_W + grid.cols * (CELL_W + GAP);
   const out: string[] = [
     `<defs><pattern id="nodata" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="8" fill="${esc(t.muted)}"/></pattern></defs>`,
   ];
   const cx = (c: number) => YEAR_W + c * (CELL_W + GAP);
-  MONTHS.forEach((m, c) => {
-    out.push(`<text x="${cx(c) + CELL_W / 2}" y="${HEAD_H - 8}" text-anchor="middle" font-family="${esc(SANS)}" font-size="11" fill="${esc(t.mutedFg)}">${m}</text>`);
-  });
+  if (week)
+    weekMonthGroups().forEach(({ month, first }) => {
+      out.push(`<text x="${cx(first)}" y="${HEAD_H - 8}" font-family="${esc(SANS)}" font-size="11" fill="${esc(t.mutedFg)}">${MONTHS[month - 1]}</text>`);
+    });
+  else
+    MONTHS.forEach((m, c) => {
+      out.push(`<text x="${cx(c) + CELL_W / 2}" y="${HEAD_H - 8}" text-anchor="middle" font-family="${esc(SANS)}" font-size="11" fill="${esc(t.mutedFg)}">${m}</text>`);
+    });
 
   let y = HEAD_H;
   const cellText = (x: number, yy: number, text: string, ink: string, weight = "400") =>
@@ -185,7 +194,9 @@ export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefine
       const { bg, ink } = colors.cell(cell.value);
       out.push(`<g${dim}>`);
       out.push(`<rect x="${x}" y="${y}" width="${CELL_W}" height="${CELL_H}" rx="2" fill="${esc(bg)}"/>`);
-      out.push(cellText(x, y, compact(cell.value), ink));
+      if (cell.partial)
+        out.push(`<rect x="${x + 0.75}" y="${y + 0.75}" width="${CELL_W - 1.5}" height="${CELL_H - 1.5}" rx="2" fill="none" stroke="${esc(t.fg)}" stroke-width="1.5" stroke-dasharray="2 1.5"/>`);
+      if (!week) out.push(cellText(x, y, compact(cell.value), ink));
       if (cell.flag === 1) out.push(`<path d="M${x + CELL_W - 6} ${y + 2}L${x + CELL_W - 2.5} ${y + 7}L${x + CELL_W - 9.5} ${y + 7}Z" fill="${esc(ink)}"/>`);
       if (cell.flag === -1) out.push(`<path d="M${x + CELL_W - 9.5} ${y + 2}L${x + CELL_W - 2.5} ${y + 2}L${x + CELL_W - 6} ${y + 7}Z" fill="${esc(ink)}"/>`);
       out.push(`</g>`);

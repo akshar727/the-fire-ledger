@@ -109,3 +109,28 @@ test("pictureName is lower case and filesystem-safe", () => {
   assert.equal(pictureName("record", "NW India (Punjab, Haryana)", "raw", "2001-2026"), "record_nw-india-punjab-haryana_raw_2001-2026");
   assert.equal(pictureName("calendar", "ghana", "2001-01-01", "2026-11-02"), "calendar_ghana_2001-01-01_2026-11-02");
 });
+
+test("calendarBody week view (FE-016): 52 unlabelled cells per row, month headers, dashed partial week, no median", () => {
+  const b = structuredClone(fixture);
+  const n = 52 + 20;
+  b.weekly = {
+    start_year: 2001,
+    weeks_per_year: 52,
+    modis: Array(n).fill(1),
+    viirs: Array(n).fill(null),
+    pred: Array.from({ length: n }, (_, i) => 100 + i),
+    lo: Array(n).fill(1),
+    hi: Array(n).fill(9),
+    last_week_days: 4,
+  };
+  const grid = buildGrid(b, "week");
+  const body = calendarBody(grid, fixture.calendar, { theme, cell: () => ({ bg: "#ff8800", ink: "#000" }) });
+  const t = texts(body.body);
+  assert.deepEqual(t.filter((s) => /^[A-Z][a-z]{2}$/.test(s)), ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]);
+  assert.ok(!t.some((s) => /^\d/.test(s) && !/^20\d\d/.test(s)), "no value labels in week cells");
+  assert.ok(!t.includes("Median"), "monthly statistics are not drawn on weeks");
+  assert.equal((body.body.match(/fill="#ff8800"/g) ?? []).length, n);
+  assert.equal((body.body.match(/fill="url\(#nodata\)"/g) ?? []).length, 52 * 2 - n);
+  assert.equal((body.body.match(/stroke-dasharray/g) ?? []).length, 1);
+  assert.equal(body.width, 78 + 52 * 16);
+});

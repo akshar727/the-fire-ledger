@@ -3,29 +3,38 @@
 // Burn calendar: year x month heatmap of harmonized monthly detections from series.json (Series bundle contract),
 // with per-month median / spread and anomaly marks when the ML-005 `calendar` section is present.
 // FE-015: "Download picture" saves the visible rows as PNG or SVG (lib/picture.ts calendarBody).
+// FE-016: Month / Week toggle; the week view draws 52 columns from `weekly` (no medians or flags: those are per month).
 import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { fetchSeries, type RegionId, type SeriesResult } from "@/lib/data";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
 import { REGIONS } from "@/lib/regions";
+import type { CalendarView as View } from "@/lib/selection";
 import {
   buildGrid,
   compact,
+  dayMonth,
   MONTHS,
   MONTHS_LONG,
+  periodLabel,
   rampColor,
+  remapColumn,
   rampPosition,
   sliceGrid,
   times,
+  weekMonthGroups,
   type CalendarCell,
   type CalendarGrid,
   type CalendarStats,
 } from "@/lib/series";
+
+const WEEK_GROUPS = weekMonthGroups();
 
 type Mode = "light" | "dark";
 const darkQuery = "(prefers-color-scheme: dark)";
@@ -44,7 +53,19 @@ function useColorMode(): Mode {
 
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
-export function BurnCalendar({ region, from, to }: { region: RegionId; from: string; to: string }) {
+export function BurnCalendar({
+  region,
+  from,
+  to,
+  view = "month",
+  onView,
+}: {
+  region: RegionId;
+  from: string;
+  to: string;
+  view?: View;
+  onView?: (view: View) => void;
+}) {
   // results are tagged with the request they answer, so switching region or retrying shows the skeleton, never the
   // previous region's grid
   const [loaded, setLoaded] = useState<{ key: string; result: SeriesResult } | null>(null);
@@ -63,26 +84,58 @@ export function BurnCalendar({ region, from, to }: { region: RegionId; from: str
   if (result == null) return <CalendarSkeleton />;
   if (result.status === "missing") return <NotPublished />;
   if (result.status === "error") return <LoadError message={result.message} onRetry={retry} />;
-  // keyed by the selection so focus and readout reset when the visible rows change
+  const bundle = result.bundle;
+  const monthGrid = buildGrid(bundle);
+  // a bundle without `weekly` (older exports, the sample fixture) stays on the month view and hides the toggle
+  const week = view === "week" && !!bundle.weekly;
+  // keyed by the selection so focus and readout reset when the visible rows change; a view switch keeps the component
+  // (and keyboard focus on the toggle) and moves the roving focus to the matching column
   return (
     <CalendarView
       key={`${region}:${from}:${to}`}
-      grid={sliceGrid(buildGrid(result.bundle), from, to)}
-      stats={result.bundle.calendar}
+      grid={sliceGrid(week ? buildGrid(bundle, "week") : monthGrid, from, to)}
+      latestMonth={monthGrid.latest}
+      stats={bundle.calendar}
       label={{ region, from, to }}
+      onView={bundle.weekly ? onView : undefined}
     />
   );
 }
 
 type Label = { region: RegionId; from: string; to: string };
 
-function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: CalendarStats; label: Label }) {
+function CalendarView({
+  grid,
+  latestMonth,
+  stats: monthStats,
+  label,
+  onView,
+}: {
+  grid: CalendarGrid;
+  latestMonth: CalendarCell | null;
+  stats?: CalendarStats;
+  label: Label;
+  onView?: (view: View) => void;
+}) {
   const mode = useColorMode();
+  const week = grid.view === "week";
+  const stats = week ? undefined : monthStats; // medians and flags are per month
+  const unit = week ? "week" : "month";
   const [active, setActive] = useState<CalendarCell | null>(null);
   const [focus, setFocus] = useState<[number, number]>([grid.rows.length - 1, 0]);
   const [announce, setAnnounce] = useState(""); // screen readers hear keyboard moves only, not every mouse hover
+  const [shownView, setShownView] = useState(grid.view);
+  if (shownView !== grid.view) {
+    // adjust state while rendering (React's "storing information from previous renders" pattern): the readout's cell
+    // belongs to the other grid, and the focused column maps month <-> first week of that month
+    setShownView(grid.view);
+    setActive(null);
+    setAnnounce(`Showing the ${week ? "weekly" : "monthly"} view.`);
+    const [r, c] = focus;
+    setFocus([Math.min(r, grid.rows.length - 1), remapColumn(c, week ? "week" : "month")]);
+  }
   const color = (v: number) => rampColor(rampPosition(v, grid.max), mode);
-  const latest = grid.latest;
+  const partialCell = grid.rows.flat().find((c) => c.partial && c.inRange) ?? null;
 
   const makePicture = () => {
     const theme = pageTheme();
@@ -105,15 +158,17 @@ function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: Cale
     const first = grid.firstObserved;
     return composePicture({
       title: `Burn calendar, ${REGIONS[label.region]}`,
-      subtitle: `Harmonized fire detections per month (VIIRS scale), ${label.from} to ${label.to}`,
+      subtitle: `Harmonized fire detections per ${unit} (VIIRS scale), ${label.from} to ${label.to}`,
       legend,
       body: body.body,
       bodyWidth: body.width,
       bodyHeight: body.height,
       note: [
-        first && `Before ${monthName(first)}: model back-cast from MODIS. From ${monthName(first)}: VIIRS observed.`,
+        first && `Before ${periodName(first)}: model back-cast from MODIS. From ${periodName(first)}: VIIRS observed.`,
         stats && `Median and middle half over ${stats.baseline_years[0]}-${stats.baseline_years[1]}.`,
-        grid.rows.some((r) => r.some((c) => !c.inRange && c.value != null)) && "Faded months are outside the selected dates.",
+        week && "Week w of a year is days 7w+1 to 7w+7; the last week runs to 31 December.",
+        partialCell && `Dashed outline: ${describePartial(partialCell)}.`,
+        grid.rows.some((r) => r.some((c) => !c.inRange && c.value != null)) && `Faded ${unit}s are outside the selected dates.`,
       ]
         .filter(Boolean)
         .join(" "),
@@ -123,13 +178,14 @@ function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: Cale
 
   const onKey = (e: KeyboardEvent<HTMLTableElement>) => {
     const [r, c] = focus;
+    const last = grid.cols - 1;
     const next: Record<string, [number, number]> = {
       ArrowUp: [Math.max(0, r - 1), c],
       ArrowDown: [Math.min(grid.rows.length - 1, r + 1), c],
       ArrowLeft: [r, Math.max(0, c - 1)],
-      ArrowRight: [r, Math.min(11, c + 1)],
+      ArrowRight: [r, Math.min(last, c + 1)],
       Home: [r, 0],
-      End: [r, 11],
+      End: [r, last],
     };
     const to = next[e.key];
     if (!to) return;
@@ -142,40 +198,83 @@ function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: Cale
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end">
-        {latest && <LatestCard cell={latest} stats={stats} />}
-        <Legend max={grid.max} mode={mode} hasFlags={!!stats} firstObserved={grid.firstObserved} />
+        {latestMonth && <LatestCard cell={latestMonth} stats={monthStats} />}
+        <Legend max={grid.max} mode={mode} unit={unit} hasFlags={!!stats} firstObserved={grid.firstObserved} partial={partialCell} />
       </div>
 
       <section aria-labelledby="calendar-heading" className="rounded-xl border bg-card p-4 sm:p-6">
-        <h2 id="calendar-heading" className="sr-only">
-          Harmonized detections by year and month
-        </h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <h2 id="calendar-heading" className="text-sm font-medium">
+            Harmonized detections by year and {unit}
+          </h2>
+          {onView && (
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              spacing={0}
+              value={grid.view}
+              onValueChange={(v) => (v === "month" || v === "week") && v !== grid.view && onView(v)}
+              aria-label="Calendar resolution"
+            >
+              {(["month", "week"] as const).map((v) => (
+                <ToggleGroupItem
+                  key={v}
+                  value={v}
+                  className="h-8 px-3 capitalize data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]"
+                >
+                  {v}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          )}
+        </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
-          {active ? describe(active, stats) : "Hover a month, or focus the table and use the arrow keys, to read its value."}
+          {active ? describe(active, stats) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
         </p>
         <p className="sr-only" aria-live="polite">
           {announce}
         </p>
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <table
-            className="w-full min-w-[720px] border-separate border-spacing-[3px] font-mono text-xs tabular-nums"
+            className={`w-full font-mono text-xs tabular-nums ${week ? "min-w-[900px] table-fixed border-separate border-spacing-[2px]" : "min-w-[720px] border-separate border-spacing-[3px]"}`}
             onKeyDown={onKey}
             onMouseLeave={() => setActive(null)}
           >
             <caption className="sr-only">
-              Harmonized monthly fire detections. Values are VIIRS observations from{" "}
-              {grid.firstObserved ? monthName(grid.firstObserved) : "2012"} and model back-casts before.
+              Harmonized {week ? "weekly" : "monthly"} fire detections. Values are VIIRS observations from{" "}
+              {grid.firstObserved ? periodName(grid.firstObserved) : "2012"} and model back-casts before.
             </caption>
+            {week && (
+              // fixed layout + one <col> per week keeps all 52 columns the same width (the month headers span several)
+              <colgroup>
+                <col className="w-24" />
+                {Array.from({ length: grid.cols }, (_, i) => (
+                  <col key={i} />
+                ))}
+              </colgroup>
+            )}
             <thead>
               <tr>
                 <th scope="col" className="w-20 text-left font-sans font-normal text-muted-foreground">
                   <span className="sr-only">Year</span>
                 </th>
-                {MONTHS.map((m) => (
-                  <th key={m} scope="col" className="pb-1 font-sans font-normal text-muted-foreground">
-                    {m}
-                  </th>
-                ))}
+                {week
+                  ? WEEK_GROUPS.map((g) => (
+                      <th
+                        key={g.month}
+                        scope="col"
+                        colSpan={g.span}
+                        className="pb-1 text-left font-sans font-normal text-muted-foreground"
+                      >
+                        {MONTHS[g.month - 1]}
+                      </th>
+                    ))
+                  : MONTHS.map((m) => (
+                      <th key={m} scope="col" className="pb-1 font-sans font-normal text-muted-foreground">
+                        {m}
+                      </th>
+                    ))}
               </tr>
             </thead>
             <tbody>
@@ -205,9 +304,9 @@ function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: Cale
                             setActive(cell);
                             setAnnounce(describe(cell, stats));
                           }}
-                          className={`h-8 rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
+                          className={`${week ? "h-5" : "h-8"} rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
                         >
-                          <span className="sr-only">no data</span>
+                          <span className="sr-only">{week && `${periodLabel(cell)}: `}no data</span>
                         </td>
                       );
                     const { bg, ink } = color(cell.value);
@@ -223,9 +322,11 @@ function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: Cale
                           setAnnounce(describe(cell, stats));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className={`relative h-8 rounded-sm text-center outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
+                        className={`relative ${week ? "h-5" : "h-8"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
                       >
-                        {compact(cell.value)}
+                        {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
+                        {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
+                        {cell.partial && <span className="sr-only">, partial</span>}
                         {cell.flag !== 0 && <FlagMark flag={cell.flag} />}
                       </td>
                     );
@@ -264,15 +365,22 @@ function CalendarView({ grid, stats, label }: { grid: CalendarGrid; stats?: Cale
             )}
           </table>
         </div>
-        {!stats && (
+        {week ? (
           <p className="mt-4 text-sm text-muted-foreground">
-            Monthly medians and unusual-month marks will appear once the calendar statistics are published.
+            Week w of a year is days 7w+1 to 7w+7, so weeks start on the same date every year and the last week runs to
+            31 December (8 or 9 days). Monthly medians and unusual-month marks are in the month view.
           </p>
+        ) : (
+          !stats && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Monthly medians and unusual-month marks will appear once the calendar statistics are published.
+            </p>
+          )
         )}
         <div className="mt-5">
           <DownloadPicture
             make={makePicture}
-            name={pictureName("calendar", label.region, label.from, label.to)}
+            name={pictureName("calendar", label.region, ...(week ? ["weekly"] : []), label.from, label.to)}
             what="burn calendar"
           />
         </div>
@@ -290,11 +398,19 @@ function FlagMark({ flag }: { flag: -1 | 1 }) {
   );
 }
 
+/** Short form for legends and notes: "the week of 22 Jan 2012", "February 2012". */
+const periodName = (cell: CalendarCell) => (cell.week == null ? monthName(cell) : `the week of ${dayMonth(cell.start)} ${cell.year}`);
+
+const describePartial = (cell: CalendarCell) =>
+  `${cell.week == null ? "partial month" : "partial week"}, data for ${cell.days} of its ${cell.length} days`;
+
 function describe(cell: CalendarCell, stats?: CalendarStats): string {
-  const when = `${MONTHS_LONG[cell.month - 1]} ${cell.year}${cell.inRange ? "" : " (outside the selected dates)"}`;
+  const long = cell.week != null && cell.length > 7 ? ` (${cell.length} days)` : "";
+  const when = `${periodLabel(cell)}${long}${cell.inRange ? "" : " (outside the selected dates)"}`;
   if (cell.value == null) return `${when}: no data in the record yet.`;
   const src = cell.observed ? "VIIRS observed" : "model back-cast";
   let s = `${when}: ${fmt(cell.value)} harmonized detections (${src}).`;
+  if (cell.partial) s += ` Partial ${cell.week == null ? "month" : "week"}: data for ${cell.days} of ${cell.length} days.`;
   if (stats && cell.anomaly != null) {
     s += ` ${times(cell.anomaly)} the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
     s += cell.flag === 1 ? ", marked unusually high." : cell.flag === -1 ? ", marked unusually low." : ".";
@@ -351,13 +467,17 @@ function LatestCard({ cell, stats }: { cell: CalendarCell; stats?: CalendarStats
 function Legend({
   max,
   mode,
+  unit,
   hasFlags,
   firstObserved,
+  partial,
 }: {
   max: number;
   mode: Mode;
+  unit: "month" | "week";
   hasFlags: boolean;
   firstObserved: CalendarCell | null;
+  partial: CalendarCell | null;
 }) {
   const steps = Array.from({ length: 24 }, (_, i) => rampColor(i / 23, mode).bg);
   // keep clear of the max label; with max 0 every tick would sit at 0, so show none
@@ -365,7 +485,7 @@ function Legend({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-4 text-sm">
-        <span className="font-medium">Detections per month</span>
+        <span className="font-medium">Detections per {unit}</span>
         <span className="text-muted-foreground">log scale</span>
       </div>
       <div className="relative">
@@ -402,9 +522,15 @@ function Legend({
           <span className="size-3 rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_3px,transparent_3px_6px)] ring-1 ring-border" />
           no data yet
         </li>
+        {partial && (
+          <li className="flex items-center gap-1.5">
+            <span className="size-3 rounded-sm outline-2 -outline-offset-2 outline-foreground outline-dashed" aria-hidden />
+            {describePartial(partial)} (to {dayMonth(partial.through)})
+          </li>
+        )}
         {firstObserved && (
           <li className="basis-full">
-            Before {monthName(firstObserved)}: model back-cast. From {monthName(firstObserved)}: VIIRS observed.
+            Before {periodName(firstObserved)}: model back-cast. From {periodName(firstObserved)}: VIIRS observed.
           </li>
         )}
       </ul>

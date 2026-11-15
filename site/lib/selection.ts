@@ -75,6 +75,20 @@ export function moveEnd(sel: { from: string; to: string }, end: "from" | "to", v
   return { from: v < sel.from ? v : sel.from, to: v };
 }
 
+/** Burn calendar resolution, kept in the URL as ?view=week (FE-016); month is the default and keeps no parameter. */
+export type CalendarView = "month" | "week";
+
+/** Reads ?view=; anything but "week" is the month view. */
+export const parseView = (params: URLSearchParams): CalendarView => (params.get("view") === "week" ? "week" : "month");
+
+/** The query string with the view set; other parameters are kept and the default view drops the parameter. */
+export function withView(params: URLSearchParams, view: CalendarView): URLSearchParams {
+  const next = new URLSearchParams(params);
+  if (view === "week") next.set("view", "week");
+  else next.delete("view");
+  return next;
+}
+
 /** Years with a point file that start before the selectable record (2000: partial year, MODIS Terra only). */
 export function yearsBefore(bounds: Bounds, pointYears: number[]): number[] {
   const first = Number(bounds.min.slice(0, 4));
