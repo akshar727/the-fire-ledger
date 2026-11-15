@@ -4,17 +4,20 @@
 // with per-month median / spread and anomaly marks when the ML-005 `calendar` section is present.
 // FE-015: "Download picture" saves the visible rows as PNG or SVG (lib/picture.ts calendarBody).
 // FE-016: Month / Week toggle; the week view draws 52 columns from `weekly` (no medians or flags: those are per month).
+// FE-013: PlayCalendar ("Hear the 2012 satellite jump") sets `data-playing` on the sounding cell; this file only styles it.
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DownloadPicture } from "@/components/DownloadPicture";
+import { PlayCalendar } from "@/components/PlayCalendar";
 import { fetchSeries, type RegionId, type SeriesResult } from "@/lib/data";
 import { calendarBody, composePicture, pictureName, type LegendItem } from "@/lib/picture";
 import { pageTheme, solidColor } from "@/lib/picture-dom";
 import { REGIONS } from "@/lib/regions";
+import { rawValues } from "@/lib/sonify";
 import type { CalendarView as View } from "@/lib/selection";
 import {
   buildGrid,
@@ -35,6 +38,10 @@ import {
 } from "@/lib/series";
 
 const WEEK_GROUPS = weekMonthGroups();
+// sounding cell (FE-013): a thick ring that wins over the focus ring, a small pop only when motion is welcome, and room
+// for the sticky readout when it is scrolled into view
+const PLAYING =
+  "data-playing:relative data-playing:z-10 data-playing:ring-[3px]! data-playing:ring-foreground! data-playing:ring-offset-2! data-playing:ring-offset-card! data-playing:motion-safe:scale-110 scroll-mt-32";
 
 type Mode = "light" | "dark";
 const darkQuery = "(prefers-color-scheme: dark)";
@@ -95,6 +102,7 @@ export function BurnCalendar({
       key={`${region}:${from}:${to}`}
       grid={sliceGrid(week ? buildGrid(bundle, "week") : monthGrid, from, to)}
       latestMonth={monthGrid.latest}
+      raw={rawValues(bundle, week ? "week" : "month")}
       stats={bundle.calendar}
       label={{ region, from, to }}
       onView={bundle.weekly ? onView : undefined}
@@ -107,12 +115,14 @@ type Label = { region: RegionId; from: string; to: string };
 function CalendarView({
   grid,
   latestMonth,
+  raw,
   stats: monthStats,
   label,
   onView,
 }: {
   grid: CalendarGrid;
   latestMonth: CalendarCell | null;
+  raw: (number | null)[];
   stats?: CalendarStats;
   label: Label;
   onView?: (view: View) => void;
@@ -124,6 +134,7 @@ function CalendarView({
   const [active, setActive] = useState<CalendarCell | null>(null);
   const [focus, setFocus] = useState<[number, number]>([grid.rows.length - 1, 0]);
   const [announce, setAnnounce] = useState(""); // screen readers hear keyboard moves only, not every mouse hover
+  const table = useRef<HTMLTableElement>(null);
   const [shownView, setShownView] = useState(grid.view);
   if (shownView !== grid.view) {
     // adjust state while rendering (React's "storing information from previous renders" pattern): the readout's cell
@@ -229,6 +240,9 @@ function CalendarView({
             </ToggleGroup>
           )}
         </div>
+        <div className="mb-3">
+          <PlayCalendar grid={grid} raw={raw} table={table} onAnnounce={setAnnounce} />
+        </div>
         <p className="sticky top-16 z-10 -mx-1 mb-3 min-h-6 bg-card/95 px-1 py-2 text-sm text-muted-foreground backdrop-blur" aria-hidden>
           {active ? describe(active, stats) : `Hover a ${unit}, or focus the table and use the arrow keys, to read its value.`}
         </p>
@@ -237,6 +251,7 @@ function CalendarView({
         </p>
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <table
+            ref={table}
             className={`w-full font-mono text-xs tabular-nums ${week ? "min-w-[900px] table-fixed border-separate border-spacing-[2px]" : "min-w-[720px] border-separate border-spacing-[3px]"}`}
             onKeyDown={onKey}
             onMouseLeave={() => setActive(null)}
@@ -304,7 +319,7 @@ function CalendarView({
                             setActive(cell);
                             setAnnounce(describe(cell, stats));
                           }}
-                          className={`${week ? "h-5" : "h-8"} rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
+                          className={`${week ? "h-5" : "h-8"} rounded-sm bg-[repeating-linear-gradient(135deg,var(--muted)_0_4px,transparent_4px_8px)] outline-none focus-visible:ring-2 focus-visible:ring-ring ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                         >
                           <span className="sr-only">{week && `${periodLabel(cell)}: `}no data</span>
                         </td>
@@ -322,7 +337,7 @@ function CalendarView({
                           setAnnounce(describe(cell, stats));
                         }}
                         style={{ backgroundColor: bg, color: ink }}
-                        className={`relative ${week ? "h-5" : "h-8"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"}`}
+                        className={`relative ${week ? "h-5" : "h-8"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                       >
                         {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
                         {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
