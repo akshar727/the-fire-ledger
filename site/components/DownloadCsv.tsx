@@ -14,7 +14,7 @@ import { Disclosure } from "@/components/Disclosure";
 import { FirmsAcknowledgment } from "@/components/FirmsAcknowledgment";
 import { Button } from "@/components/ui/button";
 import { regionInfo } from "@/lib/data";
-import { isCountry, REGIONS } from "@/lib/regions";
+import { FIRMS_COUNTRY_ARCHIVE, isCountry, REGIONS } from "@/lib/regions";
 import {
   boxesOverlap,
   boxLabel,
@@ -30,7 +30,6 @@ import {
 import { useBox, useSelection } from "@/lib/use-selection";
 
 const fmt = (v: number) => v.toLocaleString("en-US");
-const FIRMS_COUNTRY_ARCHIVE = "https://firms.modaps.eosdis.nasa.gov/country/";
 
 export function DownloadCsv() {
   const { sel, bounds } = useSelection();

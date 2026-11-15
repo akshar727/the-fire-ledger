@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { JumpStat, RecordExplorer, RecordSkeleton } from "@/components/RecordExplorer";
-import { recordSpan } from "@/lib/data";
+import { recordSpan } from "@/lib/data-server";
 
 export const metadata: Metadata = { title: "Record" };
 

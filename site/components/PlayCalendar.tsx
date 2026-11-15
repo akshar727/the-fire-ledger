@@ -157,34 +157,38 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
   const year = tour?.switchYear ?? grid.firstObserved?.year ?? 2012;
 
   return (
-    // FE-025: button and its one-sentence caption on one line where they fit, no box, so the calendar starts higher
-    <div className="flex flex-col gap-x-4 gap-y-1.5 sm:flex-row sm:items-center">
-      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+    // FE-025: button and its one-sentence caption on one line where they fit, no box, so the calendar starts higher.
+    // The now-playing line has its own row of fixed height (one line, cut short if too long), so the text changing on
+    // every note never moves the caption or the calendar below it.
+    <div className="flex flex-col gap-y-1.5">
+      <div className="flex flex-col gap-x-4 gap-y-1.5 sm:flex-row sm:items-center">
         <Button
           size="sm"
           onClick={() => (playing ? stop() : play())}
           disabled={!tour}
           aria-describedby={captionId}
-          className="active:scale-[0.98]"
+          className="shrink-0 self-start active:scale-[0.98] sm:self-auto"
         >
           {playing ? <StopIcon weight="fill" aria-hidden /> : <SpeakerHighIcon weight="fill" aria-hidden />}
           {playing ? "Stop playing" : `Hear the ${year} satellite jump`}
         </Button>
-        <p className="font-mono text-xs text-muted-foreground tabular-nums" aria-hidden>
-          {now}
+        <p id={captionId} className="max-w-[70ch] text-xs leading-relaxed text-muted-foreground">
+          {tour ? (
+            <>
+              Plays {tour.years[0]} to {tour.years[1]} twice, <strong className="font-medium text-foreground">higher note = more fire</strong>:
+              the raw record steps up in {year} when VIIRS takes over, the harmonized one barely does, because it was the
+              satellite changing, not the fire.
+            </>
+          ) : (
+            `Choose dates that include ${year} and at least one year before it to hear the satellite jump.`
+          )}
         </p>
       </div>
-      <p id={captionId} className="max-w-[70ch] text-xs leading-relaxed text-muted-foreground">
-        {tour ? (
-          <>
-            Plays {tour.years[0]} to {tour.years[1]} twice, <strong className="font-medium text-foreground">higher note = more fire</strong>:
-            the raw record steps up in {year} when VIIRS takes over, the harmonized one barely does, because it was the
-            satellite changing, not the fire.
-          </>
-        ) : (
-          `Choose dates that include ${year} and at least one year before it to hear the satellite jump.`
-        )}
-      </p>
+      {tour && (
+        <p className="h-5 truncate font-mono text-xs leading-5 text-muted-foreground tabular-nums" aria-hidden>
+          {now}
+        </p>
+      )}
     </div>
   );
 }

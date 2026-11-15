@@ -146,6 +146,25 @@ class SiteDataTests(unittest.TestCase):
                 for k in ("short_name", "season", "caveat"):
                     self.assertTrue(k not in r or (isinstance(r[k], str) and r[k]), f"{p}:{rid}: {k}")
 
+    def test_index_record_fields_match_annual(self):
+        """DP-018: the site reads first_year / forward_through / ship from index.json before it fetches annual.json;
+        a stale copy means site_bundle.py was not run after model.py."""
+        self.assertFalse((DATA / "annual-all.json").exists(), "annual-all.json is gone since DP-018")
+        for r in self.index()["regions"]:
+            rid = r["id"]
+            a = DATA / rid / "annual.json"
+            with self.subTest(region=rid):
+                if not a.is_file():
+                    self.assertNotIn("first_year", r, f"{rid}: record fields but no annual.json")
+                    continue
+                d = load_json(a)
+                self.assertEqual(r.get("first_year"), d["years"][0], f"{rid}: first_year (rerun site_bundle.py)")
+                self.assertEqual(r.get("forward_through"), d.get("forward_through"), f"{rid}: forward_through")
+                if r.get("tier") == "country":
+                    self.assertEqual(r.get("ship"), d.get("ship"), f"{rid}: ship")
+                    # None until ML-023 writes the ship rule into country annual.json
+                    self.assertIn(r.get("ship"), ("model", "caveat", "ratio", "sparse", None), f"{rid}: ship label")
+
     def test_folders_match_regions(self):
         ids = set(self.region_ids())
         for d in sorted(x for x in DATA.iterdir() if x.is_dir()):

@@ -367,7 +367,7 @@ def main():
         ap.error(f"unknown region_id {bad}; choose from {ids}")
     for r in a.regions or ids:
         run(r, a.nboot, write_cells=True)
-    site_bundle.main()  # DP-009: refresh index.json countries and annual-all.json from the files just written
+    site_bundle.main()  # DP-009 / DP-018: refresh index.json countries and record fields from the files just written
 
 if __name__ == "__main__":
     main()

@@ -12,7 +12,7 @@ import { StoryLegend, StoryLine } from "@/components/story/StoryLine";
 import { StoryMotion } from "@/components/story/StoryMotion";
 import { StorySceneGate } from "@/components/story/StorySceneGate";
 import { dayLabel, HOLD_FROM, VIIRS_FROM } from "@/lib/annual";
-import { recordSpan } from "@/lib/data";
+import { recordSpan } from "@/lib/data-server";
 import { FIRE_SEASON } from "@/lib/regions";
 import { rampColor } from "@/lib/series";
 import { bigCount, jumpVerb, PIXEL_M, STORY_FIRE } from "@/lib/story";

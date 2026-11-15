@@ -25,7 +25,8 @@ export function RegionSwitcher({ orientation = "horizontal" }: { orientation?: "
         <ToggleGroupItem
           key={id}
           value={id}
-          className="h-9 px-4 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]"
+          // vertical: full-width rows in a narrow column, so long names ("NW India (Punjab, Haryana)") wrap inside the box
+          className={`${orientation === "vertical" ? "h-auto min-h-9 py-2 text-center leading-snug whitespace-normal" : "h-9"} px-4 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground active:scale-[0.98]`}
         >
           {REGIONS[id]}
         </ToggleGroupItem>

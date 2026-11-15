@@ -1,10 +1,10 @@
 "use client";
 
 // "See it from space" (FE-024): the NASA true-colour image of one day over the region's box, with our FIRMS detections of
-// that day drawn on top. Opens on request from the burn calendar (click or Enter on a month, or the latest-month card),
+// that day drawn on top. Always shown under the burn calendar (starting on the latest month; a click or Enter on a month, or the latest-month card, picks another),
 // starting on the month's peak fire day from peaks.json (DP-016). Imagery: NASA GIBS WMS, satellite picked by date
-// (lib/space.ts, facts from FE-023). Nothing loads until a month is chosen; hidden when a region has no peaks.json.
-import { ArrowLeftIcon, ArrowRightIcon, XIcon } from "@phosphor-icons/react";
+// (lib/space.ts, facts from FE-023). Hidden when a region has no peaks.json.
+import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { regionInfo, type RegionId } from "@/lib/data";
@@ -89,13 +89,11 @@ export function SpaceView({
   year,
   month,
   opened,
-  onClose,
 }: {
   region: RegionId;
   year: number;
   month: number;
-  opened: number; // bumps on every open, so re-opening the same month scrolls and focuses again
-  onClose: () => void;
+  opened: number; // 0 for the default month (no scroll); bumps on every pick, so picking the same month scrolls again
 }) {
   const bbox = regionInfo(region).bbox as Bbox;
   const size = imageSize(bbox, WIDTH);
@@ -116,6 +114,7 @@ export function SpaceView({
   const [dots, setDots] = useState(true);
 
   useEffect(() => {
+    if (opened === 0) return; // the default month on page load: stay where the reader is
     section.current?.scrollIntoView({ block: "start", behavior: "smooth" });
     heading.current?.focus({ preventScroll: true });
   }, [region, year, month, opened]);
@@ -213,9 +212,6 @@ export function SpaceView({
             </p>
           )}
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close the satellite view">
-          <XIcon aria-hidden /> Close
-        </Button>
       </div>
 
       <p className="sr-only" aria-live="polite">
