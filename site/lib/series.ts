@@ -78,6 +78,7 @@ export type CalendarCell = {
   observed: boolean; // true when the value is a VIIRS observation, false when it is the model's back-cast
   flag: Flag;
   anomaly: number | null;
+  inRange: boolean; // inside the selected dates (sliceGrid); always true from buildGrid
 };
 
 export type CalendarGrid = {
@@ -109,6 +110,7 @@ export function buildGrid(b: SeriesBundle): CalendarGrid {
         observed: v != null,
         flag: (i < n && b.calendar?.flag[i]) || 0,
         anomaly: i < n && b.calendar ? b.calendar.anomaly[i] : null,
+        inRange: true,
       };
       if (value != null) {
         max = Math.max(max, value);
@@ -122,6 +124,23 @@ export function buildGrid(b: SeriesBundle): CalendarGrid {
     rows.push(row);
   }
   return { years, rows, max, partialYears, latest, firstObserved };
+}
+
+/**
+ * Keeps the year rows that the selected dates touch and marks months outside them (`inRange: false`). Takes
+ * `YYYY-MM-DD` dates; a month counts as inside if any of its days is. `max`, `latest` and `firstObserved` still describe
+ * the whole record, so colours and the latest-month card don't change with the filter.
+ */
+export function sliceGrid(g: CalendarGrid, from: string, to: string): CalendarGrid {
+  const f = from.slice(0, 7), t = to.slice(0, 7);
+  const keep = g.years.map((y) => y >= Number(from.slice(0, 4)) && y <= Number(to.slice(0, 4)));
+  const ym = (c: CalendarCell) => `${c.year}-${String(c.month).padStart(2, "0")}`;
+  return {
+    ...g,
+    years: g.years.filter((_, r) => keep[r]),
+    rows: g.rows.filter((_, r) => keep[r]).map((row) => row.map((c) => ({ ...c, inRange: ym(c) >= f && ym(c) <= t }))),
+    partialYears: g.partialYears.filter((y) => keep[g.years.indexOf(y)]),
+  };
 }
 
 /** Position on the colour ramp, 0-1, on a log scale (monthly fire counts span three orders of magnitude). */

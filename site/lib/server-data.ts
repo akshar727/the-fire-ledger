@@ -5,7 +5,10 @@
 // switch to fs.readFile(path.join(process.cwd(), "public/data/...")) plus
 // outputFileTracingIncludes for "/api/**" in next.config.ts. Only this file would change.
 
-export const MAX_SPAN_DAYS = 366;
+import { MAX_SPAN_DAYS } from "./selection.ts";
+
+// kept in lib/selection.ts so the Download CSV button (client) uses the same limit
+export { MAX_SPAN_DAYS };
 export const REGION_RE = /^[a-z0-9-]+$/;
 export const HOTSPOT_HEADER =
   "date,time_utc,lat,lon,satellite,confidence,frp_mw,daynight";

@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { buildGrid, compact, parseSeries, rampColor, rampPosition, SeriesFormatError, times } from "./series.ts";
+import { buildGrid, compact, parseSeries, rampColor, rampPosition, SeriesFormatError, sliceGrid, times } from "./series.ts";
 
 const fixture = JSON.parse(readFileSync(new URL("../fixtures/series.portugal.sample.json", import.meta.url), "utf8"));
 
@@ -110,3 +110,15 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(g.firstObserved.month, 2);
   });
 }
+
+test("sliceGrid keeps the touched years and marks months outside the dates", () => {
+  const g = buildGrid(parseSeries(fixture));
+  const s = sliceGrid(g, "2017-06-15", "2018-02-01");
+  assert.deepEqual(s.years, [2017, 2018]);
+  assert.deepEqual(s.rows[0].map((c) => c.inRange), [false, false, false, false, false, true, true, true, true, true, true, true]);
+  assert.deepEqual(s.rows[1].map((c) => c.inRange), [true, true, false, false, false, false, false, false, false, false, false, false]);
+  // colours and the latest-month card still describe the whole record
+  assert.equal(s.max, g.max);
+  assert.equal(s.latest, g.latest);
+  assert.ok(g.rows.flat().every((c) => c.inRange));
+});
