@@ -18,6 +18,12 @@ import {
   weekMonthGroups,
   weeklyWindow,
   weekSpan,
+  dayAtShare,
+  driftDays,
+  seasonTiming,
+  timingDrift,
+  timingSentence,
+  type SeasonCum,
 } from "./series.ts";
 
 const fixture = JSON.parse(readFileSync(new URL("../fixtures/series.portugal.sample.json", import.meta.url), "utf8"));
@@ -438,4 +444,74 @@ test("remapColumn maps months and weeks both ways", () => {
   assert.equal(remapColumn(9, "week"), 39);
   for (let m = 0; m < 12; m++) assert.equal(remapColumn(remapColumn(m, "week"), "month"), m);
   for (let w = 0; w < 52; w++) assert.equal(remapColumn(w, "month"), Number(weekSpan(2001, w).start.slice(5, 7)) - 1);
+});
+
+// FE-017: season timing (10% / 50% / 90% dates) on synthetic seasons.
+const cumOf = (weekly: number[]) => weekly.reduce<number[]>((a, v) => [...a, (a.at(-1) ?? 0) + v], []);
+/** A season starting at week `startWeek` of `year` with all its fire spread evenly over weeks `from`..`to`. */
+const season = (year: number, startWeek: number, from: number, to: number): SeasonCum => ({
+  year,
+  label: String(year),
+  start: weekSpan(year, startWeek).start,
+  cum: cumOf(Array.from({ length: 52 }, (_, k) => (k >= from && k <= to ? 10 : 0))),
+});
+
+test("dayAtShare interpolates inside the crossing week", () => {
+  const cum = cumOf(Array(52).fill(7)); // 7 a week, 364 in all
+  assert.ok(Math.abs(dayAtShare(cum, 2001, 0, 0.1)! - 36.4) < 1e-9); // 35 after 5 weeks, 1.4 of the 6th week's 7
+  assert.ok(Math.abs(dayAtShare(cum, 2001, 0, 0.5)! - 182) < 1e-9);
+  // all the fire in season week 10: every share lands inside days 70-77
+  const one = cumOf(Array.from({ length: 52 }, (_, k) => (k === 10 ? 50 : 0)));
+  for (const q of [0.1, 0.5, 0.9]) assert.ok(dayAtShare(one, 2001, 0, q)! > 70 && dayAtShare(one, 2001, 0, q)! <= 77);
+  assert.equal(dayAtShare(Array(52).fill(0), 2001, 0, 0.5), null);
+  // 0.1 * 30 = 3.0000000000000004: a running total of exactly 3 must still count as reaching 10%
+  const edge = { year: 2001, label: "2001", start: "2001-01-01", cum: cumOf([...Array(30).fill(1), ...Array(22).fill(0)]) };
+  assert.equal(seasonTiming([edge], 0)[0].days[0], 20); // reached at the end of week 3 (day index 20), not in week 4
+});
+
+test("dayAtShare counts week 51's 8 or 9 days when the season crosses New Year", () => {
+  // season from week 50 of 2004 (leap year: week 51 is 9 days); all fire in season week 2 = week 0 of 2005
+  const cum = cumOf(Array.from({ length: 52 }, (_, k) => (k === 2 ? 70 : 0)));
+  assert.ok(Math.abs(dayAtShare(cum, 2004, 50, 0.5)! - (7 + 9 + 3.5)) < 1e-9);
+});
+
+test("seasonTiming gives the three dates and skips partial or fire-free seasons", () => {
+  const rows = seasonTiming(
+    [season(2001, 40, 10, 19), { ...season(2002, 40, 10, 19), cum: season(2002, 40, 10, 19).cum.slice(0, 30) }, season(2003, 40, 60, 60)],
+    40,
+  );
+  assert.equal(rows.length, 1); // 2002 has 30 weeks, 2003 has no fire
+  const r = rows[0];
+  assert.equal(r.start, "2001-10-08"); // week 40 starts on day 281
+  assert.equal(r.total, 100);
+  // 10 weeks of 10: 10% at the end of season week 10 (day 77), 50% after season week 14, 90% after season week 18;
+  // season week 11 is calendar week 51 (8 days in 2001), so the last two land one day later than 7 days a week gives
+  assert.deepEqual(r.days, [76, 105, 133]);
+  assert.deepEqual(r.dates, ["2001-12-23", "2002-01-21", "2002-02-18"]); // crosses New Year
+});
+
+test("timingDrift finds a season that starts later every year, and none in a fixed one", () => {
+  const later = seasonTiming(Array.from({ length: 20 }, (_, i) => season(2001 + i, 30, 5 + Math.floor(i / 2), 15 + Math.floor(i / 2))), 30);
+  const d = timingDrift(later, 0)!;
+  assert.ok(Math.abs(d.perDecade - 35) < 1e-9, String(d.perDecade)); // one week every two years
+  assert.ok(d.p < 0.001 && d.lo > 0);
+  assert.match(timingSentence(later, "Testland"), /^Onset is drifting in Testland: across 20 whole seasons \(2001 to 2020\) the first 10% of the season's fire arrives 35 days later per decade \(90% interval \+35 to \+35\), a consistent shift;/);
+  const fixed = seasonTiming(Array.from({ length: 20 }, (_, i) => season(2001 + i, 30, 5, 15)), 30);
+  const f = timingDrift(fixed, 0)!;
+  assert.equal(f.perDecade, 0);
+  assert.ok(Number.isNaN(f.p));
+  assert.equal(
+    timingSentence(fixed, "Testland"),
+    "Onset is not clearly drifting in Testland: across 20 whole seasons (2001 to 2020) the first 10% falls on the same day of the season every year; the halfway point falls on the same day of the season every year.",
+  );
+  assert.equal(timingDrift(fixed.slice(0, 4), 0), null);
+  assert.match(timingSentence(fixed.slice(0, 4), "Testland"), /^Too few whole fire seasons in Testland/);
+});
+
+test("driftDays wording", () => {
+  assert.equal(driftDays(6), "6 days later");
+  assert.equal(driftDays(-2.25), "2.3 days earlier");
+  assert.equal(driftDays(1), "1 day later");
+  assert.equal(driftDays(12.4), "12 days later");
+  assert.equal(driftDays(0.01), "no change");
 });

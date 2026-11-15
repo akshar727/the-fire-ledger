@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { backtest, cumAt, forecastFrom, outlook, quantile, seasons, seasonStartWeek, weekAtShare } from "./outlook.ts";
-import { parseSeries, type Weekly } from "./series.ts";
+import { parseSeries, seasonTiming, type Weekly } from "./series.ts";
 
 // Synthetic weekly record: every year has the same shape (quietest week 40, peak around week 10), scaled by its own
 // factor, so every season finishes with the same ratio and a forecast must be exact.
@@ -146,3 +146,14 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     for (const r of o.backtest) assert.ok(r.n >= 20 && r.mape >= 0 && r.covered <= r.n);
   });
 }
+
+test("FE-017: season timing on outlook().past leaves out the running season and a partial last week", () => {
+  // 12 years + 52 weeks whose last week has 3 of 7 days: that season is not complete, so it must not get dates
+  const o = outlook(synthetic(12, 52, 3), [2001, 2012])!;
+  assert.equal(o.current.complete, false);
+  const rows = seasonTiming(o.past, o.startWeek);
+  assert.equal(rows.length, o.past.length);
+  assert.ok(rows.every((r) => r.year !== o.current.year));
+  // every season has the same shape around week 10 (early to mid March): the halfway date is there every year
+  for (const r of rows) assert.match(r.dates[1], /^\d{4}-03-(0[5-9]|1\d)$/, `${r.label} ${r.dates[1]}`);
+});
