@@ -205,6 +205,7 @@ class SiteDataTests(unittest.TestCase):
                     self.assertTrue(is_int(w.get("start_year")), f"{p}: weekly.start_year")
                     self.assertEqual(w.get("weeks_per_year"), 52, f"{p}: weeks_per_year")
                     self.check_arrays(p, w, keys, nulls=("viirs",))
+                self.assertTrue("calendar" in s, f"{p}: missing calendar block (model.py writes it, ML-005)")
                 if "calendar" in s:
                     c = s["calendar"]
                     by = c.get("baseline_years")
