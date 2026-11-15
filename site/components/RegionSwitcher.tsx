@@ -7,17 +7,19 @@ import { REGION_LIST } from "@/lib/data";
 import { isRegionId, REGIONS } from "@/lib/regions";
 import { useSelection } from "@/lib/use-selection";
 
-export function RegionSwitcher() {
+/** `vertical` (FE-025): one button per row, full width, for the Record page's control column. */
+export function RegionSwitcher({ orientation = "horizontal" }: { orientation?: "horizontal" | "vertical" }) {
   const { sel, update } = useSelection();
   return (
     <ToggleGroup
       type="single"
       variant="outline"
       spacing={0}
+      orientation={orientation}
       value={sel.region}
       onValueChange={(v) => isRegionId(v) && v !== sel.region && update({ region: v })}
       aria-label="Region"
-      className="flex-wrap"
+      className={orientation === "vertical" ? "w-full" : "flex-wrap"}
     >
       {REGION_LIST.map(({ id }) => (
         <ToggleGroupItem

@@ -8,6 +8,7 @@
 // whole-year files and the analytics stay whole-region. A box in the URL that misses the region is ignored, and said so.
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { BoxFilter } from "@/components/BoxFilter";
+import { Disclosure } from "@/components/Disclosure";
 import { FirmsAcknowledgment } from "@/components/FirmsAcknowledgment";
 import { Button } from "@/components/ui/button";
 import { regionInfo } from "@/lib/data";
@@ -56,13 +57,11 @@ export function DownloadCsv() {
             )}{" "}
             from{" "}
             <span className="font-mono text-foreground tabular-nums">{sel.from}</span> to{" "}
-            <span className="font-mono text-foreground tabular-nums">{sel.to}</span> ({fmt(days)} days): date, time
-            (UTC), latitude, longitude, satellite, confidence, fire radiative power and day or night. Raw detections,
-            not harmonized.
+            <span className="font-mono text-foreground tabular-nums">{sel.to}</span> ({fmt(days)} days), raw detections,
+            not harmonized; analytics are the monthly counts with their 5-95% band.
           </p>
         </div>
 
-        <BoxFilter box={box} region={rbox} regionName={REGIONS[sel.region]} onApply={setBox} />
         {urlBox && !box && (
           <p className="max-w-[60ch] text-sm leading-relaxed">
             The box in this link ({boxLabel(urlBox)}) is outside {REGIONS[sel.region]}, so the CSV covers the whole
@@ -98,61 +97,72 @@ export function DownloadCsv() {
         {!fits && (
           <p id="download-limit" className="max-w-[60ch] text-sm leading-relaxed">
             One download covers up to {MAX_SPAN_DAYS} days. Narrow the dates or pick one year above, or use the yearly
-            files below.
+            files just below.
           </p>
         )}
-        <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-          Analytics: monthly MODIS, VIIRS and harmonized counts with the 5-95% band for the same months, and where each
-          value comes from (back-cast, observed, or forward link from NOAA-20/21), with the last month marked if it is
-          still running (also as{" "}
-          <a className="underline underline-offset-2 hover:text-foreground" href={`/data/${sel.region}/series.json`}>
-            JSON
-          </a>
-          ).
-        </p>
-        <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-          Pictures: &quot;Download picture&quot; under the record chart and the calendar saves what is on screen as PNG
-          or SVG, with title, legend and the FIRMS acknowledgment.
-        </p>
 
-        {years.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">
-              Whole-year files{box && <span className="font-normal text-muted-foreground"> (whole region)</span>}
+        {/* FE-025: everything past the two buttons on request; open when a box came in the link */}
+        <Disclosure summary="Whole-year files and more download options" defaultOpen={!!urlBox}>
+          <div className="flex flex-col gap-5">
+            <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+              Each CSV row: date, time (UTC), latitude, longitude, satellite, confidence, fire radiative power and day or
+              night.
             </p>
-            <ul className="flex flex-wrap gap-1.5" aria-label="Whole-year hotspot files">
-              {years.map((y) => (
-                <li key={y}>
-                  <a
-                    href={pointFileUrl(sel.region, y)}
-                    download
-                    className="inline-flex h-7 items-center rounded-md border px-2 font-mono text-xs tabular-nums transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                  >
-                    {y}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <BoxFilter box={box} region={rbox} regionName={REGIONS[sel.region]} onApply={setBox} />
+            <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+              Analytics: monthly MODIS, VIIRS and harmonized counts with the 5-95% band for the same months, and where each
+              value comes from (back-cast, observed, or forward link from NOAA-20/21), with the last month marked if it is
+              still running (also as{" "}
+              <a className="underline underline-offset-2 hover:text-foreground" href={`/data/${sel.region}/series.json`}>
+                JSON
+              </a>
+              ).
+            </p>
+            <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+              Pictures: &quot;Download picture&quot; under the record chart and the calendar saves what is on screen as PNG
+              or SVG, with title, legend and the FIRMS acknowledgment.
+            </p>
+
+            {years.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium">
+                  Whole-year files{box && <span className="font-normal text-muted-foreground"> (whole region)</span>}
+                </p>
+                <ul className="flex flex-wrap gap-1.5" aria-label="Whole-year hotspot files">
+                  {years.map((y) => (
+                    <li key={y}>
+                      <a
+                        href={pointFileUrl(sel.region, y)}
+                        download
+                        className="inline-flex h-7 items-center rounded-md border px-2 font-mono text-xs tabular-nums transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                      >
+                        {y}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {earlier.length > 0 && (
+              <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
+                Before the record starts:{" "}
+                {earlier.map((y, i) => (
+                  <span key={y}>
+                    {i > 0 && ", "}
+                    <a
+                      className="font-mono tabular-nums underline underline-offset-2 hover:text-foreground"
+                      href={pointFileUrl(sel.region, y)}
+                      download
+                    >
+                      {y}
+                    </a>
+                  </span>
+                ))}{" "}
+                (partial year, MODIS Terra only).
+              </p>
+            )}
           </div>
-        )}
-        {earlier.length > 0 && (
-          <p className="max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-            Before the record starts:{" "}
-            {earlier.map((y, i) => (
-              <span key={y}>
-                {i > 0 && ", "}
-                <a
-                  className="font-mono tabular-nums underline underline-offset-2 hover:text-foreground"
-                  href={pointFileUrl(sel.region, y)}
-                  download
-                >
-                  {y}
-                </a>
-              </span>
-            ))}{" "}
-            (partial year, MODIS Terra only).
-          </p>
-        )}
+        </Disclosure>
       </div>
 
       <div className="flex flex-col gap-2 border-t pt-6 text-xs text-muted-foreground md:border-t-0 md:border-l md:pt-0 md:pl-6">

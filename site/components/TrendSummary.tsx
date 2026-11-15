@@ -7,6 +7,7 @@
 // holds); the harmonized row never waits for it.
 import { useEffect, useRef, useState } from "react";
 
+import { Disclosure } from "@/components/Disclosure";
 import { VIIRS_FROM, type Annual } from "@/lib/annual";
 import { fetchSeries, type RegionId } from "@/lib/data";
 import { ALPHA, isSignificant, rangeTrend, rangeYears, slopeLabel, trendSentence, type TrendBlock, type TrendStat, type WeeklyRaw } from "@/lib/trend";
@@ -43,12 +44,15 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
         {sentence}
       </p>
       {r.years.length >= 3 && <SlopeIntervals stitched={r.stitched} harmonized={r.harmonized} boot={r.boot} />}
-      <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
-        Theil-Sen slope as a share of the median year, with its {Math.round(ALPHA * 100)}% interval; significant means a
-        Mann-Kendall p below 0.05. Partial years are left out. The stitched record glues raw MODIS (before 20 January{" "}
-        {VIIRS_FROM}) to raw VIIRS, so it carries the sensor change.
-        {r.boot && " The thin tick marks show how much the harmonized slope moves across the model's back-cast draws."}
-      </p>
+      {/* FE-025: the method note on request */}
+      <Disclosure summary="How the trend is measured">
+        <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
+          Theil-Sen slope as a share of the median year, with its {Math.round(ALPHA * 100)}% interval; significant means a
+          Mann-Kendall p below 0.05. Partial years are left out. The stitched record glues raw MODIS (before 20 January{" "}
+          {VIIRS_FROM}) to raw VIIRS, so it carries the sensor change.
+          {r.boot && " The thin tick marks show how much the harmonized slope moves across the model's back-cast draws."}
+        </p>
+      </Disclosure>
     </div>
   );
 }
