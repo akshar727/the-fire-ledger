@@ -126,7 +126,6 @@ class RawDirCase(unittest.TestCase):
         self.raw = os.path.join(self.tmp, "raw")
         os.makedirs(self.raw)
         self.region = {"id": "xx", "name": "X", "country": "XX", "bbox": self.BBOX, "fire_type": "wildfire"}
-        write_raw(self.raw, "modis_2012_XX.csv", [])  # load_region always probes this file first
         for patcher in (
             mock.patch.object(build, "RAW", self.raw),
             mock.patch.object(build, "SRC", {"modis": range(2020, 2021), "viirs-snpp": range(2020, 2021)}),
@@ -187,13 +186,81 @@ class LoadRegionTests(RawDirCase):
     def test_existing_files_never_downloaded(self):
         # fail_download is patched in setUp; reaching here without AssertionError proves no download
         self.load([det(37, -7)])
-        self.assertEqual(sorted(os.listdir(self.raw)), [
-            "modis_2012_XX.csv", "modis_2020_XX.csv", "viirs-snpp_2020_XX.csv"])
+        self.assertEqual(sorted(os.listdir(self.raw)), ["modis_2020_XX.csv", "viirs-snpp_2020_XX.csv"])
 
     def test_empty_satellite_raises_naming_nan(self):
         with self.assertRaises(ValueError) as cm:
             self.load([det(37, -7, sat="")])
         self.assertIn("NaN", str(cm.exception))
+
+
+class ProbeTests(RawDirCase):
+    """The early probe fetches the first year SRC lists, nothing else."""
+
+    def run_load(self, src, files=()):
+        for name in files:
+            write_raw(self.raw, name, [])
+        buf = io.StringIO()
+        with mock.patch.object(build, "SRC", src), contextlib.redirect_stdout(buf):
+            build.load_region(self.region)
+        return buf.getvalue()
+
+    def probe_line(self, out):
+        return next(ln for ln in out.splitlines() if ln.startswith("probe "))
+
+    def test_probe_is_first_sensor_first_year(self):
+        out = self.run_load({"viirs-snpp": range(2020, 2021), "modis": range(2019, 2020)},
+                            ["viirs-snpp_2020_XX.csv", "modis_2019_XX.csv"])
+        self.assertIn("viirs-snpp_2020_XX.csv", self.probe_line(out))
+        self.assertNotIn("modis", self.probe_line(out))
+        # printed before anything else the loop prints, with the full path
+        self.assertTrue(out.splitlines()[0].startswith(f"probe {build.RAW}/viirs-snpp_2020_XX.csv: "), out.splitlines()[0])
+        self.assertEqual(sorted(os.listdir(self.raw)), ["modis_2019_XX.csv", "viirs-snpp_2020_XX.csv"])
+
+    def test_probe_accepts_any_iterable_of_years(self):
+        # a set (or list/tuple) of years works too; the probe is the loop's first year
+        out = self.run_load({"viirs-snpp": {2020}, "modis": [2019]}, ["viirs-snpp_2020_XX.csv", "modis_2019_XX.csv"])
+        self.assertIn("viirs-snpp_2020_XX.csv", self.probe_line(out))
+
+    def test_probe_download_target_is_first_listed(self):
+        calls = []
+
+        def record(url, path, attempts=3):
+            calls.append(os.path.basename(path))
+            raise SystemExit("x")
+
+        with mock.patch.object(build, "download", record), self.assertRaises(SystemExit):
+            quiet(self.run_load, {"viirs-snpp": range(2020, 2021), "modis": range(2019, 2020)})
+        self.assertEqual(calls, ["viirs-snpp_2020_XX.csv"])
+
+    def test_probe_uses_first_year_of_range(self):
+        out = self.run_load({"modis": range(2018, 2021)},
+                            [f"modis_{y}_XX.csv" for y in (2018, 2019, 2020)])
+        self.assertIn("modis_2018_XX.csv", self.probe_line(out))
+
+    def test_empty_first_range_is_skipped(self):
+        out = self.run_load({"modis": range(0), "viirs-snpp": range(2020, 2021)},
+                            ["viirs-snpp_2020_XX.csv"])
+        self.assertIn("viirs-snpp_2020_XX.csv", self.probe_line(out))
+
+    def test_all_ranges_empty_raises_clear_message(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.run_load({"modis": range(0), "viirs-snpp": range(5, 5)})
+        self.assertIn("SRC lists no years", str(cm.exception))
+        self.assertEqual(os.listdir(self.raw), [])
+
+    def test_missing_probe_fails_before_any_other_file(self):
+        calls = []
+
+        def record(url, path, attempts=3):
+            calls.append(os.path.basename(path))
+            raise SystemExit("x")
+
+        write_raw(self.raw, "modis_2020_XX.csv", [])  # present, but must not be reached
+        with mock.patch.object(build, "download", record), self.assertRaises(SystemExit):
+            quiet(self.run_load, {"viirs-snpp": range(2020, 2021), "modis": range(2020, 2021)})
+        self.assertEqual(calls, ["viirs-snpp_2020_XX.csv"])  # exactly one attempt
+        self.assertEqual(os.listdir(self.raw), ["modis_2020_XX.csv"])
 
 
 class WritePointsTests(unittest.TestCase):
