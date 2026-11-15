@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { dayLabel, HOLD_FROM, holdoutYears, isPartial, VIIRS_FROM, type Annual, type ForwardScore } from "@/lib/annual";
-import { loadAnnual, loadReferee, recordSpan, REGION_LIST, REGIONS } from "@/lib/data";
+import { loadReferee, REGION_LIST, REGIONS } from "@/lib/data";
+import { readAnnual as loadAnnual, recordSpan } from "@/lib/data-server";
 import { backcastOffset, nearLevel, stepLabel, stepRange } from "@/lib/referee";
 import { SAT } from "@/components/story/FireFootprints";
 import { PIXEL_M, SCENE_BBOX, STORY_FIRE, utc } from "@/lib/story";

@@ -1,8 +1,8 @@
 // FE-028: the world scoreboard on /method. One row per published record (the 3 deep dives and every whole country in
-// annual-all.json), each with its own hold-out check. Pure, no imports, so `node --test` and the client table use it.
+// index.json, each annual.json read at build time: DP-018), each with its own hold-out check. Pure, no imports, so `node --test` and the client table use it.
 // Country fields (`ship`, `method`, `cell_deg`) are the registry rows "Country-tier outputs" / "Globe data" (ML-023);
-// the deep dives' annual.json has none of them. A country's file lands in annual-all.json as soon as ML-026 commits it,
-// so the table fills in with no change here.
+// the deep dives' annual.json has none of them. A country joins index.json (site_bundle.py) as soon as ML-026 commits
+// its annual.json, so the table fills in with no change here.
 
 /** What a row's record is: one of ML-023's country labels, or one of our deep-dive boxes. */
 export type Label = "deep dive" | "model" | "caveat" | "ratio" | "sparse";

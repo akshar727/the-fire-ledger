@@ -1,4 +1,4 @@
-"""DP-009: site_bundle.py (country entries in index.json, annual-all.json) and build.write_index keeping countries.
+"""DP-009 / DP-018: site_bundle.py (country entries and record fields in index.json) and build.write_index keeping countries.
 Temp folders only, no network. Run from the repo root:
     python -m unittest tests.test_site_bundle -v
 """
@@ -134,12 +134,34 @@ class SiteBundle(unittest.TestCase):
             f.write("date,lat,lon,daynight\n2001-01-01,10.0,-3.25,D\n2001-01-02,4.5,1.0,N\n")
         self.assertEqual(site_bundle.grid_bbox(p), [-3.25, 4.5, 1.25, 10.25])
 
-    def test_bundle_holds_each_modelled_region_in_index_order(self):
-        put(os.path.join(self.out, "ghana", "annual.json"), {"years": [2002]})
-        idx = {"regions": [{"id": "ghana"}, {"id": "portugal"}, {"id": "punjab"}]}  # punjab: no annual.json yet
-        b = site_bundle.bundle(idx, out=self.out)
-        self.assertEqual(list(b), ["ghana", "portugal"])
-        self.assertEqual(b["ghana"], {"years": [2002]})
+    def test_record_fields_come_from_annual_json(self):
+        put(os.path.join(self.out, "greece", "annual.json"),
+            {"years": [2001, 2002], "forward_through": None, "ship": "caveat", "method": "model", "cell_deg": 1,
+             "caveat": "Band too narrow in 2 of 6 years."})
+        idx = {"regions": [dict(CELL_REGION), {"id": "greece", "tier": "country", "caveat": "Islands left out."},
+                           {"id": "punjab", "first_year": 2001, "forward_through": "2026-11-14"}]}  # punjab: no annual
+        out = site_bundle.add_records(idx, out=self.out)["regions"]
+        self.assertEqual((out[0]["first_year"], out[0]["forward_through"]), (2001, None))
+        self.assertNotIn("ship", out[0])
+        g = out[1]
+        self.assertEqual((g["first_year"], g["ship"], g["method"], g["cell_deg"]), (2001, "caveat", "model", 1))
+        self.assertEqual((g["caveat"], g["ship_caveat"]), ("Islands left out.", "Band too narrow in 2 of 6 years."))
+        self.assertNotIn("first_year", out[2])  # not modelled (any more): the site hides it
+
+    def test_record_fields_are_idempotent_and_drop_stale_ship(self):
+        put(os.path.join(self.out, "greece", "annual.json"), {"years": [2001], "ship": "ratio"})
+        idx = {"regions": [{"id": "greece", "tier": "country", "ship": "model", "ship_caveat": "old"}]}
+        once = site_bundle.add_records(idx, out=self.out)
+        self.assertEqual(once["regions"][0]["ship"], "ratio")
+        self.assertNotIn("ship_caveat", once["regions"][0])
+        self.assertEqual(site_bundle.add_records(once, out=self.out), once)
+
+    def test_iso_a3_copied_from_countries_json(self):
+        put(self.countries, [{"id": "greece", "name": "Greece", "country": "Greece", "tier": "country",
+                              "iso_a3": "GRC", "bbox": [1, 2, 3, 4]}])
+        put(os.path.join(self.grid, "manifest.json"), {"greece": {"archive_through": "2025-12-31", "sensors": SENSORS}})
+        put(os.path.join(self.out, "greece", "annual.json"), {"years": [2001]})
+        self.assertEqual(self.add({"schema": 1, "regions": []})["regions"][0]["iso_a3"], "GRC")
 
 
 class WriteIndexKeepsCountries(unittest.TestCase):
@@ -147,7 +169,7 @@ class WriteIndexKeepsCountries(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             index = os.path.join(d, "index.json")
             country = {"id": "greece", "name": "Greece", "tier": "country", "point_years": [], "point_rows": 0}
-            put(index, {"schema": 1, "regions": [dict(CELL_REGION), country]})
+            put(index, {"schema": 1, "regions": [dict(CELL_REGION, first_year=2001, forward_through="2026-11-14"), country]})
             regions = [{"id": "portugal", "name": "Mainland Portugal", "short_name": "Portugal", "country": "Portugal",
                         "bbox": [-10.0, 36.9, -6.0, 42.2], "fire_type": "x", "season": "Wildfire.", "caveat": "Careful."}]
             manifest = {"portugal": {"archive_through": "2026-11-02", "sensors": SENSORS}}
@@ -159,6 +181,7 @@ class WriteIndexKeepsCountries(unittest.TestCase):
         p = out[0]
         self.assertEqual((p["short_name"], p["tier"], p["season"], p["caveat"]), ("Portugal", "region", "Wildfire.", "Careful."))
         self.assertEqual(p["point_years"], [2001])  # kept from the old entry when no points were built
+        self.assertEqual((p["first_year"], p["forward_through"]), (2001, "2026-11-14"))  # DP-018 record fields kept
         self.assertEqual(out[1], country)
 
     def test_check_regions_rejects_a_country_tier_in_regions_json(self):

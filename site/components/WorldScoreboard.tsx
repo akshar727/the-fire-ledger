@@ -1,7 +1,7 @@
 "use client";
 
 // FE-028: sortable, searchable table of every record's own hold-out check (rows from lib/scoreboard.ts, built on the
-// server from annual-all.json). The table scrolls inside its box, so the page never scrolls sideways at phone width.
+// server from each region's annual.json at build time, DP-018). The table scrolls inside its box, so the page never scrolls sideways at phone width.
 import Link from "next/link";
 import { useId, useMemo, useState } from "react";
 import {
