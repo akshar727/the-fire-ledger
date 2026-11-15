@@ -53,6 +53,18 @@ def synthetic_grid():
                                        "terra_frp_mean", "aqua_frp_mean", "viirs_frp_mean"])
 
 
+def synthetic_points(points_dir):
+    """Day passes in points/<year>.csv (ML-016): Terra at 10:30 local solar time, 9:30 in 2024 (drifted); Aqua at
+    13:30; one night row that must be ignored. lon 15 E = UTC + 1 h, so 0930 UTC -> 10:30."""
+    os.makedirs(points_dir)
+    for yr in range(2013, 2026):
+        terra = "0830" if yr == 2024 else "0930"
+        rows = [f"{yr}-06-01,{terra},40.0,15.0,Terra,80,10.0,D", f"{yr}-06-01,1230,40.0,15.0,Aqua,80,10.0,D",
+                f"{yr}-06-01,2330,40.0,15.0,Terra,80,10.0,N"]
+        with open(os.path.join(points_dir, f"{yr}.csv"), "w", encoding="utf-8", newline="\n") as f:
+            f.write("date,time_utc,lat,lon,satellite,confidence,frp_mw,daynight\n" + "\n".join(rows) + "\n")
+
+
 def reject_constant(name):
     raise ValueError(f"non-finite JSON constant {name}")
 
@@ -78,9 +90,11 @@ class ModelRunTests(unittest.TestCase):
         cls.tmp = tempfile.mkdtemp(prefix="test_model_")
         cls.grid_dir = os.path.join(cls.tmp, "grid")
         cls.out_dir = os.path.join(cls.tmp, "out")
+        cls.points_dir = os.path.join(cls.tmp, "points")
         cls.cwd_dir = os.path.join(cls.tmp, "cwd")   # run from an empty folder: catches writes to relative paths
         for d in (cls.grid_dir, cls.cwd_dir):
             os.makedirs(d)
+        synthetic_points(cls.points_dir)
         synthetic_grid().to_csv(os.path.join(cls.grid_dir, f"fire_grid_daily_{RID}.csv"), index=False)
         with open(os.path.join(cls.grid_dir, "manifest.json"), "w", encoding="utf-8") as f:
             json.dump({RID: {"archive_through": THROUGH}}, f)
@@ -90,7 +104,8 @@ class ModelRunTests(unittest.TestCase):
         os.chdir(cls.cwd_dir)
         try:
             with contextlib.redirect_stdout(io.StringIO()):
-                cls.res = model.run(RID, nboot=5, grid_dir=cls.grid_dir, out_dir=cls.out_dir)
+                cls.res = model.run(RID, nboot=5, grid_dir=cls.grid_dir, out_dir=cls.out_dir,
+                                    points_dir=cls.points_dir)
         finally:
             os.chdir(old_cwd)
         cls.status_after = git_status()
@@ -121,10 +136,14 @@ class ModelRunTests(unittest.TestCase):
     def test_annual_keys_and_lengths(self):
         a = self.annual
         self.assertEqual(list(a), ["years", "modis", "viirs", "pred", "lo", "hi", "score", "partial", "data_through",
-                                   "harmonized", "viirs_partial"])
+                                   "harmonized", "viirs_partial", "overpass", "obs_over_pred", "drifted"])
         self.assertEqual(a["years"], YEARS)
-        for k in ("modis", "viirs", "pred", "lo", "hi", "partial", "harmonized", "viirs_partial"):
+        for k in ("modis", "viirs", "pred", "lo", "hi", "partial", "harmonized", "viirs_partial", "obs_over_pred",
+                  "drifted"):
             self.assertEqual(len(a[k]), 25, k)
+        self.assertEqual(list(a["overpass"]), ["terra", "aqua", "snpp"])
+        for k, v in a["overpass"].items():
+            self.assertEqual(len(v), 25, k)
         self.assertEqual(list(a["score"]), ["mape_model", "mape_ratio", "coverage", "n_hold", "ratio", "alpha",
                                             "weekly_r", "sigma_year"])
         self.assertEqual(a["score"]["n_hold"], 6)
@@ -156,6 +175,31 @@ class ModelRunTests(unittest.TestCase):
         blended = sum(w["pred"][wk][:3]) + sum(w["viirs"][wk][3:])
         self.assertAlmostEqual(a["harmonized"][i12], blended, delta=0.5)
         self.assertNotAlmostEqual(a["harmonized"][i12], a["viirs"][i12], delta=1)   # 2012 is not the raw total
+
+    def test_overpass_and_drift(self):
+        # ML-016: points only for 2013-2025 -> null before; Terra 10:30 (9:30 in 2024), Aqua 13:30, no SNPP rows
+        ov, a = self.annual["overpass"], self.annual
+        for i, yr in enumerate(YEARS):
+            has = yr >= 2013
+            self.assertEqual(ov["terra"][i], (9.5 if yr == 2024 else 10.5) if has else None, yr)
+            self.assertEqual(ov["aqua"][i], 13.5 if has else None, yr)
+            self.assertIsNone(ov["snpp"][i], yr)
+        self.assertEqual(a["drifted"], [int(y == 2024) for y in YEARS])
+
+    def test_obs_over_pred(self):
+        # ML-016: VIIRS / pred over VIIRS-covered weeks; null before 2012; 2012 uses weeks 3-51 only (weekly sums)
+        a, w = self.annual, self.series["weekly"]
+        for i, yr in enumerate(YEARS):
+            r = a["obs_over_pred"][i]
+            if yr < 2012:
+                self.assertIsNone(r, yr)
+                continue
+            wk = slice(i * 52, (i + 1) * 52)
+            vs = [(v, p) for v, p in zip(w["viirs"][wk], w["pred"][wk]) if v is not None]
+            want = sum(v for v, _ in vs) / sum(p for _, p in vs)
+            self.assertAlmostEqual(r, want, delta=2e-3, msg=str(yr))   # weekly pred is rounded to 1 dp
+            if yr > 2012:
+                self.assertAlmostEqual(r, a["viirs"][i] / a["pred"][i], delta=2e-3, msg=str(yr))
 
     def test_bands_ordered(self):
         for name, d in (("annual", self.annual), ("monthly", self.series["monthly"]),

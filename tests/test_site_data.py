@@ -197,6 +197,21 @@ class SiteDataTests(unittest.TestCase):
                             self.assertAlmostEqual(h, want, delta=1, msg=f"{p}: blended {a['years'][i]} vs weekly")
                     else:
                         self.assertAlmostEqual(h, pr if v is None else v, delta=0.05, msg=f"{p}: harmonized {a['years'][i]}")
+                # ML-016: overpass drift fields
+                ov = a.get("overpass")
+                self.assertIsInstance(ov, dict, f"{p}: overpass")
+                self.assertEqual(sorted(ov), ["aqua", "snpp", "terra"], f"{p}: overpass keys")
+                self.check_arrays(p, {"years": a["years"], **ov}, ["years", "terra", "aqua", "snpp"],
+                                  nulls=("terra", "aqua", "snpp"))
+                for k, vals in ov.items():
+                    self.assertTrue(all(v is None or 6 < v < 18 for v in vals), f"{p}: overpass.{k} not a daytime hour")
+                self.assertTrue(all(v is None for y, v in zip(a["years"], ov["snpp"]) if y < 2012),
+                                f"{p}: snpp overpass before 2012")
+                self.check_arrays(p, a, ["years", "obs_over_pred", "drifted"], nulls=("obs_over_pred",))
+                self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["drifted"]), f"{p}: drifted")
+                for y, v, r in zip(a["years"], a["viirs"], a["obs_over_pred"]):
+                    self.assertEqual(r is None, v is None, f"{p}: obs_over_pred null where viirs is ({y})")
+                    self.assertTrue(r is None or r > 0, f"{p}: obs_over_pred {y}")
         if not ran:
             self.skipTest("no region has data yet")
 
