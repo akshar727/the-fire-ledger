@@ -1,23 +1,33 @@
 # spaceapps-primary
 
-**Fire Ledger**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one ledger (mainland Portugal, Ghana and NW India, 2001 to 2 November 2026; one model fit per region). NASA Space Apps Challenge 2026.
+**Fire Ledger**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one ledger for 176 countries and three detailed regions (mainland Portugal, Ghana, NW India), 2001 to 14 November 2026. NASA Space Apps Challenge 2026.
+
+**Live site: https://the-fire-ledger.vercel.app**
 
 ## Features
 
-- **Landing story (`/`)**: a scroll-driven story over a Blender-rendered scene of the 2017 central Portugal fires. It explains how the satellites see fire and why their counts need harmonizing, then ends on the burn calendar.
-- **3D globe (`/globe`)**: spin a globe of every country with a fire record and colour it by one year or by the trend since 2001. Play through the years, or click a country to see its numbers.
-- **Ledger (`/ledger`)**: the harmonized fire record for a region, with a region switcher, date range and plain-language trend summary. A method card says how the record was built and how far to trust it.
-- **This fire season so far**: the latest season's running total of fire drawn over every past season, so you can see whether this year is running ahead or behind.
-- **When each season burns**: the days on which each past season reached 10%, 50% and 90% of its fire, showing whether seasons start or peak earlier than they used to.
-- **Burn calendar (`/calendar`)**: one square per month since 2001, all on one scale, so bad and quiet seasons stand out at a glance. Each region gets a line on fire weather (dry air, wind, rain) from NASA POWER.
-- **Listen to the calendar**: plays the calendar as sound, one note per month, with higher notes meaning more fire. A short tour plays the raw and harmonized counts around the 2012 change of satellite, so you can hear the jump that harmonizing removes.
-- **From space**: below the calendar, pick a month and its fire detections appear over NASA satellite imagery of that month's peak fire day.
-- **Downloads**: every chart can be saved as a picture, and the data can be downloaded as CSV for any date range and map box. The same CSVs are served at `/api/hotspots` and `/api/series`.
-- **Proof on unseen years**: the model is trained on 2012 to 2019 and scored on 2020 to 2025 against what VIIRS really counted. The scores are shown on the ledger and the method page.
-- **World scoreboard (`/method#scoreboard`)**: in every country, our model is tested against one simple constant ratio. Where the ratio did better, the site publishes the ratio.
-- **Independent check (`/method#referee`)**: fire detections are compared with MODIS burned area before and after 2012 as a check that does not depend on our model.
-- **Satellite drift (`/method#drift`)**: shows how the Terra and Aqua overpass times have drifted, and why that changes the share of each day's fire that MODIS sees.
-- **Accessible charts**: charts can be read with the keyboard (arrow keys step through values), and each one has a text description for screen readers.
+- **Landing story (`/`)**: scroll-driven story over a Blender scene built from NASA SRTM terrain and the 16,906 FIRMS detections around the 2017 Pedrógão Grande fire. Shows the core problem on one fire: Aqua MODIS counted 35 hot pixels, Suomi NPP VIIRS 239 thirty-five minutes later.
+- **Feature tiles (`/`)**: links under the hero to the main features, each with a live number.
+- **Ledger (`/ledger`)**: annual record for any of the 3 regions or 176 countries, with a Raw / Harmonized switch. Raw shows the 2012 sensor jump (×4.1 in Ghana); harmonized back-casts 2001-2011 to the VIIRS scale with a 5-95% bootstrap band.
+- **Harmonization model**: Poisson regression per 0.25° cell-week, trained 2012-2019 on MODIS Terra/Aqua counts and FRP, regional activity, month, latitude band and day/night. Countries use coarser cells (0.25-8°, at most 400 burning cells).
+- **Proof on unseen years**: every place is scored on hold-out years 2020-2025 against observed VIIRS and against one constant ratio. Ghana 4.3% mean annual error (ratio 6.8%, 5 of 6 years in band), Portugal 10.5% (12.6%); in NW India the ratio wins (3.2% vs 7.3%) and the page says so.
+- **World scoreboard (`/method#scoreboard`)**: model vs ratio per country. The model won in 92 of 176 countries and is published there, the ratio in the other 77; 7 are too sparse to check.
+- **Record provenance**: each ledger is labelled model, model with a caveat (band held in fewer than 4 of 6 hold-out years), constant-ratio estimate or too sparse, with the reason.
+- **Trend test**: 2001-2025 trend on the stitched and harmonized records with a 90% interval. Ghana: stitched +5.1%/yr, harmonized −1.1%/yr, both significant.
+- **Season outlook**: this season's running total over every past season, with its rank and a 5-95% forecast of the season total. Back-tested on 25 seasons (NW India: range held 21 of 25, reported as 84%).
+- **Season timing**: days each season reached 10%, 50% and 90% of its fire, with the per-decade drift in onset and midpoint.
+- **Burn calendar (`/calendar`)**: harmonized detections per month (or week) since 2001 on one log scale, with unusually high and low months flagged against the monthly median.
+- **This month so far**: the running month against the same days of every past year, plus NASA POWER fire-weather percentile. NW India, 1-14 Nov 2026: 0.11× the median with weather at the 76th percentile.
+- **Was it the weather?**: high- and low-fire months cross-tabulated against top-quarter fire weather from NASA POWER (NW India: 16 of 27 high months vs ~7 expected by chance).
+- **See it from space**: click a month to see its peak fire day in NASA GIBS true-colour imagery with that day's detections overlaid.
+- **Sonification**: plays the 2009-2014 raw and harmonized records as pitch, so the 2012 jump is audible in one and absent in the other.
+- **3D globe (`/globe`)**: globe.gl choropleth of detections per 1,000 km² by year (2001-2025) or trend; click a country to open its ledger. A sortable table lists every place with its trend and label.
+- **NOAA-20/21 forward link**: Suomi NPP data end 2 Nov 2026; per-region day/night ratios turn NOAA-20 and NOAA-21 detections into S-NPP equivalents up to 14 Nov 2026. Fitted 2018-2023, tested 2024-2026.
+- **Independent check (`/method#referee`)**: detections per km² burned (MODIS MCD64) before vs after 2012. The jump is ×2.2-4.6 in the stitched record and ×0.84-1.04 harmonized.
+- **Satellite drift (`/method#drift`)**: median overpass time per satellite per year from FIRMS. Terra now passes ~1.5 h earlier and Aqua ~1.5 h later than in training, so recent MODIS is flagged.
+- **Known limits (`/method`)**: few hold-out years, Terra-only 2001-2002, the partial current year, MODIS drift.
+- **Downloads and API**: raw detections and monthly analytics (with band) as CSV for any date range or bounding box, and every chart as PNG/SVG. The same data is served at `/api/hotspots` and `/api/series`.
+- **Accessible charts**: keyboard navigation (arrow keys step through values) and a text description of every chart for screen readers.
 
 The Python pipeline behind these pages (download, harmonization model, fire weather, peak days, referee check, landing scene) is described step by step in "Run it" below.
 
