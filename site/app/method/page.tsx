@@ -9,6 +9,8 @@ import { PIXEL_M, SCENE_BBOX, STORY_FIRE, utc } from "@/lib/story";
 import { loadStory } from "@/lib/story-data";
 import { boardSentence, LABEL_TEXT, LABELS, scoreRow, summarize, type ScoreSource } from "@/lib/scoreboard";
 import { WorldScoreboard } from "@/components/WorldScoreboard";
+import { OverpassChart } from "@/components/OverpassChart";
+import { clock, driftSummary, shiftText, type OverpassSource } from "@/lib/overpass";
 
 export const metadata: Metadata = { title: "Method" };
 
@@ -36,6 +38,8 @@ const SPAN = recordSpan();
 const SCORE_ROWS = ALL.map((r) => scoreRow(r.id, r.name, r.tier === "country", r.D as unknown as ScoreSource));
 const BOARD = summarize(SCORE_ROWS);
 const REF = loadReferee();
+// FE-031: how far the MODIS orbits moved, training years against the last year (deep dives' annual.json `overpass`)
+const DRIFT = driftSummary(RECORDS.map((r) => r.D as unknown as OverpassSource), [VIIRS_FROM, HOLD_FROM - 1]);
 // End of the downloaded ledger (index.json archive_through, the same for every region), e.g. 2026-11-02.
 const THROUGH = RECORDS.map((r) => r.through).sort().at(-1)!;
 const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
@@ -443,12 +447,17 @@ export default function MethodPage() {
             </li>
             <li>
               <span className="font-medium text-foreground">MODIS is no longer a fixed witness.</span> The Terra and
-              Aqua orbits have been drifting for the last few years. Measured from the FIRMS overpass times, by{" "}
-              {ARCHIVE_END + 1} Terra passes about 1.5 hours earlier than in the training years (near 9:10 local time)
-              and Aqua about 1.5 hours later (near 15:00), so MODIS sees a different share of each day&apos;s fires.
+              Aqua orbits have been drifting for the last few years.
+              {DRIFT?.terra && DRIFT.aqua
+                ? ` Measured from the FIRMS overpass times (each year's median daytime pass), ${lastPartial && DRIFT.year === lastYear ? `so far in ${DRIFT.year} (to ${dayLabel(last.data_through)})` : `in ${DRIFT.year}`} Terra passes ${shiftText(DRIFT.terra.shift)} ${DRIFT.terra.shift < 0 ? "earlier" : "later"} than in the training years (near ${clock(DRIFT.terra.last)} local time, against ${clock(DRIFT.terra.base)}) and Aqua ${shiftText(DRIFT.aqua.shift)} ${DRIFT.aqua.shift > 0 ? "later" : "earlier"} (near ${clock(DRIFT.aqua.last)}, against ${clock(DRIFT.aqua.base)}), so MODIS sees a different share of each day's fires.`
+                : ""}{" "}
               The model, fitted when both orbits were stable, then predicts {ARCHIVE_END + 1} about 16% too low in
               Ghana and north-west India. The published ledger uses observed VIIRS from {VIIRS_FROM} on, so the line
-              itself is not affected, but the model should not be read as a forecast from recent MODIS data.
+              itself is not affected, but the model should not be read as a forecast from recent MODIS data. Suomi
+              NPP, the VIIRS satellite, kept its time.
+              <div className="mt-4">
+                <OverpassChart records={RECORDS.map((r) => ({ id: r.id, name: r.name, D: r.D as unknown as OverpassSource }))} />
+              </div>
             </li>
           </ul>
         </section>
