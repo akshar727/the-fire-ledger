@@ -205,12 +205,21 @@
 [data-scene] .story-scene canvas { opacity: 1; }
 [data-scene] .story-scene-note { visibility: visible; }
 [data-scene] [data-chapter] { border-color: transparent; }
-/* the words sit on a soft dark cloud that travels with them, so they stay readable over any frame while the rest of
-   the picture stays clear. Shadow only: it takes no room, so turning the scene on moves nothing. */
+/* the words sit on a light dark haze that hugs them (fit-content, so no box over empty picture beside a short
+   headline) and travels with them; a tight glyph shadow does most of the legibility work, so the haze can stay thin
+   and the picture shows through. Shadow only: it takes no room, so turning the scene on moves nothing. */
 [data-scene] .story-text {
-  background: color-mix(in oklch, var(--background) 80%, transparent);
-  box-shadow: 0 0 3.5rem 3.5rem color-mix(in oklch, var(--background) 80%, transparent);
-  text-shadow: 0 1px 10px color-mix(in oklch, var(--background) 90%, transparent);
+  width: fit-content;
+  max-width: 100%;
+  background: color-mix(in oklch, var(--background) 50%, transparent);
+  box-shadow: 0 0 4rem 2.5rem color-mix(in oklch, var(--background) 50%, transparent);
+  text-shadow:
+    0 1px 2px color-mix(in oklch, var(--background) 90%, transparent),
+    0 0 14px color-mix(in oklch, var(--background) 95%, transparent);
+}
+/* with a thinner haze, muted body text is lifted toward the foreground so it still reads over a bright sky */
+[data-scene] .story-text .text-muted-foreground {
+  color: color-mix(in oklch, var(--foreground) 82%, var(--muted-foreground));
 }
 /* figures sit on a dark panel; the negative margin keeps their size and place, so turning the scene on moves nothing.
    No backdrop-filter on purpose: a blur over a canvas that redraws on every scroll frame is the first thing to drop
