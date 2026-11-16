@@ -28,6 +28,86 @@
 
 The Python pipeline behind these pages (download, harmonization model, fire weather, peak days, referee check, landing scene) is described step by step in "Run it" below.
 
+## The harmonization model
+
+The ledger is built on a statistical regression model: a **Poisson generalized linear model** (log link, fitted by iteratively reweighted least squares in statsmodels), fitted separately for every region and country. Its predictive distribution is widened to a **negative binomial (NB2, gamma–Poisson mixture)** to absorb overdispersion, and it translates MODIS Terra/Aqua detections into the number of Suomi NPP VIIRS detections that would have been recorded under the same fire conditions.
+
+### Grid, predictors and fit
+
+Every FIRMS vegetation-fire detection (`type` 0) is binned per satellite into 0.25° cells × UTC day × day/night overpass, carrying count and mean fire radiative power (FRP). There is no confidence filter, because MODIS's 0–100 scale and VIIRS's low/nominal/high classes are not commensurable. The bins are then aggregated to cell × overpass × week (52 weeks a year, week 52 absorbing the last 8–9 days) over the full Cartesian product of every cell that ever burned, so fire-free weeks enter the likelihood as explicit zeros. The model is fitted on 2012–2019 only and scored on six whole years it never sees (2020–2025):
+
+`log E[VIIRS] = β₁·ln(1+Aqua) + β₂·ln(1+Terra) + β₃·ln(1+mean MODIS FRP) + β₄·ln(1+regional MODIS total for that week and overpass) + β₅·1[MODIS = 0] + month (12-level factor) + day/night + 1° latitude band (factor)`
+
+This makes the MODIS→VIIRS conversion a non-linear function of how much fire MODIS saw, how intense it was, how active the whole region was, the season, the overpass and the latitude. The zero indicator lets the model learn the small, cool fires that VIIRS's 375 m pixels resolve but MODIS's 1 km pixels miss entirely.
+
+### Terra-only formula (2001 to mid-2002)
+
+Aqua only began observing on 4 July 2002, and it records 2.4–3.5× more fire than Terra in Ghana and NW India because its afternoon overpass catches the diurnal burning peak. So all of 2001 and weeks 0–26 of 2002 are back-cast with a second GLM fitted on the same 2012–2019 rows from Terra alone:
+
+`log E[VIIRS] = ln(1+Terra) + ln(1+Terra FRP) + ln(1+regional Terra total) + 1[Terra = 0] + month + day/night + latitude band`
+
+The back-cast therefore never assumes an Aqua that was not flying, and its prediction bands are correspondingly wider.
+
+### How the uncertainty bands are built
+
+Each of 200 Monte Carlo draws (100 for countries) combines three layers of uncertainty:
+
+1. **Parameter uncertainty:** both GLMs are refitted on a block bootstrap of whole training years, which preserves within-year dependence.
+2. **Year-level uncertainty:** every row of a calendar year is multiplied by one shared log-normal factor exp(σz − σ²/2) with mean 1. σ_year is the root-mean-square of log(observed/predicted) annual totals from eight leave-one-year-out refits, taken from training years only and never tuned on the hold-out.
+3. **Count noise:** each cell-week count is drawn from a gamma–Poisson (NB2) with dispersion α = Σ[(y−μ)² − y] / Σμ², the Cameron–Trivedi moment estimator.
+
+Draws are summed inside the loop to region × year × week, so annual, monthly and weekly 5–95% bands are percentiles of the same coherent simulations without storing per-row draws (about 1 GB for Ghana). The year layer exists because per-row noise averages out over a year, which left annual bands at half the true inter-annual error. Adding it lifted hold-out coverage from 3, 1 and 4 of 6 years to 6, 5 and 5 (Portugal, Ghana, NW India). A fixed random seed per region makes reruns byte-reproducible.
+
+### Why a model rather than one ratio
+
+A single VIIRS/MODIS factor cannot represent a conversion that changes with fire size, intensity, season, overpass, regional activity and MODIS non-detection. On the 2020–2025 hold-out the model cuts mean annual error to 10.5% vs 12.6% for one constant ratio in Portugal and 4.3% vs 6.8% in Ghana, with weekly correlations of r = 0.997, 0.991 and 0.974. In NW India the ratio wins (3.2% vs 7.3%), and the site says so. The rule is enforced worldwide: every country gets both the model and a constant-ratio estimate, both are scored on that country's own hidden 2020–2025 years, and the winner is published:
+
+- **The ratio:** MODIS × the country's single 2012–2019 VIIRS/MODIS ratio (a Terra-only ratio before Aqua), with a band from its own leave-one-year-out error.
+- **The model at country scale:** the same model on the 0.25° grid summed to the finest of 0.25/0.5/1/2/4/8° that keeps at most 400 burning cells, with counts summed and FRP count-weighted, so a continent-sized country fits in memory.
+- **The label:** `model` (beats the ratio and at least 4 of 6 hidden years in its band), `caveat` (beats the ratio, band too narrow), `ratio`, or `sparse` (under 1,000 VIIRS detections in 2012–2019, or a year with none).
+
+Result: across the 176 countries FIRMS archives, the model won and is published in 92, the ratio in 77, and 7 are too sparse to test.
+
+### Data traps we handled
+
+- **VIIRS start date:** S-NPP data begin on 20 January 2012, so the weeks before it are excluded from training and back-cast rather than read as zero fire. Read as zero, they had produced a fake 2012 dip in Ghana (148k observed vs 203k predicted).
+- **Calendar months:** weeks are split into calendar months by day share for every series, raw included. Mapping whole weeks onto months makes 4- and 5-week months differ by up to 25%.
+- **Partial periods:** a partial final week or month is kept with its day count and never zero-filled. A year counts as complete, and is scored, only when its data reach 31 December.
+- **S-NPP end of life (2 November 2026):** weeks and months that straddle it use observed S-NPP days, never the back-cast. The back-cast ran 4.5× the observed count during NW India's 29 Oct–2 Nov stubble peak.
+- **Border detections in 2026:** 2026 area-API detections are kept only if their 0.05° sub-cell (~5.5 km) had an archive detection in 2000–2025. This removes neighbouring-country and untyped near-real-time static sources (about 6% of detections at 0.25°) while dropping at most about 0.3% of genuine fires.
+- **Processing streams:** standard-processing (SP) data are used to their last available day and near-real-time (NRT) data only after it.
+- **MODIS version labels:** the labels change (6.2 → 6.03 → 61.03). We checked for a step in the VIIRS/MODIS ratio at each change and found none.
+- **Anomaly flags:** each month is compared with its 2001–2025 median and interquartile range. "High" needs all of: above the 75th percentile, at least 2× the median, and at least median + 20 detections; "low" mirrors this. So noise in quiet months cannot raise a flag.
+
+### Trend statistics
+
+Trends use the **Theil–Sen estimator** (median of all pairwise slopes, with a 90% confidence interval) and the **Mann–Kendall test** (Kendall's τ p-value), so skewed fire counts and single extreme years such as Portugal 2017 cannot swing the line the way least squares would. Slopes are expressed as a percentage of the series median per year so regions are comparable. They are computed on complete years for both the stitched and the harmonized record, and for each calendar month to detect seasonal shifts. The harmonized slope also carries a bootstrap 5–95% range from re-running Theil–Sen on every model draw. Mann–Kendall assumes independent years, so mild autocorrelation makes its p-values slightly optimistic.
+
+### NOAA-20/21 forward link
+
+After Suomi NPP ended on 2 November 2026, the record continues to today through a second Poisson GLM, `S-NPP ~ day/night`, with offset log(NOAA exposure) on region × day × overpass totals. Its maximum-likelihood estimate is exactly Σ S-NPP / Σ exposure, separately for day and night:
+
+- **Exposure:** NOAA-20 from April 2018; from 2024, the mean of NOAA-20 and NOAA-21, with NOAA-21 first scaled to NOAA-20 per overpass using NOAA data only, so the hold-out never leaks.
+- **Outages:** a day with zero detections while another satellite saw at least 20 is treated as an outage and excluded or substituted.
+- **Bands:** a year bootstrap, a monthly log-normal term from leave-one-year-out errors (months with at least 100 detections) and NB2 noise, on a separate random stream, so every value up to the S-NPP end stays byte-identical.
+
+It is fitted on 2018–2023 and held out on 2024–2026. The ratio form was chosen because NOAA-20/21 carry the same instrument as S-NPP: a richer GLM with log NOAA counts and month scored 17–23% monthly hold-out error against 10–13% for the plain ratio, and adding NOAA-21 brought it to 7–11%.
+
+### Season outlook and its back-test
+
+The outlook runs in the browser (`site/lib/outlook.ts`) on the harmonized weekly series:
+
+1. **Season start:** the week with the lowest median harmonized count over 2001–2025, so a season such as Ghana's November–February is never split mid-peak.
+2. **Running totals:** each season is accumulated week by week, and the current season is ranked against every past season at the same point.
+3. **Forecast:** the final total is forecast as the current total × the 5th, 50th and 95th percentiles of past complete seasons' final ÷ same-point ratios, interpolated within a partial week. The forecast needs at least 5 past seasons and at least 5% of a typical season already burned.
+4. **Back-test:** leave-one-season-out at the weeks by which 25%, 50% and 75% of a season has typically burned, reporting mean absolute percentage error and how often the true final fell inside the range.
+
+In NW India the range held in 21 of 25 seasons (84%, below the nominal 90%), and the page states that number rather than the nominal one.
+
+### How satellite drift is measured
+
+For every year and satellite, each daytime detection's local solar time is computed as UTC + longitude ÷ 15 h from the published point files, and the per-satellite median is taken. A year is flagged as drifted when Terra or Aqua departs more than 0.5 h from its own 2013–2019 median. 2024–2026 are flagged in all three regions: in 2026 Terra passes at about 9:16 instead of 10:50 and Aqua at about 15:02 instead of 13:19, while S-NPP stays steady. Fire has a strong afternoon diurnal peak, so the drift changes the fraction of each day's burning that MODIS samples. The 2025→2026 VIIRS/MODIS ratio jumped from 5.1 to 6.1 in Ghana and from 4.5 to 7.4 in NW India, putting the 2026 back-cast 16–18% below observed VIIRS. The published ledger uses observed VIIRS for every year it exists, so drift affects the diagnostic line, not the record.
+
 ## Run it
 
 Python precompute (from the repo root). Needs Python 3.12 or newer (tested with 3.14): check with `python3 --version` (Windows: `python --version`) first, and install a newer one from python.org or Homebrew if it's older, or `pip install` fails with "No matching distribution found for scipy==1.18.1"; library versions are pinned in `requirements.txt` (numpy 2.4.4, pandas 3.0.2, statsmodels 0.14.6, patsy 1.0.2, scipy 1.18.1), so reruns reproduce the committed outputs. Use `python` on Windows, `python3` on macOS.
@@ -174,6 +254,14 @@ Data
 - NASA Shuttle Radar Topography Mission Global 3 arc second (SRTM GL3, about 90 m), tiles N39W009, N39W008, N40W009, N40W008 (39-41 N, 9-7 W), committed in `scripts/landing_scene/srtm_tiles/` — the terrain of the landing-page scene (`scripts/landing_scene/`) — https://doi.org/10.5067/MEASURES/SRTM/SRTMGL3.003 — NASA JPL (2013). NASA Shuttle Radar Topography Mission Global 3 arc second [Data set]. NASA Land Processes Distributed Active Archive Center (DataCite record checked 2026-11-15). NASA data, openly shared without restriction. Downloaded as GeoTIFF from OpenTopography's public bulk-download bucket (`https://opentopography.s3.sdsc.edu/raster/SRTM_GL3/SRTM_GL3_srtm/North/North_30_60/<tile>.tif`, no login, fetched 2026-11-15): NASA Shuttle Radar Topography Mission (SRTM) (2013). Shuttle Radar Topography Mission (SRTM) Global. Distributed by OpenTopography. https://doi.org/10.5069/G9445JDF (DataCite record checked 2026-11-15).
 - Natural Earth 1:110m Cultural Vectors, Admin 0 - Countries, v5.1.2 — the country outlines on the `/globe` page (FE-026) and each country's land area for detections per 1,000 km² — https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/ ; GeoJSON copy from the project's own repository, https://github.com/nvkelso/natural-earth-vector/blob/v5.1.2/geojson/ne_110m_admin_0_countries.geojson (fetched 2026-11-15) — public domain ("Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com", terms at https://www.naturalearthdata.com/about/terms-of-use/). Cut down by `scripts/globe/outlines.py` to `ISO_A3`, `ADM0_A3` and `NAME` with coordinates rounded to 0.01°, and French Guiana moved out of France into its own shape (FIRMS archives it as its own country), committed as `site/public/data/countries-110m.geojson` (172 KB).
 - Pedrógão Grande fire, 17 June 2017 (the fire the landing page and its scene follow): place and date only; every detection drawn is from the FIRMS files above (`site/public/data/portugal/points/2017.csv`). The setting sun in the opening frames is placed at azimuth 300° (west-north-west), about where the sun sets at 40° N in mid-June (general astronomical fact; decoration, not data). Torre, Serra da Estrela (1,993 m, 40.3217 N, 7.6130 W) is used by `tests/test_landing_scene.py` to check that the SRTM mosaic is placed correctly (general geographic fact).
+
+Statistical methods (named in "The harmonization model")
+
+- Generalized linear models (Poisson GLM, log link, IRLS) — Nelder, J. A., & Wedderburn, R. W. M. (1972). Generalized linear models. Journal of the Royal Statistical Society, Series A, 135(3), 370–384. https://doi.org/10.2307/2344614
+- Negative binomial (NB2) overdispersion and the moment estimator of α — Cameron, A. C., & Trivedi, P. K. (1990). Regression-based tests for overdispersion in the Poisson model. Journal of Econometrics, 46(3), 347–364. https://doi.org/10.1016/0304-4076(90)90014-K
+- Bootstrap — Efron, B. (1979). Bootstrap methods: another look at the jackknife. The Annals of Statistics, 7(1), 1–26. https://doi.org/10.1214/aos/1176344552
+- Theil–Sen slope — Theil, H. (1950). A rank-invariant method of linear and polynomial regression analysis. Proceedings of the Koninklijke Nederlandse Akademie van Wetenschappen, 53; Sen, P. K. (1968). Estimates of the regression coefficient based on Kendall's tau. Journal of the American Statistical Association, 63(324), 1379–1389. https://doi.org/10.1080/01621459.1968.10480934
+- Mann–Kendall trend test — Mann, H. B. (1945). Nonparametric tests against trend. Econometrica, 13(3), 245–259. https://doi.org/10.2307/1907187 ; Kendall, M. G. (1975). Rank Correlation Methods (4th ed.). Charles Griffin.
 
 Python libraries (precompute; exact versions in `requirements.txt`)
 
