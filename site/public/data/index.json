@@ -569,7 +569,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.2% vs 11.2% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.2% vs 11.2% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "india",
@@ -1179,8 +1179,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "kazakhstan",
@@ -1370,8 +1372,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 1.0,
+      "ship_caveat": "Only 2 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "south-africa",
@@ -1445,8 +1449,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "paraguay",
@@ -1482,8 +1487,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "sudan",
@@ -1520,7 +1526,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.2% vs 9.0% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "mali",
@@ -1556,8 +1563,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "iran",
@@ -1594,7 +1602,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (20.5% vs 21.4% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "colombia",
@@ -1631,7 +1640,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (2.7% vs 3.1% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "zimbabwe",
@@ -1667,8 +1677,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "ukraine",
@@ -1704,8 +1716,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -1742,9 +1755,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "republic-of-congo",
@@ -1780,8 +1793,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.5,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "algeria",
@@ -1817,8 +1832,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 1.0,
+      "ship_caveat": "Only 2 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "senegal",
@@ -1854,8 +1871,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "vietnam",
@@ -1891,8 +1910,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "peru",
@@ -1929,7 +1949,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (9.6% vs 9.9% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "benin",
@@ -1965,8 +1986,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "uganda",
@@ -2002,8 +2024,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "laos",
@@ -2039,8 +2062,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "burkina-faso",
@@ -2077,7 +2102,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.7% vs 6.8% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "honduras",
@@ -2114,7 +2140,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.1% vs 10.5% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "malawi",
@@ -2150,8 +2177,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "pakistan",
@@ -2188,7 +2216,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (3.8% vs 7.4% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "liberia",
@@ -2224,9 +2253,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "togo",
@@ -2262,8 +2291,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "philippines",
@@ -2299,8 +2329,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "libya",
@@ -2336,8 +2367,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "turkey",
@@ -2374,7 +2406,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (8.3% vs 11.8% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "guatemala",
@@ -2411,7 +2444,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.4% vs 5.6% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "botswana",
@@ -2449,7 +2483,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.9% vs 7.0% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "nicaragua",
@@ -2486,7 +2520,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (11.2% vs 14.1% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "syria",
@@ -2524,7 +2559,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (27.1% vs 43.7% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "papua-new-guinea",
@@ -2562,7 +2597,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.3% vs 7.1% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "saudi-arabia",
@@ -2599,7 +2634,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.8% vs 14.8% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "chile",
@@ -2635,8 +2671,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "cote-divoire",
@@ -2672,8 +2709,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "nepal",
@@ -2709,8 +2747,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "namibia",
@@ -2747,7 +2786,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.1% vs 6.3% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "japan",
@@ -2783,8 +2823,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "egypt",
@@ -2820,8 +2861,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "turkmenistan",
@@ -2857,8 +2899,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "italy",
@@ -2894,8 +2937,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "romania",
@@ -2933,7 +2977,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (8.3% vs 9.5% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "guinea-bissau",
@@ -2970,7 +3014,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.6% vs 6.6% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "malaysia",
@@ -3008,7 +3053,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (9.9% vs 16.3% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "oman",
@@ -3045,7 +3090,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (20.3% vs 30.7% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "cuba",
@@ -3082,7 +3128,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (4.6% vs 5.8% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "kenya",
@@ -3118,8 +3165,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "germany",
@@ -3156,7 +3204,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (17.1% vs 19.3% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "uzbekistan",
@@ -3192,8 +3241,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -3232,7 +3282,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (10.7% vs 17.1% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "spain",
@@ -3269,7 +3319,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (11.6% vs 27.7% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "panama",
@@ -3306,7 +3357,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (11.2% vs 12.9% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "serbia",
@@ -3342,8 +3394,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "bulgaria",
@@ -3381,7 +3434,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.5% vs 12.2% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "ecuador",
@@ -3417,8 +3470,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "bangladesh",
@@ -3456,7 +3510,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (12.0% vs 12.8% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "gabon",
@@ -3492,8 +3546,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "swaziland",
@@ -3530,7 +3586,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.4% vs 8.4% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "belarus",
@@ -3568,7 +3625,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (8.2% vs 29.3% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "guyana",
@@ -3606,7 +3663,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.2% vs 8.4% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "azerbaijan",
@@ -3644,7 +3701,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (6.4% vs 11.8% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "belize",
@@ -3681,7 +3738,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (14.1% vs 16.0% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "dominican-republic",
@@ -3718,7 +3776,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (4.6% vs 6.9% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "united-kingdom",
@@ -3754,8 +3813,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "qatar",
@@ -3791,8 +3851,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "niger",
@@ -3829,7 +3890,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (12.3% vs 21.4% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "kuwait",
@@ -3865,8 +3927,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "costa-rica",
@@ -3904,7 +3967,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (11.5% vs 19.5% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "timor-leste",
@@ -3942,7 +4005,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (14.6% vs 22.5% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "el-salvador",
@@ -3978,9 +4041,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 2 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "sri-lanka",
@@ -4016,8 +4080,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "poland",
@@ -4053,8 +4118,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -4093,7 +4159,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (12.7% vs 17.5% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "greece",
@@ -4132,7 +4198,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (7.2% vs 38.9% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "new-zealand",
@@ -4168,8 +4234,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "belgium",
@@ -4205,8 +4272,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "portugal-country",
@@ -4242,8 +4310,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "yemen",
@@ -4280,7 +4349,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (23.4% vs 63.5% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "united-arab-emirates",
@@ -4316,8 +4386,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "the-gambia",
@@ -4353,9 +4424,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "uruguay",
@@ -4391,8 +4462,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "bosnia-and-herzegovina",
@@ -4429,7 +4501,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (4.0% vs 18.8% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "georgia",
@@ -4465,8 +4538,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -4504,7 +4578,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (13.3% vs 14.1% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "new-caledonia",
@@ -4542,7 +4617,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (17.1% vs 52.3% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "sweden",
@@ -4578,8 +4653,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
@@ -4618,7 +4694,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (14.2% vs 18.9% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "netherlands",
@@ -4654,8 +4730,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "austria",
@@ -4691,8 +4768,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 2 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "morocco",
@@ -4728,8 +4807,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "tunisia",
@@ -4767,7 +4847,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (8.7% vs 25.8% average error), so the years before 2012 are MODIS times that ratio. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "moldova",
@@ -4805,7 +4885,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (16.9% vs 18.3% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "kyrgyzstan",
@@ -4841,8 +4921,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -4881,7 +4962,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (11.0% vs 12.6% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "hungary",
@@ -4917,8 +4998,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -4956,7 +5038,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (8.3% vs 10.4% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "somalia",
@@ -4992,8 +5075,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5
     },
     {
       "id": "slovakia",
@@ -5029,8 +5113,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
@@ -5069,7 +5154,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (8.4% vs 46.0% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "haiti",
@@ -5105,8 +5190,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "kosovo",
@@ -5142,8 +5228,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "armenia",
@@ -5179,8 +5266,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "mauritania",
@@ -5216,9 +5304,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "czech-republic",
@@ -5254,8 +5342,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "taiwan",
@@ -5291,8 +5380,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "montenegro",
@@ -5330,7 +5420,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (15.5% vs 54.9% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "eritrea",
@@ -5368,7 +5458,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (26.1% vs 26.4% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "south-korea",
@@ -5405,7 +5495,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (23.2% vs 48.8% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "bahrain",
@@ -5441,8 +5532,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "FIRMS has no file for 6 sensor-year(s) (2000, 2001, 2002, 2003, 2006, 2012); those count as no fire."
     },
     {
@@ -5479,8 +5571,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "norway",
@@ -5516,8 +5609,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.5,
       "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
@@ -5554,8 +5648,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "jamaica",
@@ -5592,7 +5687,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (5.4% vs 13.2% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "trinidad-and-tobago",
@@ -5628,9 +5724,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "bahamas",
@@ -5667,7 +5763,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (15.4% vs 15.9% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "french-guiana",
@@ -5703,8 +5800,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "vanuatu",
@@ -5741,7 +5839,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (66.2% vs 210.6% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "rwanda",
@@ -5779,7 +5878,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (24.9% vs 29.4% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "equatorial-guinea",
@@ -5815,8 +5914,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "finland",
@@ -5854,7 +5954,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (10.5% vs 18.6% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "afghanistan",
@@ -5892,7 +5992,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (18.0% vs 35.6% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "denmark",
@@ -5928,8 +6028,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
@@ -5966,8 +6067,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "luxembourg",
@@ -6043,7 +6145,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (15.9% vs 17.0% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "palestine",
@@ -6079,9 +6181,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "jordan",
@@ -6117,8 +6219,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "caveat",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "Only 3 of the 6 hidden years (2020-2025) fell inside the model's 5-95% band, so the band is too narrow here."
     },
     {
       "id": "lebanon",
@@ -6154,9 +6258,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "switzerland",
@@ -6192,8 +6296,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
@@ -6231,7 +6336,8 @@
       "first_year": 2001,
       "forward_through": null,
       "ship": "ratio",
-      "method": "ratio"
+      "method": "ratio",
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (37.2% vs 56.1% average error), so the years before 2012 are MODIS times that ratio."
     },
     {
       "id": "ireland",
@@ -6269,7 +6375,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (22.1% vs 25.9% average error), so the years before 2012 are MODIS times that ratio. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "greenland",
@@ -6305,9 +6411,10 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
+      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "lithuania",
@@ -6345,7 +6452,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (14.9% vs 20.3% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "latvia",
@@ -6383,7 +6490,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (50.3% vs 79.9% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "cyprus",
@@ -6419,8 +6526,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "brunei-darussalam",
@@ -6458,7 +6566,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (45.9% vs 52.4% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "estonia",
@@ -6534,7 +6642,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (27.3% vs 47.9% average error), so the years before 2012 are MODIS times that ratio. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
       "id": "mauritius",
@@ -6572,7 +6680,7 @@
       "forward_through": null,
       "ship": "ratio",
       "method": "ratio",
-      "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
+      "ship_caveat": "On the hidden years 2020-2025 one constant VIIRS/MODIS ratio was closer than the model (32.9% vs 37.6% average error), so the years before 2012 are MODIS times that ratio. The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution."
     },
     {
       "id": "slovenia",
@@ -6646,8 +6754,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio"
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25
     },
     {
       "id": "djibouti",
@@ -6797,8 +6906,9 @@
       "point_rows": 0,
       "first_year": 2001,
       "forward_through": null,
-      "ship": "ratio",
-      "method": "ratio",
+      "ship": "model",
+      "method": "model",
+      "cell_deg": 0.25,
       "ship_caveat": "The 2001-2002 back-cast (Terra only before mid-2002) runs high against MODIS here: treat 2001-2002 with caution. FIRMS has no file for 1 sensor-year(s) (2000); those count as no fire."
     },
     {
