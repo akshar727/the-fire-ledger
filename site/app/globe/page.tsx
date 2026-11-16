@@ -5,7 +5,7 @@ import { logBins, per1000 } from "@/lib/globe";
 
 export const metadata: Metadata = {
   title: "Globe",
-  description: "Every place with a harmonized MODIS + VIIRS fire ledger, on a 3D globe, coloured by detections per 1,000 km².",
+  description: "Every place with a harmonized MODIS + VIIRS fire ledger, on a 3D globe, colored based on detections per 1000 km².",
 };
 
 const { years, places, unmatched } = readPlaces();
@@ -18,10 +18,10 @@ export default function GlobePage() {
       <header className="flex max-w-[68ch] flex-col gap-1.5">
         <h1 className="text-3xl leading-tight font-bold tracking-tight md:text-4xl">The world&apos;s fire ledger</h1>
         <p className="leading-relaxed text-muted-foreground">
-          Every place with a harmonized ledger, {years[0]} to {years.at(-1)}, coloured by fire detections per 1,000
+          Every place with a harmonized ledger, from {years[0]} to {years.at(-1)}, coloured by fire detections per 1,000
           km² on the VIIRS scale. Move the year, or switch to the trend to see where fire is rising or falling.
           {!hasCountries &&
-            " Countries fill in as the world run publishes them; until then the three deep dives carry the colour."}
+            " Countries fill in as the world run publishes them. Until then the three deep dives carry the color."}
         </p>
       </header>
       <GlobeExplorer years={years} places={places} edges={edges} unmatched={unmatched} />

@@ -11,7 +11,7 @@ export default function CalendarPage() {
       <header className="flex max-w-[65ch] flex-col gap-1.5">
         <h1 className="text-3xl leading-tight font-bold tracking-tight md:text-4xl">Burn calendar</h1>
         <p className="leading-relaxed text-muted-foreground">
-          Which months burn and which years broke the pattern, every month on the VIIRS scale.
+          Which months have fires and which years broke the pattern, every month on the VIIRS scale.
         </p>
       </header>
       <Suspense fallback={<CalendarSkeleton />}>
