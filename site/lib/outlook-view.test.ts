@@ -18,7 +18,6 @@ import {
 } from "./outlook-view.ts";
 import { parseSeries, type Weekly } from "./series.ts";
 
-// Synthetic record (same idea as outlook.test.ts): quietest week 40, peak at week 10, season y scaled by `scale(y)`.
 const shape = (wk: number) => {
   const d = Math.min(Math.abs(wk - 10), 52 - Math.abs(wk - 10));
   return wk === 40 ? 1 : 10 + 100 * Math.exp(-(d * d) / 50);
@@ -51,7 +50,7 @@ test("ordinal and rankPhrase", () => {
   assert.equal(rankPhrase(26, 26), "busiest");
   assert.equal(rankPhrase(3, 26), "3rd quietest");
   assert.equal(rankPhrase(24, 26), "3rd busiest");
-  assert.equal(rankPhrase(13, 25), "13th quietest"); // middle of an odd count
+  assert.equal(rankPhrase(13, 25), "13th quietest");
 });
 
 test("forecastPath starts at now and ends at outlook().forecast", () => {
@@ -64,13 +63,12 @@ test("forecastPath starts at now and ends at outlook().forecast", () => {
   assert.ok(Math.abs(end.lo - o.forecast.lo) < 1e-6 && Math.abs(end.hi - o.forecast.hi) < 1e-6);
   assert.ok(Math.abs(end.median - o.forecast.median) < 1e-6);
   for (const q of p) assert.ok(q.lo <= q.median + 1e-9 && q.median <= q.hi + 1e-9);
-  // running totals never go down
   for (let i = 1; i < p.length; i++) assert.ok(p[i].lo >= p[i - 1].lo - 1e-9);
   assert.equal(p.length, 1 + 52 - o.weeks);
 });
 
 test("forecastPath is empty without a forecast", () => {
-  const o = outlook(synthetic(12, 41), [2001, 2012])!; // one week into the season: too early
+  const o = outlook(synthetic(12, 41), [2001, 2012])!;
   assert.equal(o.forecast, null);
   assert.deepEqual(forecastPath(o), []);
 });
@@ -98,7 +96,6 @@ test("coveragePhrase only says 'less often than 90%' when it is", () => {
 });
 
 test("staleView: a complete current season is the last complete season", () => {
-  // record ends on the last day of a season (week 39 of the last year), so the current season is complete
   const o = outlook(synthetic(12, 40), [2001, 2012])!;
   assert.ok(o.current.complete);
   const v = staleView(o);
@@ -106,7 +103,6 @@ test("staleView: a complete current season is the last complete season", () => {
   assert.equal(v.seasons.length, o.past.length + 1);
   assert.ok(v.rank >= 1 && v.rank <= v.seasons.length);
   assert.match(outlookText(o, true).headline, new RegExp(`season, ${o.current.label}, ended with .+ of ${o.past.length + 1}\\.$`));
-  // a partial current season: the last past one
   const o2 = outlook(synthetic(12, 52 + 20), [2001, 2012])!;
   assert.equal(staleView(o2).focus, o2.past.at(-1));
 });
@@ -126,7 +122,6 @@ test("text: too early names the months most fire burns", () => {
   const t = outlookText(o);
   assert.match(t.forecast, /^Too early to forecast: by this date a typical season has had only \d+% of its fire\. Most of it burns /);
   assert.equal(t.honest, "");
-  // season starts week 40 (early October); peak around week 10 (March)
   assert.match(mainBurnMonths(o.past, o.past[0].start), /^\w+ to \w+$/);
 });
 
@@ -146,7 +141,6 @@ test("extremes", () => {
   for (const s of o.past) assert.ok(quietest.cum[51] <= s.cum[51] && s.cum[51] <= busiest.cum[51]);
 });
 
-// Real data (snapshot through 14 Nov 2026; update when the model is rerun).
 const real = (region: string) => {
   const b = parseSeries(JSON.parse(readFileSync(new URL(`../public/data/${region}/series.json`, import.meta.url), "utf8")));
   return { w: b.weekly!, o: outlook(b.weekly!, b.calendar?.baseline_years ?? [2001, 2025])! };

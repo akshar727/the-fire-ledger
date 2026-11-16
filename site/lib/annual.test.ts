@@ -1,4 +1,3 @@
-// Tests for lib/annual.ts against a small synthetic record and the published annual.json files (FE-006).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -21,10 +20,6 @@ import {
 
 const score = { mape_model: 1, mape_ratio: 2, coverage: 2, n_hold: 2, ratio: 3, alpha: 0.1, weekly_r: 0.9, sigma_year: 0.1 };
 
-/**
- * 2010-2021: MODIS 100 a year, VIIRS 300 from 2012, last year partial with VIIRS 30. 2012 is blended (ML-009): raw
- * VIIRS 280 from 20 Jan, harmonized 300 with the model filling 1-19 Jan.
- */
 function sample(): Annual {
   const years = Array.from({ length: 12 }, (_, k) => 2010 + k);
   const viirs = years.map((y) => (y < VIIRS_FROM ? null : y === 2021 ? 30 : y === VIIRS_FROM ? 280 : 300));
@@ -56,7 +51,6 @@ test("completeEnd and lastCompleteYear stop before trailing partial years", () =
 test("eraMeans leaves the partial year out and uses the harmonized 2012", () => {
   const e = eraMeans(sample());
   assert.equal(e.modis, 100);
-  // with 2021 in it would be (9 * 300 + 30) / 10 = 273; with the raw 2012 it would be (280 + 8 * 300) / 9 = 297.8
   assert.equal(e.viirs, 300);
   assert.equal(e.jump, 3);
 });
@@ -87,15 +81,12 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     const D: Annual = JSON.parse(readFileSync(new URL(`../public/data/${region}/annual.json`, import.meta.url), "utf8"));
     assert.equal(D.partial.length, D.years.length);
     assert.match(D.data_through, /^\d{4}-\d{2}-\d{2}$/);
-    // only trailing years may be partial (completeEnd relies on it)
     const end = completeEnd(D);
     assert.ok(D.partial.slice(0, end).every((p) => p === 0), "partial year before a complete one");
-    // the score's hold-out years are all complete and end at or before the last complete year
     const [h0, h1] = holdoutYears(D);
     assert.equal(h0, HOLD_FROM);
     assert.ok(h1 <= lastCompleteYear(D));
     assert.ok(D.years.includes(VIIRS_FROM) && D.viirs[D.years.indexOf(VIIRS_FROM) - 1] === null);
-    // the jump uses complete years only, from the harmonized ledger (ML-009)
     assert.equal(D.harmonized.length, D.years.length);
     assert.equal(D.viirs_partial.length, D.years.length);
     const e = eraMeans(D);
@@ -113,7 +104,7 @@ test("forward year helpers (FE-009)", () => {
   assert.equal(isForward(F, 11), true);
   assert.equal(isForward(F, 10), false);
   assert.equal(harmonizedLabel(F, 11), "2021 to 16 Mar");
-  assert.equal(partialLabel(F, 11), "2021 to 4 Mar"); // the raw value still stops at data_through
+  assert.equal(partialLabel(F, 11), "2021 to 4 Mar");
   assert.equal(forwardFrom(F), "5 Mar");
   assert.equal(isForward({ ...F, forward_through: null }, 11), false);
 });
@@ -121,7 +112,7 @@ test("forward year helpers (FE-009)", () => {
 for (const region of ["portugal", "ghana", "punjab"]) {
   test(`published ${region}/annual.json: forward link fields (ML-017)`, () => {
     const D: Annual = JSON.parse(readFileSync(new URL(`../public/data/${region}/annual.json`, import.meta.url), "utf8"));
-    if (!D.source) return; // before ML-017
+    if (!D.source) return;
     assert.equal(D.source.length, D.years.length);
     const fwd = D.years.flatMap((_, i) => (isForward(D, i) ? [i] : []));
     if (!D.forward_through) return assert.deepEqual(fwd, []);

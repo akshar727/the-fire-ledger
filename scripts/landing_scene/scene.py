@@ -33,13 +33,9 @@ sys.path.insert(0, str(HERE))
 import layout as L  # noqa: E402
 import srtm  # noqa: E402
 
-STEP = 2  # terrain mesh uses every 2nd SRTM sample (~180 m)
+STEP = 2
 RNG = np.random.default_rng(2017)
 
-
-# ---------------------------------------------------------------------------------------------------------------
-# small helpers
-# ---------------------------------------------------------------------------------------------------------------
 
 def smooth(u):
     u = min(1.0, max(0.0, u))
@@ -47,12 +43,10 @@ def smooth(u):
 
 
 def ramp(frame, keys):
-    """Linear interpolation through (frame, value) keys."""
     return float(np.interp(frame, [k[0] for k in keys], [k[1] for k in keys]))
 
 
 def new_mesh(name, co, faces, smooth_shading=True):
-    """Mesh from an (n, 3) vertex array and an (m, k) face array (k = 3 or 4)."""
     me = bpy.data.meshes.new(name)
     faces = np.asarray(faces, dtype=np.int32)
     k = faces.shape[1]
@@ -64,7 +58,7 @@ def new_mesh(name, co, faces, smooth_shading=True):
     me.polygons.foreach_set("loop_start", np.arange(0, faces.size, k, dtype=np.int32))
     try:
         me.polygons.foreach_set("loop_total", np.full(len(faces), k, dtype=np.int32))
-    except Exception:  # read-only since Blender 4.0: sizes follow from loop_start
+    except Exception:
         pass
     me.update(calc_edges=True)
     if smooth_shading:
@@ -73,7 +67,6 @@ def new_mesh(name, co, faces, smooth_shading=True):
 
 
 def show(ob, visible):
-    """Shows or hides an object in renders and in the viewport alike, so scrubbing an open Blender matches the frames."""
     ob.hide_render = ob.hide_viewport = not visible
 
 
@@ -99,14 +92,12 @@ def box_blur(a, r, axis):
 
 
 def blur(a, r):
-    """Three box blurs each way: close to a Gaussian."""
     for _ in range(3):
         a = box_blur(box_blur(a, r, 0), r, 1)
     return a
 
 
 class Nodes:
-    """Tiny wrapper to build a node tree without repeating boilerplate."""
 
     def __init__(self, tree):
         self.tree = tree
@@ -152,10 +143,6 @@ def material(name):
     return m, Nodes(m.node_tree)
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# terrain
-# ---------------------------------------------------------------------------------------------------------------
-
 def build_terrain(dem):
     d = dem[::STEP, ::STEP]
     rows, cols = d.shape
@@ -164,9 +151,8 @@ def build_terrain(dem):
     x, y = L.project(lat[:, None], lon[None, :])
     x, y = np.broadcast_to(x, d.shape), np.broadcast_to(y, d.shape)
     co = np.stack([x, y, d / 1000.0 * L.EXAG], axis=-1).reshape(-1, 3)
-    me = new_mesh("Terrain", co, L.mesh_faces(rows, cols))  # triangles, so layout.surface_km is its exact height
+    me = new_mesh("Terrain", co, L.mesh_faces(rows, cols))
 
-    # how far inside the tiles a vertex is (0 at the edge): the land fades into the dark instead of ending in a cliff
     ex = np.minimum(np.arange(cols), np.arange(cols)[::-1])[None, :] / cols
     ey = np.minimum(np.arange(rows), np.arange(rows)[::-1])[:, None] / rows
     edge = np.clip(np.minimum(ex, ey) / 0.12, 0, 1)
@@ -190,7 +176,7 @@ def build_terrain(dem):
         (0.0, (0.070, 0.085, 0.050)), (0.18, (0.045, 0.070, 0.036)), (0.42, (0.085, 0.092, 0.052)),
         (0.7, (0.16, 0.14, 0.10)), (1.0, (0.27, 0.25, 0.23)),
     ])
-    steep = n.math("SUBTRACT", 1.0, nor.outputs["Z"], clamp=True)  # 0 flat .. 1 vertical
+    steep = n.math("SUBTRACT", 1.0, nor.outputs["Z"], clamp=True)
     rock = n.new("ShaderNodeMixRGB", blend_type="MIX")
     n.link(n.math("MULTIPLY", steep, 2.2, clamp=True), rock.inputs["Fac"])
     n.link(land, rock.inputs["Color1"])
@@ -207,7 +193,6 @@ def build_terrain(dem):
     n.link(faded.outputs["Color"], bsdf.inputs["Base Color"])
     bsdf.inputs["Roughness"].default_value = 0.92
     n.link(n.math("MULTIPLY", n.attr("sea"), 0.25), bsdf.inputs["Specular IOR Level"])
-    # fire light on the ground around the squares
     glow = n.color_ramp(n.attr("glow"), [(0.0, (0, 0, 0)), (0.25, (0.55, 0.06, 0.0)), (0.7, (1.0, 0.33, 0.03)), (1.0, (1.0, 0.75, 0.3))])
     n.link(glow, bsdf.inputs["Emission Color"])
     strength = n.new("ShaderNodeValue", label="glow strength", name="glow_strength")
@@ -219,7 +204,6 @@ def build_terrain(dem):
 
 
 def ground_glow(S, pos, size, heat, on_ground):
-    """Fire light on the terrain: the squares' heat splatted onto the terrain grid and blurred."""
     rows, cols = S["grid"]
     g = np.zeros((rows, cols), dtype=np.float32)
     sel = on_ground & (heat > 0)
@@ -232,11 +216,6 @@ def ground_glow(S, pos, size, heat, on_ground):
     return np.clip(g, 0, 1)
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# squares (the detections)
-# ---------------------------------------------------------------------------------------------------------------
-
-# A square seen from above, a low tent seen from the side (so fire lines read on a slope from the ground).
 TENT = np.array([[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, 0.5, 0], [-0.5, 0.5, 0], [0, 0, 0.2]], dtype=np.float32)
 TENT_FACES = np.array([[0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]], dtype=np.int32)
 
@@ -276,12 +255,7 @@ def update_squares(S, pos, size, heat):
     me.update()
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# forest around the opening viewpoint
-# ---------------------------------------------------------------------------------------------------------------
-
 def pine(height, seed):
-    """A maritime pine as a few cones on a tapering trunk: (verts, faces), base at the origin, km."""
     r = np.random.default_rng(seed)
     sides = 7
     ang = np.linspace(0, 2 * np.pi, sides, endpoint=False)
@@ -314,7 +288,6 @@ def pine(height, seed):
 
 
 def far_pine(seed):
-    """A pine for the distant hills: two cones and no trunk (seen from a kilometre or more), base at the origin."""
     r = np.random.default_rng(seed)
     sides = 5
     ang = np.linspace(0, 2 * np.pi, sides, endpoint=False) + r.uniform(0, 1)
@@ -329,10 +302,6 @@ def far_pine(seed):
 
 
 def plant(variants, x, y, z, h):
-    """
-    Copies of the variant meshes at x, y (base height z), scaled to height h and turned at random: (vertices,
-    faces, tree index of each vertex, height of each vertex up its tree 0..1), in tree order.
-    """
     which = RNG.integers(0, len(variants), len(x))
     rot = RNG.uniform(0, 2 * np.pi, len(x))
     cos, faces, owner, up, base = [], [], [], [], 0
@@ -351,7 +320,6 @@ def plant(variants, x, y, z, h):
 
 
 def tree_material():
-    """Pine needles in the evening sun and the night: dark green, varied per tree, lit orange from below near fire."""
     mat, nd = material("Pine")
     out = nd.new("ShaderNodeOutputMaterial")
     bsdf = nd.new("ShaderNodeBsdfPrincipled")
@@ -359,7 +327,7 @@ def tree_material():
     shade = nd.new("ShaderNodeMixRGB", blend_type="MULTIPLY")
     shade.inputs["Fac"].default_value = 1.0
     nd.link(color, shade.inputs["Color1"])
-    lift = nd.math("ADD", nd.math("MULTIPLY", nd.attr("up"), 0.55), 0.45)  # darker inside, low in the crown
+    lift = nd.math("ADD", nd.math("MULTIPLY", nd.attr("up"), 0.55), 0.45)
     comb = nd.new("ShaderNodeCombineXYZ")
     for k in range(3):
         nd.link(lift, comb.inputs[k])
@@ -387,10 +355,6 @@ def tree_object(name, variants, x, y, z, h, mat):
 
 
 def clear_view(x, y, top, eye, targets, bin_deg=0.2, margin=0.0015):
-    """
-    False for every tree whose top would stand in front of a burning square seen from `eye` (the opening viewpoint),
-    so the forest frames the fire instead of hiding it. Only squares the terrain itself leaves in view count.
-    """
     ex, ey, ez = eye
     tx, ty, tz = targets
     s = np.linspace(0.02, 0.98, 48)[None, :]
@@ -403,21 +367,20 @@ def clear_view(x, y, top, eye, targets, bin_deg=0.2, margin=0.0015):
     lowest, far = np.full(nb, np.inf), np.zeros(nb)
     np.minimum.at(lowest, bins(tx, ty), (tz - ez) / dt)
     np.maximum.at(far, bins(tx, ty), dt)
-    for _ in range(2):  # a bin either side
+    for _ in range(2):
         lowest = np.minimum(lowest, np.minimum(np.roll(lowest, 1), np.roll(lowest, -1)))
         far = np.maximum(far, np.maximum(np.roll(far, 1), np.roll(far, -1)))
     b, d = bins(x, y), np.hypot(x - ex, y - ey)
     return ~((d < far[b]) & ((top - ez) / d > lowest[b] - margin))
 
 
-DEM = []  # the elevation grid, for clear_view (set in build)
+DEM = []
 
 
 def build_forest(dem, eye, targets, mat):
-    """Detailed pines around the opening viewpoint, denser close to it, with a view to the fire left open."""
     ex, ey = L.EYE
     n = 16000
-    rad = 1.6 * np.sqrt(RNG.uniform(0, 1, n)) ** 1.6 + 0.004  # denser near the eye
+    rad = 1.6 * np.sqrt(RNG.uniform(0, 1, n)) ** 1.6 + 0.004
     ang = RNG.uniform(0, 2 * np.pi, n)
     x, y = ex + rad * np.cos(ang), ey + rad * np.sin(ang)
     h = RNG.uniform(0.016, 0.030, n) * 1.25
@@ -426,7 +389,7 @@ def build_forest(dem, eye, targets, mat):
     to_fire /= np.linalg.norm(to_fire)
     along = (x - ex) * to_fire[0] + (y - ey) * to_fire[1]
     across = np.abs(-(x - ex) * to_fire[1] + (y - ey) * to_fire[0])
-    keep = ~((along > 0) & (along < 0.35) & (across < 0.012 + along * 0.22))  # a clearing towards the fire
+    keep = ~((along > 0) & (along < 0.35) & (across < 0.012 + along * 0.22))
     keep &= (rad > 0.014) & clear_view(x, y, z + h, eye, targets)
     variants = [pine(1.0, s) for s in range(6)]
     ob, _ = tree_object("Forest", variants, x[keep], y[keep], z[keep], h[keep], mat)
@@ -434,11 +397,6 @@ def build_forest(dem, eye, targets, mat):
 
 
 def build_far_forest(dem, eye, targets, mat, grid):
-    """
-    Pines over the hills between the opening viewpoint and the fire and all around the fire, in patches, thinning
-    on steep slopes and above 1,100 m. Returns the object and, per vertex, the terrain-grid cell under its tree (the
-    fire light on the ground is copied onto the trees each frame).
-    """
     ex, ey, _ = eye
     fx, fy = L.FIRE
     d = np.array([fx - ex, fy - ey])
@@ -452,7 +410,6 @@ def build_far_forest(dem, eye, targets, mat, grid):
     keep = (along > -2.5) & (along < length + 7.0) & (across < 8.0) & (np.hypot(x - ex, y - ey) > 1.2)
     x, y = x[keep], y[keep]
     z = L.surface_km(dem, x, y)
-    # patches: a smooth random field on a 250 m lattice
     x0, y0, cell = x.min(), y.min(), 0.25
     field = blur(RNG.normal(size=(int((y.max() - y0) / cell) + 2, int((x.max() - x0) / cell) + 2)).astype(np.float32), 3)
     field = (field - field.mean()) / field.std()
@@ -477,7 +434,6 @@ def build_far_forest(dem, eye, targets, mat, grid):
 
 
 def build_grass(dem, eye):
-    """Grass blades in front of the opening viewpoint, dense close by: dry June grass with a little green left."""
     ex, ey, _ = eye
     face = math.atan2(L.FIRE[1] - ey, L.FIRE[0] - ex)
     n = 420_000
@@ -493,9 +449,8 @@ def build_grass(dem, eye):
     phi = RNG.uniform(0, 2 * np.pi, n)
     px, py = np.cos(phi) * w / 2, np.sin(phi) * w / 2
     lean = RNG.uniform(0.08, 0.45, n) * h
-    lx = np.cos(phi + np.pi / 2) * lean * 0.6 + lean * 0.4 * 0.7  # partly random, partly a breeze to the east
+    lx = np.cos(phi + np.pi / 2) * lean * 0.6 + lean * 0.4 * 0.7
     ly = np.sin(phi + np.pi / 2) * lean * 0.6 + lean * 0.4 * 0.3
-    # five points per blade: base pair, a narrower pair half-way (bent less), the tip
     co = np.stack([
         np.stack([x - px, y - py, z], -1), np.stack([x + px, y + py, z], -1),
         np.stack([x - px * 0.6 + lx * 0.3, y - py * 0.6 + ly * 0.3, z + h * 0.55], -1),
@@ -521,7 +476,7 @@ def build_grass(dem, eye):
     nd.link(comb.outputs[0], shade.inputs["Color2"])
     nd.link(shade.outputs["Color"], bsdf.inputs["Base Color"])
     bsdf.inputs["Roughness"].default_value = 0.75
-    trans = nd.new("ShaderNodeBsdfTranslucent")  # low sun through the blades
+    trans = nd.new("ShaderNodeBsdfTranslucent")
     nd.link(shade.outputs["Color"], trans.inputs["Color"])
     mix = nd.new("ShaderNodeMixShader")
     mix.inputs["Fac"].default_value = 0.3
@@ -531,26 +486,16 @@ def build_grass(dem, eye):
     return add_object("Grass", me, mat)
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# sky, light, smoke
-# ---------------------------------------------------------------------------------------------------------------
-
-SUN_AZ = 300.0  # sunset on 17 June at 40 N is about 300 degrees (west-north-west): behind the fire from the eye
+SUN_AZ = 300.0
 
 
 def sun_vector(t):
-    """Unit vector towards the sun at story time t: low in the west-north-west, setting by t = 27."""
     el = math.radians(ramp(t, [(0, 12.0), (10, 8.0), (18, 4.0), (24, 1.0), (30, -3.0), (40, -8.0)]))
     az = math.radians(SUN_AZ)
     return Vector((math.sin(az) * math.cos(el), math.cos(az) * math.cos(el), math.sin(el)))
 
 
 def build_world():
-    """
-    The sky, from the end of the afternoon of 17 June to the night: a blue day sky with the sun low behind the fire,
-    a warm glow on the horizon around the sun as it sets, then the night sky (lighter than black, so the hills and
-    trees still read against it). Values `day`, `glow`, `sun` and `sky` are keyed per frame in apply().
-    """
     w = bpy.data.worlds.new("Evening and night of 17 June")
     w.use_nodes = True
     n = Nodes(w.node_tree)
@@ -568,7 +513,6 @@ def build_world():
     n.link(daylight.outputs[0], sky.inputs["Fac"])
     n.link(night, sky.inputs["Color1"])
     n.link(day, sky.inputs["Color2"])
-    # towards the sun: a wide warm glow low on the horizon, a tighter bright halo, and the disc itself
     to_sun = n.new("ShaderNodeVectorMath", operation="DOT_PRODUCT", name="to_sun")
     n.link(tc.outputs["Generated"], to_sun.inputs[0])
     to_sun.inputs[1].default_value = sun_vector(0)
@@ -586,10 +530,10 @@ def build_world():
     n.link(sky.outputs["Color"], add.inputs["Color1"])
     add.inputs["Color2"].default_value = (1.0, 0.40, 0.13, 1)
     sky_with_clouds, cover = clouds(n, xyz, up, c, add.outputs["Color"])
-    add2 = n.new("ShaderNodeMixRGB", blend_type="ADD")  # sky + halo x sun colour (halo can exceed 1: no clamping)
-    n.link(n.math("SUBTRACT", 1.0, n.math("MULTIPLY", cover, 0.85)), add2.inputs["Fac"])  # thin cloud dims the sun
+    add2 = n.new("ShaderNodeMixRGB", blend_type="ADD")
+    n.link(n.math("SUBTRACT", 1.0, n.math("MULTIPLY", cover, 0.85)), add2.inputs["Fac"])
     n.link(sky_with_clouds, add2.inputs["Color1"])
-    sun_col = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="sun_colour")  # Color1 keyed in apply()
+    sun_col = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="sun_colour")
     sun_col.inputs["Fac"].default_value = 1.0
     comb = n.new("ShaderNodeCombineXYZ")
     for k in range(3):
@@ -606,13 +550,6 @@ def build_world():
 
 
 def clouds(n, xyz, up, c, sky):
-    """
-    Scattered fair-weather cloud on the sky dome for the daylight frames: two noise fields on a flat layer seen from
-    below (direction / height, so cloud shrinks and thins towards the horizon into the haze), grey-blue in their
-    thick cores, white-gold on their edges and warmest towards the sun, kept off the sun's disc so the sunset stays
-    visible. Values `clouds` (amount) and `cloud_light` are keyed per frame in apply(); the tint is `cloud_tint`.
-    Returns (sky colour with the clouds over it, cloud cover 0..1).
-    """
     lift = n.math("ADD", n.math("MAXIMUM", xyz.outputs["Z"], 0.0), 0.10)
     drift = n.new("ShaderNodeValue", label="cloud drift", name="cloud_drift")
     plane = n.new("ShaderNodeCombineXYZ")
@@ -645,10 +582,9 @@ def clouds(n, xyz, up, c, sky):
     n.link(core, body.inputs["Fac"])
     body.inputs["Color1"].default_value = (0.92, 0.88, 0.84, 1)
     body.inputs["Color2"].default_value = (0.42, 0.45, 0.55, 1)
-    tint = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="cloud_tint")  # Color2 keyed: white to sunset orange
+    tint = n.new("ShaderNodeMixRGB", blend_type="MULTIPLY", name="cloud_tint")
     tint.inputs["Fac"].default_value = 1.0
     n.link(body.outputs["Color"], tint.inputs["Color1"])
-    # edges facing the sun light up (silver lining)
     rim = n.math("MULTIPLY", n.math("MULTIPLY", n.math("POWER", c, 6.0), n.math("SUBTRACT", 1.0, core)), 1.6)
     lit = n.new("ShaderNodeMixRGB", blend_type="ADD")
     n.link(rim, lit.inputs["Fac"])
@@ -675,8 +611,8 @@ def build_lights():
     sky.color = (0.55, 0.66, 1.0)
     sky.angle = math.radians(8)
     ob = add_object("Sky light", sky)
-    ob.rotation_euler = (math.radians(58), 0, math.radians(128))  # from the north-west, 32 degrees up
-    sky.volume_factor = 0.2  # lights the land more than the smoke, so a lighter night does not turn the air to fog
+    ob.rotation_euler = (math.radians(58), 0, math.radians(128))
+    sky.volume_factor = 0.2
     sun = bpy.data.lights.new("Sun", "SUN")
     sun.angle = math.radians(1.2)
     sun.volume_factor = 0.3
@@ -692,7 +628,6 @@ def build_lights():
 
 
 def build_smoke():
-    """Smoke over the June fire and a thin haze in the valleys: one volume box, density from position."""
     me = bpy.data.meshes.new("Air")
     x0, x1, y0, y1, z0, z1 = -85.0, 85.0, -110.0, 110.0, 0.0, 9.0
     co = [(x, y, z) for z in (z0, z1) for y in (y0, y1) for x in (x0, x1)]
@@ -703,7 +638,6 @@ def build_smoke():
     geo = n.new("ShaderNodeNewGeometry")
     pos = n.new("ShaderNodeSeparateXYZ")
     n.link(geo.outputs["Position"], pos.inputs[0])
-    # plume: rises from the fire and leans east-north-east with height
     lean_x = n.math("ADD", L.FIRE[0], n.math("MULTIPLY", pos.outputs["Z"], 2.2))
     lean_y = n.math("ADD", L.FIRE[1], n.math("MULTIPLY", pos.outputs["Z"], 0.8))
     dx = n.math("DIVIDE", n.math("SUBTRACT", pos.outputs["X"], lean_x), 14.0)
@@ -734,10 +668,6 @@ def build_smoke():
     return ob
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# satellites and their scan lines
-# ---------------------------------------------------------------------------------------------------------------
-
 def box(cx, cy, cz, sx, sy, sz):
     v = np.array([[x, y, z] for z in (-0.5, 0.5) for y in (-0.5, 0.5) for x in (-0.5, 0.5)], dtype=np.float32)
     v = v * (sx, sy, sz) + (cx, cy, cz)
@@ -746,7 +676,6 @@ def box(cx, cy, cz, sx, sy, sz):
 
 
 def build_satellite(name, wings):
-    """A plain satellite: a foil-wrapped bus, an instrument facing down, solar wings. No imported model."""
     def mat(label, color, metallic, rough, emit=0.0):
         m, n = material(f"{name} {label}")
         out = n.new("ShaderNodeOutputMaterial")
@@ -778,7 +707,6 @@ def build_satellite(name, wings):
 
 
 def glow_material(name, color):
-    """Light with nothing behind it: an emission added to a fully see-through surface, so it only brightens."""
     m, n = material(name)
     out = n.new("ShaderNodeOutputMaterial")
     clear = n.new("ShaderNodeBsdfTransparent")
@@ -795,17 +723,12 @@ def glow_material(name, color):
     return m, n, em
 
 
-SCAN_HALF = 90.0  # km either side of the satellite's nadir the ground line is drawn (past the picture's edges)
-SCAN_N = 721      # samples along it (every 250 m), so it lies on the terrain
-FAN_N = 120       # slices of the fan from the instrument down to the line
+SCAN_HALF = 90.0
+SCAN_N = 721
+FAN_N = 120
 
 
 def build_scan(name, color, width):
-    """
-    One satellite's scan: the line on the ground it is imaging right now (one pixel wide, draped over the terrain)
-    and a faint fan of light from its instrument down to that line, so the line visibly hangs from the satellite and
-    moves with it. Both meshes keep their topology; place_scan() moves their vertices each frame.
-    """
     k = SCAN_N
     i = np.arange(k - 1)
     line_me = new_mesh(name, np.zeros((2 * k, 3)), np.stack([i, i + 1, k + i + 1, k + i], axis=1), smooth_shading=False)
@@ -821,7 +744,6 @@ def build_scan(name, color, width):
     fan_me = new_mesh(f"{name} fan", np.zeros((3 * FAN_N, 3)), np.arange(3 * FAN_N).reshape(-1, 3), smooth_shading=False)
     float_attr(fan_me, "down", np.tile(np.array([0.0, 1.0, 1.0], dtype=np.float32), FAN_N))
     m, n, em = glow_material(f"{name} fan", color)
-    # brightest where it meets the ground line and straight under the satellite, gone at the fan's two edges
     centre = n.math("POWER", n.math("SUBTRACT", 1.0, n.math("POWER", n.attr("edge"), 2.0), clamp=True), 2.0)
     down = n.math("ADD", n.math("MULTIPLY", n.math("POWER", n.attr("down"), 2.0), 0.75), 0.25)
     gain = n.new("ShaderNodeValue", label="fan", name="fan")
@@ -832,20 +754,19 @@ def build_scan(name, color, width):
     return line, fan, width
 
 
-FLY_ON = 8.0  # story frames before and after its pass a satellite may still be flying through the picture
+FLY_ON = 8.0
 
 
 def in_view(scene, camera, sat, scan, scale):
-    """Whether any of the satellite (its body and wings), its fan or its ground line is inside the camera's frame."""
     from bpy_extras.object_utils import world_to_camera_view
     c = Vector(sat.location)
     pts = [c + Vector((dx, dy, dz)) * scale for dx in (-3.5, 3.5) for dy in (-1, 1) for dz in (-1, 1)]
     co = np.zeros(len(scan[0].data.vertices) * 3, dtype=np.float32)
     scan[0].data.vertices.foreach_get("co", co)
     co = co.reshape(-1, 3)
-    pts += [Vector(v) for v in co[:: 12]]  # the ground line, every 3 km
-    foot = Vector(co[len(co) // 4])  # the middle of the line's near edge, under the satellite
-    pts += [c.lerp(foot, k / 10) for k in range(1, 10)]  # down the fan
+    pts += [Vector(v) for v in co[:: 12]]
+    foot = Vector(co[len(co) // 4])
+    pts += [c.lerp(foot, k / 10) for k in range(1, 10)]
     for p in pts:
         x, y, z = world_to_camera_view(scene, camera, p)
         if z > 0 and -0.02 <= x <= 1.02 and -0.02 <= y <= 1.02:
@@ -854,15 +775,13 @@ def in_view(scene, camera, sat, scan, scale):
 
 
 def place_scan(S, scan, s, c_sat, apex):
-    """Puts the ground line at `s` km along the track (centred under the satellite, `c_sat` km across) and the fan
-    between it and the instrument at `apex`."""
     line, fan, width = scan
     dem = S["dem"]
     bx, by = L.TRACK[0] * s, L.TRACK[1] * s
 
     def ground(c):
         x, y = bx + L.CROSS[0] * c, by + L.CROSS[1] * c
-        return x, y, L.surface_km(dem, x, y) + 0.22  # clear of the ridges it crosses, seen from the side
+        return x, y, L.surface_km(dem, x, y) + 0.22
 
     x, y, z = ground(c_sat + np.linspace(-SCAN_HALF, SCAN_HALF, SCAN_N))
     hw = width / 2
@@ -871,7 +790,7 @@ def place_scan(S, scan, s, c_sat, apex):
     line.data.vertices.foreach_set("co", co.astype(np.float32).ravel())
     line.data.update()
 
-    half = min(1.3 * (apex.z - float(L.surface_km(dem, apex.x, apex.y))), SCAN_HALF)  # about MODIS's +-55 degrees
+    half = min(1.3 * (apex.z - float(L.surface_km(dem, apex.x, apex.y))), SCAN_HALF)
     c = c_sat + np.linspace(-half, half, FAN_N + 1)
     gx, gy, gz = ground(c)
     tri = np.zeros((FAN_N, 3, 3))
@@ -884,25 +803,9 @@ def place_scan(S, scan, s, c_sat, apex):
     fan.data.update()
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# embers
-# ---------------------------------------------------------------------------------------------------------------
-
 def build_embers(dem, p, burning):
-    """
-    Glowing embers in the air, as small camera-facing discs rebuilt each frame (ember_state, update_embers):
-      plume  rising off the squares burning when the story opens, spiralling up to 0.3-3.5 km while they cool and
-             drifting east-north-east with height, like the smoke (build_smoke)
-      drift  carried on the wind across the hills between the fire and the opening viewpoint, scattered around the
-             camera's path up out of the forest (each one near where the camera is at some moment of story time
-             24 to 44, over the smoke, at a distance in proportion to its height above the ground then, glowing for a few units
-             either side of that moment), so the camera flies through them on the way up
-    Decoration, not data: no ember is a detection. Real embers are 1-5 cm; these are 4-50 cm (so a few stay in sight) and drawn at least ~2 pixels wide
-    and dimmed in proportion when that is larger than they are, so far ones read as sparks, not blobs.
-    """
     r = np.random.default_rng(618)
     E = {}
-    # plume
     na = 4500
     src = r.choice(np.where(burning)[0], na)
     sx, sy = p["x"][src] + r.normal(0, 0.2, na), p["y"][src] + r.normal(0, 0.2, na)
@@ -913,9 +816,8 @@ def build_embers(dem, p, burning):
         "swirl": r.uniform(0.04, 0.35, na), "spin": r.choice([-1, 1], na) * r.uniform(0.3, 1.0, na),
         "angle": r.uniform(0, 2 * np.pi, na), "size": r.uniform(0.00015, 0.0005, na),
     }
-    # drift: anchors on the camera path
     nb = 3600
-    grid = np.linspace(24.0, 44.0, 81)  # only once the camera is up over the smoke and the burning hills
+    grid = np.linspace(24.0, 44.0, 81)
     cams = [L.camera(dem, max(g, 0.0)) for g in grid]
     eyes = np.array([c["eye"] for c in cams])
     fwds = np.array([c["target"] for c in cams]) - eyes
@@ -930,7 +832,7 @@ def build_embers(dem, p, burning):
     pos = eyes[k] + way * d[:, None]
     ground = L.surface_km(dem, pos[:, 0], pos[:, 1])
     pos[:, 2] = np.clip(pos[:, 2], ground + 0.002, ground + 4.5)
-    wind = np.array([0.020, 0.007, 0.012]) + r.normal(0, 0.006, (nb, 3))  # east-north-east and up, per story unit
+    wind = np.array([0.020, 0.007, 0.012]) + r.normal(0, 0.006, (nb, 3))
     b = {
         "pos": pos, "t": grid[k], "vel": wind * d[:, None],
         "swirl": d * r.uniform(0.01, 0.05, nb), "spin": r.choice([-1, 1], nb) * r.uniform(0.3, 1.2, nb),
@@ -952,7 +854,7 @@ def build_embers(dem, p, burning):
     nd.link(nd.color_ramp(nd.attr("hot"), [(0.0, (0.60, 0.05, 0.004)), (0.55, (1.0, 0.22, 0.015)), (1.0, (1.0, 0.48, 0.08))]),
             em.inputs["Color"])
     r2 = nd.math("ADD", nd.math("MULTIPLY", nd.attr("u"), nd.attr("u")), nd.math("MULTIPLY", nd.attr("v"), nd.attr("v")))
-    disc = nd.math("POWER", nd.math("SUBTRACT", 1.0, r2, clamp=True), 2.0)  # a soft round spark in the square
+    disc = nd.math("POWER", nd.math("SUBTRACT", 1.0, r2, clamp=True), 2.0)
     gain = nd.new("ShaderNodeValue", label="embers", name="embers")
     gain.outputs[0].default_value = 1.0
     nd.link(nd.math("MULTIPLY", nd.math("MULTIPLY", disc, nd.attr("bright")), gain.outputs[0]), em.inputs["Strength"])
@@ -962,14 +864,13 @@ def build_embers(dem, p, burning):
 
 
 def ember_state(E, t):
-    """Position (n x 3), true size (km) and glow (0..1) of every ember at story time t."""
     a, b = E["plume"], E["drift"]
     age = (a["phase"] + t / a["period"]) % 1.0
     up = a["rise"] * age ** 0.75
     wob = a["swirl"] * (0.25 + age)
     ang = a["angle"] + a["spin"] * t
     pa = np.stack([a["x"] + up * 2.2 + wob * np.cos(ang), a["y"] + up * 0.8 + wob * np.sin(ang), a["z"] + up], 1)
-    ga = np.clip(age / 0.04, 0, 1) * (1 - age) ** 1.3  # flares as it leaves the fire, cools as it climbs
+    ga = np.clip(age / 0.04, 0, 1) * (1 - age) ** 1.3
 
     dt = t - b["t"]
     ang = b["angle"] + b["spin"] * t
@@ -977,7 +878,7 @@ def ember_state(E, t):
     pb[:, 0] += b["swirl"] * np.cos(ang)
     pb[:, 1] += b["swirl"] * np.sin(ang)
     pb[:, 2] += b["swirl"] * 0.5 * np.sin(ang * 1.3)
-    gb = 0.9 * np.exp(-(dt / 6.0) ** 2)  # each one glows while the camera is near where it was placed
+    gb = 0.9 * np.exp(-(dt / 6.0) ** 2)
 
     pos = np.concatenate([pa, pb])
     flick = 0.65 + 0.35 * np.sin(E["seed"] + t * 2.3 * np.concatenate([np.ones(len(pa)), b["flicker"]]))
@@ -991,7 +892,7 @@ def update_embers(E, t, eye, right, up, lens, gain):
         return
     pos, size, glow = ember_state(E, t)
     dist = np.linalg.norm(pos - np.array(eye), axis=1)
-    per_px = 2 * math.atan(18.0 / lens) / 1600.0  # radians per pixel across the 1600-pixel frame
+    per_px = 2 * math.atan(18.0 / lens) / 1600.0
     drawn = np.maximum(size, dist * per_px * 1.8)
     bright = glow * np.clip(size / drawn, 0.02, 1.0) ** 0.5
     quad = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=np.float64)
@@ -1004,12 +905,7 @@ def update_embers(E, t, eye, right, up, lens, gain):
     value(ob.data.materials[0], "embers").default_value = gain
 
 
-# ---------------------------------------------------------------------------------------------------------------
-# axis under the timeline
-# ---------------------------------------------------------------------------------------------------------------
-
 def build_axis():
-    """A baseline under the daily columns with a tick at the first of each month."""
     boxes = [box(0, L.HIST["y0"] - 0.7, L.Z_PLANE, L.HIST["x1"] - L.HIST["x0"], 0.18, 0.02)]
     days = np.cumsum([0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     for d in days:
@@ -1025,10 +921,6 @@ def build_axis():
     ob.visible_shadow = False
     return ob, em
 
-
-# ---------------------------------------------------------------------------------------------------------------
-# the scene and the frame function
-# ---------------------------------------------------------------------------------------------------------------
 
 def reset():
     if bpy.data.filepath:
@@ -1054,7 +946,6 @@ def build(scale=100):
     }
     S["terrain"], S["grid"] = build_terrain(dem)
     S["squares"] = build_squares(p)
-    # the squares burning when the story opens, as seen from its first viewpoint: the trees keep out of their way
     eye = L.camera(dem, 0)["eye"]
     burning = (L.heat(p, S["on"], 0) > 0.25) & (np.hypot(p["x"] - L.FIRE[0], p["y"] - L.FIRE[1]) < 25)
     targets = (p["x"][burning], p["y"][burning], S["ground_z"][burning] + 0.02)
@@ -1106,7 +997,6 @@ def build(scale=100):
 
 
 def build_bloom(scene):
-    """Glow around the hot squares, in the compositor."""
     tree = bpy.data.node_groups.new("Bloom", "CompositorNodeTree")
     tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
     rl = tree.nodes.new("CompositorNodeRLayers")
@@ -1116,7 +1006,7 @@ def build_bloom(scene):
                         ("Saturation", 1.0), ("Smoothness", 0.4)):
         try:
             glare.inputs[name].default_value = value
-        except Exception as e:  # socket missing in this Blender: say so, keep going
+        except Exception as e:
             print(f"bloom: could not set {name}: {e}; inputs are {[i.name for i in glare.inputs]}")
     tree.links.new(rl.outputs["Image"], glare.inputs["Image"])
     tree.links.new(glare.outputs["Image"], out.inputs[0])
@@ -1129,7 +1019,6 @@ def value(datablock, name):
 
 
 def apply(S, frame):
-    """Puts everything where it belongs at rendered `frame` (0 to L.FRAMES - 1, may be fractional)."""
     t = L.story_time(frame)
     p, dem = S["p"], S["dem"]
     pos, size, heat = L.squares(p, S["ground_z"], S["on"], S["slots_t"], S["slots_c"], t)
@@ -1141,11 +1030,10 @@ def apply(S, frame):
     float_attr(terrain, "glow", glow.ravel())
     terrain.update()
 
-    # camera
     c = L.camera(dem, t)
     eye, target = Vector(c["eye"]), Vector(c["target"])
     fwd = (target - eye).normalized()
-    hint = Vector(c["up"])  # the sky near the ground, north looking straight down, the far side while orbiting
+    hint = Vector(c["up"])
     right = fwd.cross(hint).normalized()
     up = right.cross(fwd)
     S["camera"].matrix_world = Matrix(((right.x, up.x, -fwd.x, eye.x), (right.y, up.y, -fwd.y, eye.y),
@@ -1158,7 +1046,6 @@ def apply(S, frame):
     ee.volumetric_start = cam.clip_start
     ee.volumetric_end = float(np.clip(above * 1.6 + 30.0, 30.0, 420.0))
 
-    # sunset: the sun goes down behind the fire while the camera climbs out of the forest (t 0 to 30), then night
     sun = sun_vector(t)
     S["sun"].rotation_euler = (-sun).to_track_quat("-Z", "Y").to_euler()
     S["sun"].data.energy = ramp(t, [(0, 4.2), (12, 3.4), (20, 1.8), (25, 0.5), (27, 0.0)])
@@ -1172,35 +1059,29 @@ def apply(S, frame):
     value(world, "glow").default_value = ramp(t, [(0, 0.5), (12, 1.4), (22, 2.0), (30, 1.0), (40, 0.36)])
     value(world, "sun").default_value = ramp(t, [(0, 1.0), (22, 1.0), (27, 0.0)])
     value(world, "sky").default_value = ramp(t, [(0, 1.0), (40, 1.0), (60, 0.5)])
-    # clouds through the daylight and the sunset, darkening with the sky, gone by night
     value(world, "clouds").default_value = ramp(t, [(0, 1.0), (20, 1.0), (30, 0.4), (36, 0.0)])
     value(world, "cloud_light").default_value = ramp(t, [(0, 1.0), (10, 0.9), (18, 0.6), (24, 0.32), (30, 0.12), (36, 0.05)])
     value(world, "cloud_drift").default_value = t * 0.004
     world.node_tree.nodes["cloud_tint"].inputs["Color2"].default_value = (
         1.0, ramp(t, [(0, 0.97), (14, 0.82), (24, 0.6)]), ramp(t, [(0, 0.93), (14, 0.66), (24, 0.4)]), 1.0)
-    # glow only from what is hotter than the day sky
     S["glare"].inputs["Threshold"].default_value = ramp(t, [(0, 1.6), (22, 1.6), (34, 0.7)])
-    # night light: lighter than the first cut on the way up (trees and hills stay readable), clearest from high up,
-    # then down again so the timeline carries the picture
     S["sky_light"].data.energy = ramp(t, [(0, 0.0), (16, 0.3), (30, 1.15), (40, 1.2), (54, 2.3), (100, 2.3), (144, 0.7), (179, 0.3)])
     fire_glow = ramp(t, [(0, 3.0), (16, 4.5), (36, 4.0), (72, 2.2), (108, 1.6), (144, 0.3)])
     value(S["terrain"].data.materials[0], "glow_strength").default_value = fire_glow
     value(S["forest"].data.materials[0], "glow_strength").default_value = fire_glow * 1.5
-    # dimmer in daylight, where full strength reads as cream instead of fire
     value(S["squares"].data.materials[0], "gain").default_value = ramp(t, [(0, 0.6), (20, 1.0), (30, 1.3), (36, 1.1), (60, 1.0), (108, 1.0), (144, 0.9), (179, 0.8)])
     air = S["air"].data.materials[0]
     value(air, "smoke").default_value = ramp(t, [(0, 0.6), (24, 1.0), (40, 1.0), (56, 0.45), (90, 0.25), (120, 0.0)])
-    value(air, "haze").default_value = ramp(t, [(0, 0.12), (20, 0.25), (34, 1.0), (40, 1.0), (60, 0.25), (110, 0.0)])  # thin in daylight
+    value(air, "haze").default_value = ramp(t, [(0, 0.12), (20, 0.25), (34, 1.0), (40, 1.0), (60, 0.25), (110, 0.0)])
     show(S["air"], t < 120)
     show(S["forest"], t <= 60)
     show(S["grass"], t <= 28)
     show(S["far_forest"], t <= 64)
-    if not S["far_forest"].hide_render:  # fire light on the ground, copied onto the pines standing in it
+    if not S["far_forest"].hide_render:
         me = S["far_forest"].data
         float_attr(me, "glow", glow.ravel()[S["far_cells"]])
         me.update()
 
-    # the brightest fire clusters light the smoke and the hills from below
     hot = on_ground & (heat > 0.3) & (np.hypot(pos[:, 0] - L.FIRE[0], pos[:, 1] - L.FIRE[1]) < 45)
     cell = (np.floor(pos[hot, 0] / 6.0).astype(int) + 1000) * 10000 + np.floor(pos[hot, 1] / 6.0).astype(int) + 1000
     cells, inverse = np.unique(cell, return_inverse=True)
@@ -1219,11 +1100,6 @@ def apply(S, frame):
         else:
             show(ob, False)
 
-    # satellites: each flies straight above the line it is scanning, and its fan of light reaches down to that line,
-    # so line and satellite move together; it sits a little to one side of the fire so it does not hide it. Height
-    # and size follow the camera's distance from the fire, not its height, so they stay put while it orbits (layout.ORBIT)
-    # Each one keeps flying before and after its pass (layout.flight) for as long as it, its fan or its line is still
-    # in the picture, so it enters and leaves out of view, and is hidden everywhere else.
     reach = (eye - target).length
     fire_c = L.FIRE[0] * L.CROSS[0] + L.FIRE[1] * L.CROSS[1]
     scene = bpy.context.scene
@@ -1238,7 +1114,7 @@ def apply(S, frame):
             continue
         s = L.flight(ps, t)
         side = -1.0 if key == "Aqua" else 1.0
-        z = reach * (0.42 - 0.12 * L.orbit_weight(t))  # lower while the camera orbits, so it stays in the picture
+        z = reach * (0.42 - 0.12 * L.orbit_weight(t))
         c_sat = fire_c + side * 0.3 * z
         scale = reach * 0.012
         sat.location = (L.TRACK[0] * s + L.CROSS[0] * c_sat, L.TRACK[1] * s + L.CROSS[1] * c_sat, z)
@@ -1249,7 +1125,6 @@ def apply(S, frame):
         for ob in parts:
             show(ob, visible)
 
-    # embers: none under the clear opening sky, only once the camera rises over the fire and its smoke, gone once the camera is far above the smoke
     update_embers(S["embers"], t, eye, right, up, cam.lens, ramp(t, [(0, 0.0), (22, 0.0), (28, 10.0), (34, 14.0), (44, 14.0), (52, 0.0)]))
 
     S["axis_emission"].inputs["Strength"].default_value = ramp(t, [(112, 0.0), (130, 1.6), (150, 1.6), (166, 0.0)])
@@ -1288,7 +1163,7 @@ def main():
         frames += list(range(int(lo), int(hi or lo) + 1))
     apply(S, frames[0] if frames else 0)
 
-    def on_frame(scene, *_):  # scrubbing the timeline in an open Blender
+    def on_frame(scene, *_):
         apply(S, scene.frame_current)
 
     if not frames:

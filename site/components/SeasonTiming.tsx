@@ -1,9 +1,5 @@
 "use client";
 
-// FE-017: season timing on /ledger, under the season outlook. For every whole fire season, the days on which its
-// running total reached 10%, 50% and 90% of that season's fire, and one sentence on whether onset is drifting. The
-// maths is `seasonTiming` / `timingSentence` in lib/series.ts, on the seasons `outlook()` (lib/outlook.ts) already
-// split from the weekly harmonized ledger, so the season start (the quietest week) is the same as the chart above.
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Disclosure } from "@/components/Disclosure";
 import { DownloadPicture } from "@/components/DownloadPicture";
@@ -31,7 +27,6 @@ export function SeasonTiming({ o, regionId, region }: { o: Outlook; regionId: Re
   const x = (d: number) => L + (d / 366) * (W - L - R);
   const y = (i: number) => T + i * ROW + ROW / 2;
 
-  // month ticks: day of the season of each 1st of the month, from the first season (every season starts in the same week)
   const t0 = Date.parse(`${rows[0].start}T00:00:00Z`);
   const ticks: { x: number; label: string }[] = [];
   for (let d = 0; d < 366; d++) {
@@ -122,7 +117,6 @@ export function SeasonTiming({ o, regionId, region }: { o: Outlook; regionId: Re
             ))}
             {rows.map((r, i) => (
               <g key={r.year} opacity={active == null || active === i ? 1 : 0.35}>
-                {/* every other season, counted from the latest, so the newest row is always labelled */}
                 {(rows.length - 1 - i) % 2 === 0 && (
                   <text x={L - 8} y={y(i) + 3.5} textAnchor="end" className="fill-muted-foreground font-mono">
                     {r.label}
@@ -130,7 +124,6 @@ export function SeasonTiming({ o, regionId, region }: { o: Outlook; regionId: Re
                 )}
                 <line x1={x(r.days[0])} x2={x(r.days[2] + 1)} y1={y(i)} y2={y(i)} stroke="var(--muted-foreground)" strokeWidth={2} strokeLinecap="round" />
                 <circle cx={x(r.days[1] + 0.5)} cy={y(i)} r={3.5} fill="var(--primary)" />
-                {/* hit area for the whole row */}
                 <rect x={L} y={y(i) - ROW / 2} width={W - L - R} height={ROW} fill="transparent" onMouseEnter={() => setActive(i)} />
               </g>
             ))}

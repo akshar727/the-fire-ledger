@@ -1,9 +1,5 @@
 "use client";
 
-// "See it from space" (FE-024): the NASA true-colour image of one day over the region's box, with our FIRMS detections of
-// that day drawn on top. Always shown under the burn calendar (starting on the latest month; a click or Enter on a month, or the latest-month card, picks another),
-// starting on the month's peak fire day from peaks.json (DP-016). Imagery: NASA GIBS WMS, satellite picked by date
-// (lib/space.ts, facts from FE-023). Hidden when a region has no peaks.json.
 import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,15 +24,15 @@ import {
   type Peaks,
 } from "@/lib/space";
 
-const WIDTH = 1000; // px requested from GIBS; ~250 m imagery makes a 5 degree box ~2,300 px, so this is plenty for a page
-const TIMEOUT_MS = 20000; // per image request; GIBS answers in ~1 s when it is up
+const WIDTH = 1000;
+const TIMEOUT_MS = 20000;
 
 type PeaksState = { region: RegionId; status: "loading" | "missing" | "error" } | { region: RegionId; status: "ready"; peaks: Peaks };
 type ImageState =
   | { status: "loading" }
   | { status: "ok" | "cloudy"; layer: Layer; url: string }
-  | { status: "none" } // GIBS answered, but no satellite covering the day has an image of it (all-black answers)
-  | { status: "error" }; // GIBS could not be reached (network, server error or timeout)
+  | { status: "none" }
+  | { status: "error" };
 type PointsState = { status: "loading" } | { status: "ready"; points: { lat: number; lon: number }[] } | { status: "error" };
 type Probe = "blank" | "cloudy" | "ok" | "error";
 
@@ -46,10 +42,6 @@ const monthName = (key: string) =>
   new Date(`${key}-01T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 const monthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, "0")}`;
 
-/**
- * Loads one GIBS layer and samples its pixels. "blank" only for an image that decoded and is all black (GIBS's answer
- * for a missing day); a failed load or a timeout is "error". CORS is open on GIBS (FE-023), so the canvas can read it.
- */
 function probe(url: string, signal: AbortSignal): Promise<Probe> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) return reject(new DOMException("aborted", "AbortError"));
@@ -70,13 +62,13 @@ function probe(url: string, signal: AbortSignal): Promise<Probe> {
     img.onload = () => {
       try {
         const c = document.createElement("canvas");
-        c.width = c.height = 64; // a coarse sample is enough to tell black or cloud from ground
+        c.width = c.height = 64;
         const ctx = c.getContext("2d");
         if (!ctx) return finish("ok");
         ctx.drawImage(img, 0, 0, 64, 64);
         finish(classifyPixels(ctx.getImageData(0, 0, 64, 64).data));
       } catch {
-        finish("ok"); // canvas blocked: show the image rather than nothing
+        finish("ok");
       }
     };
     img.onerror = () => finish("error");
@@ -93,7 +85,7 @@ export function SpaceView({
   region: RegionId;
   year: number;
   month: number;
-  opened: number; // 0 for the default month (no scroll); bumps on every pick, so picking the same month scrolls again
+  opened: number;
 }) {
   const bbox = regionInfo(region).bbox as Bbox;
   const size = imageSize(bbox, WIDTH);
@@ -107,14 +99,14 @@ export function SpaceView({
   const maxDay = peaks?.last_day ?? `${open}-01`;
   const [chosen, setChosen] = useState<{ open: string; region: string; day: string } | null>(null);
   const day = resolveDay(chosen, open, region, top, minDay, maxDay);
-  const tag = `${region}|${day}`; // what the image and points below belong to
+  const tag = `${region}|${day}`;
   const [img, setImg] = useState<{ tag: string; state: ImageState }>({ tag: "", state: { status: "loading" } });
   const [pts, setPts] = useState<{ tag: string; state: PointsState }>({ tag: "", state: { status: "loading" } });
   const [retry, setRetry] = useState(0);
   const [dots, setDots] = useState(true);
 
   useEffect(() => {
-    if (opened === 0) return; // the default month on page load: stay where the reader is
+    if (opened === 0) return;
     section.current?.scrollIntoView({ block: "start", behavior: "smooth" });
     heading.current?.focus({ preventScroll: true });
   }, [region, year, month, opened]);
@@ -134,7 +126,6 @@ export function SpaceView({
   useEffect(() => {
     if (!peaks) return;
     const ac = new AbortController();
-    // render treats an image of another region/day as loading, so nothing is set before the first answer
     (async () => {
       let errors = 0;
       for (const layer of layersFor(day)) {
@@ -152,7 +143,7 @@ export function SpaceView({
 
   useEffect(() => {
     if (!peaks) return;
-    const ac = new AbortController(); // no "loading" set here: render treats points of another region/day as loading
+    const ac = new AbortController();
     fetch(`/api/hotspots?${new URLSearchParams({ region, from: day, to: day })}`, { signal: ac.signal })
       .then(async (r) => {
         if (!r.ok) throw new Error(String(r.status));
@@ -171,19 +162,17 @@ export function SpaceView({
             return xy && <circle key={i} cx={xy[0]} cy={xy[1]} r={4} fill="#ff4d00" fillOpacity={0.75} stroke="#fff" strokeWidth={1} />;
           })
         : null,
-    // size follows bbox; points is replaced, never mutated
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [points, bbox],
   );
 
-  if (pk.region === region && pk.status === "missing") return null; // e.g. a country-tier region: no peaks.json
+  if (pk.region === region && pk.status === "missing") return null;
 
   const sensor = peaks ? countedSensor(peaks, day) : null;
   const image = img.tag === tag ? img.state : ({ status: "loading" } as const);
   const count = points.status === "ready" ? points.points.length : null;
   const place = REGIONS[region];
   const shown = image.status === "ok" || image.status === "cloudy";
-  // prev/next stay focusable at the bounds (aria-disabled), so focus never drops to the page
   const go = (d: string) => d >= minDay && d <= maxDay && setChosen({ open, region, day: d });
   const isPeak = top[0]?.date === day;
   const announce = !peaks
@@ -273,8 +262,6 @@ export function SpaceView({
                 </div>
               )}
               {shown && (
-                // plain <img>: the source is a remote NASA service, so next/image optimisation would add nothing; same
-                // crossOrigin as the probe, so the browser can reuse that request instead of fetching the image twice
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={image.url}

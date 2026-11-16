@@ -1,9 +1,3 @@
-"""forward_link.py (ML-017) on a synthetic region-day series: no network, ~2 s.
-
-S-NPP ~ Poisson(0.9 x rate), NOAA-20 ~ Poisson(rate), NOAA-21 ~ Poisson(rate / 1.2) from 2024, with a seasonal
-rate; S-NPP ends 2025-11-02, NOAA continues to 2025-11-20. Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import sys
 import unittest
 from pathlib import Path
@@ -19,7 +13,6 @@ THROUGH, FWD = pd.Timestamp("2025-11-02"), pd.Timestamp("2025-11-20")
 
 
 def series(seed=0, snpp_out=(), n20_out=(), n21_out=()):
-    """Grid-like rows: one per day x day/night (the module sums rows anyway), dates 2018-01-01 .. FWD."""
     rng = np.random.default_rng(seed)
     rows = []
     for day in pd.date_range("2018-01-01", FWD):
@@ -49,7 +42,7 @@ class ForwardLinkTests(unittest.TestCase):
         self.assertAlmostEqual(s["n21_scale_day"], 1.2, delta=0.03)
         self.assertLess(s["mape_month"], 5)
         self.assertGreaterEqual(s["coverage_month"], 0.8 * s["n_month"])
-        self.assertEqual((s["n_year"], s["coverage_year"]), (1, 1))   # 2024 only; 2025 ends 2 Nov
+        self.assertEqual((s["n_year"], s["coverage_year"]), (1, 1))
 
     def test_forward_days_and_band(self):
         f = self.f
@@ -58,12 +51,10 @@ class ForwardLinkTests(unittest.TestCase):
         self.assertEqual(f["draws"].shape, (50, 18))
         lo, hi = np.percentile(f["draws"], [5, 95], axis=0)
         self.assertTrue(np.all(lo <= f["pred"]) and np.all(f["pred"] <= hi))
-        # mean S-NPP-equivalent ~ 0.9 x NOAA-20 per day (NOAA-21 scaled to NOAA-20 and averaged)
         g = self.d[self.d.date > THROUGH].groupby("date").n20_n.sum().values
         self.assertAlmostEqual(f["pred"].sum() / g.sum(), 0.9, delta=0.08)
 
     def test_outages(self):
-        # NOAA-20 out on 10 Nov -> NOAA-21 alone (scaled); NOAA-21 out on 12 Nov -> NOAA-20 alone; neither gives 0
         s, f = self.f["score"], self.f
         self.assertEqual(s["outage_days_forward"], ["2025-11-10", "2025-11-12"])
         i10, i12 = [(pd.Timestamp(t) - pd.Timestamp("2025-11-03")).days for t in ("2025-11-10", "2025-11-12")]

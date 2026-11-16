@@ -1,13 +1,6 @@
 import { seriesCsv, seriesFilename, type Block } from "@/lib/series-csv";
 import { ApiError, csvHeaders, errorResponse, fetchJson, parseRegion } from "@/lib/server-data";
 
-// No `dynamic` / `runtime` exports: with cacheComponents they are removed/unsupported
-// in Next 16 (Node.js is the default runtime; reading `request` makes this dynamic).
-
-/**
- * from/to accepted formats: annual -> YYYY; monthly -> YYYY-MM; weekly -> YYYY
- * (compared against the year part of the period). Inclusive.
- */
 function parseBound(name: string, v: string | null, res: string): string | null {
   if (v === null) return null;
   const re = res === "monthly" ? /^\d{4}-(0[1-9]|1[0-2])$/ : /^\d{4}$/;
@@ -42,7 +35,6 @@ export async function GET(request: Request) {
       if (!blk || typeof blk.start_year !== "number") throw new ApiError(404, `no ${res} data for region`);
       csv = seriesCsv(res, blk, from, to);
     }
-    // BE-006: values rounded to 1 decimal, a `partial` column, week dates, and the range in the file name
     return new Response(csv, { headers: csvHeaders(seriesFilename(region, res, from, to)) });
   } catch (e) {
     return errorResponse(e);

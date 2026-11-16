@@ -1,5 +1,3 @@
-// Chapter 3, "same fire, two answers": the real MODIS (1 km) and VIIRS (375 m) detections of one fire, drawn at their
-// nominal pixel size on the same ground frame. Server component: plain SVG, no client JavaScript.
 import { metricFrame, PIXEL_M, utc, type Bbox, type Pass } from "@/lib/story";
 
 export const SAT: Record<string, string> = { Aqua: "Aqua MODIS", Terra: "Terra MODIS", SNPP: "Suomi NPP VIIRS" };
@@ -7,7 +5,7 @@ export const SAT: Record<string, string> = { Aqua: "Aqua MODIS", Terra: "Terra M
 function Panel({ pass, frame, pixel, color, id }: { pass: Pass; frame: Bbox; pixel: number; color: string; id: string }) {
   const f = metricFrame(frame);
   const W = f.width, H = f.height;
-  const scaleBar = 5000; // 5 km
+  const scaleBar = 5000;
   return (
     <figure className="flex flex-col gap-2">
       <svg

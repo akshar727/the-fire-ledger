@@ -1,6 +1,3 @@
-// Series bundle (site/public/data/<region>/series.json, registry §3 "Series bundle"): types, a strict parser,
-// and the year x month or year x week grid the burn calendar draws (FE-016: week view). Pure functions with relative imports only, so `node --test`
-// can run them without the Next.js toolchain.
 import { kendallP, SIGNIFICANT_P, theilSen } from "./trend.ts";
 
 export type Flag = -1 | 0 | 1;
@@ -9,39 +6,36 @@ export type Monthly = {
   start_year: number;
   bucketing: string;
   modis: number[];
-  viirs: (number | null)[]; // null before 2012
-  pred: number[]; // VIIRS-equivalent model mean
-  lo: number[];
-  hi: number[];
-  source?: Source[]; // ML-017; optional so older bundles still parse
-  last_month_days?: number; // ML-017: days with data in the last month (it may be partial: the forward month to date)
-};
-
-/** Where a period's value comes from (ML-017): MODIS back-cast, observed S-NPP, or S-NPP equivalent from NOAA-20/21. */
-export type Source = "backcast" | "observed" | "forward";
-const SOURCES = new Set(["backcast", "observed", "forward"]);
-
-/** Weekly series: week `w` of a year = day-of-year 7w+1..7w+7, week 51 runs to 31 Dec (8 or 9 days). */
-export type Weekly = {
-  start_year: number;
-  weeks_per_year: 52;
-  modis: number[];
-  viirs: (number | null)[]; // null for weeks starting before 2012-01-20
+  viirs: (number | null)[];
   pred: number[];
   lo: number[];
   hi: number[];
   source?: Source[];
-  last_week_days: number; // days with data in the last week (it may be partial)
+  last_month_days?: number;
 };
 
-/** Per-month statistics from ML-005; optional until ML-005 lands. */
+export type Source = "backcast" | "observed" | "forward";
+const SOURCES = new Set(["backcast", "observed", "forward"]);
+
+export type Weekly = {
+  start_year: number;
+  weeks_per_year: 52;
+  modis: number[];
+  viirs: (number | null)[];
+  pred: number[];
+  lo: number[];
+  hi: number[];
+  source?: Source[];
+  last_week_days: number;
+};
+
 export type CalendarStats = {
   baseline_years: [number, number];
-  month_median: number[]; // 12
-  month_p25: number[]; // 12
-  month_p75: number[]; // 12
-  anomaly: (number | null)[]; // ratio to the month median, one per monthly index; null where the median is 0
-  flag: Flag[]; // -1 low, 0 normal, 1 high, one per monthly index
+  month_median: number[];
+  month_p25: number[];
+  month_p75: number[];
+  anomaly: (number | null)[];
+  flag: Flag[];
 };
 
 export type SeriesBundle = {
@@ -72,7 +66,6 @@ function numArray(v: unknown, name: string, len?: number, nullable = false): voi
   });
 }
 
-/** Checks a parsed series.json against the registered contract; throws SeriesFormatError on the first problem. */
 export function parseSeries(raw: unknown): SeriesBundle {
   if (typeof raw !== "object" || raw === null) throw new SeriesFormatError("not a JSON object");
   const b = raw as Record<string, unknown>;
@@ -121,62 +114,53 @@ export function parseSeries(raw: unknown): SeriesBundle {
 export type GridView = "month" | "week";
 
 export type CalendarCell = {
-  index: number; // monthly or weekly index, depending on the grid's view
+  index: number;
   year: number;
-  col: number; // column in the grid, 0-based (month - 1, or the week of the year)
-  month: number; // 1-12; in the week view, the month the week starts in
-  week: number | null; // 0-51 in the week view, null in the month view
-  start: string; // first day of the period, YYYY-MM-DD
-  end: string; // last day of the period, YYYY-MM-DD
-  length: number; // days in the period
-  days: number; // days with data; less than `length` only for a partial last period
-  through: string; // last day with data, YYYY-MM-DD (= end unless partial; = start - 1 day when there is no data)
-  partial: boolean; // the period has a value but the data stop before its last day
-  value: number | null; // harmonized = viirs ?? pred; null = no data for this month
-  observed: boolean; // true when the value is a VIIRS observation, false when it is the model's back-cast
-  // FE-009: back-cast (MODIS model), observed (S-NPP) or forward (S-NPP to its end + the NOAA-20/21 link after). From
-  // the bundle's `source` when present (ML-017), else from `observed`.
+  col: number;
+  month: number;
+  week: number | null;
+  start: string;
+  end: string;
+  length: number;
+  days: number;
+  through: string;
+  partial: boolean;
+  value: number | null;
+  observed: boolean;
   source: Source;
   flag: Flag;
   anomaly: number | null;
-  inRange: boolean; // inside the selected dates (sliceGrid); always true from buildGrid
+  inRange: boolean;
 };
 
 export type CalendarGrid = {
   view: GridView;
-  cols: number; // 12 months or 52 weeks
+  cols: number;
   years: number[];
-  rows: CalendarCell[][]; // one row per year, `cols` cells each
+  rows: CalendarCell[][];
   max: number;
-  partialYears: number[]; // years with at least one month missing
-  latest: CalendarCell | null; // last period that has a value
-  firstObserved: CalendarCell | null; // first period whose value is a VIIRS observation (earlier ones are back-cast)
-  firstForward: CalendarCell | null; // first period with forward-link days (FE-009); null when the bundle has none
+  partialYears: number[];
+  latest: CalendarCell | null;
+  firstObserved: CalendarCell | null;
+  firstForward: CalendarCell | null;
 };
 
 const DAY_MS = 86_400_000;
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 
-/** First day, last day and length of week `w` (0-51) of `year`, as the Series bundle defines weeks. */
 export function weekSpan(year: number, w: number): { start: string; end: string; length: number } {
   const jan1 = Date.UTC(year, 0, 1);
   const length = w < 51 ? 7 : (isLeap(year) ? 366 : 365) - 7 * 51;
   return { start: isoDay(jan1 + 7 * w * DAY_MS), end: isoDay(jan1 + (7 * w + length - 1) * DAY_MS), length };
 }
 
-/** First day, last day and length of `month` (1-12) of `year`. */
 export function monthSpan(year: number, month: number): { start: string; end: string; length: number } {
   const length = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const mm = String(month).padStart(2, "0");
   return { start: `${year}-${mm}-01`, end: `${year}-${mm}-${String(length).padStart(2, "0")}`, length };
 }
 
-/**
- * Month header groups for the week view: for each month, the first week column that starts in it and how many weeks
- * start in it, using a common (non-leap) year. In a leap year a week can start one day earlier in the calendar (week 39
- * starts 30 Sep instead of 1 Oct), so the header is a guide; each cell's own dates are exact.
- */
 export function weekMonthGroups(): { month: number; first: number; span: number }[] {
   const starts = Array.from({ length: 52 }, (_, w) => Number(weekSpan(2001, w).start.slice(5, 7)));
   return Array.from({ length: 12 }, (_, i) => ({
@@ -186,21 +170,12 @@ export function weekMonthGroups(): { month: number; first: number; span: number 
   }));
 }
 
-/**
- * Column in the `to` view that matches column `col` of the other view: a month goes to the first week that starts in
- * it; a week goes to the month whose header group holds it (weekMonthGroups).
- */
 export function remapColumn(col: number, to: GridView): number {
   const groups = weekMonthGroups();
   if (to === "week") return groups[Math.max(0, Math.min(11, col))].first;
   return groups.filter((g) => g.first <= col).length - 1;
 }
 
-/**
- * Lays the series out as year rows x 12 months (`view` "month", the default) or year rows x 52 weeks ("week", from
- * `weekly`; throws SeriesFormatError if the bundle has none). Periods after the end of the series have value null. The
- * calendar statistics are per month, so in the week view every flag is 0 and every anomaly null.
- */
 export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGrid {
   const week = view === "week";
   if (week && !b.weekly) throw new SeriesFormatError("weekly series is missing");
@@ -217,7 +192,6 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
       const v = i < n ? s.viirs[i] : null;
       const value = i < n ? (v ?? s.pred[i]) : null;
       const span = week ? weekSpan(year, col) : monthSpan(year, col + 1);
-      // the last week (weekly.last_week_days) and the last month (monthly.last_month_days, ML-017) can stop early
       const lastDays = week ? b.weekly!.last_week_days : b.monthly.last_month_days;
       const days = i >= n ? 0 : i === n - 1 && lastDays != null ? Math.min(lastDays, span.length) : span.length;
       const cell: CalendarCell = {
@@ -252,19 +226,17 @@ export function buildGrid(b: SeriesBundle, view: GridView = "month"): CalendarGr
   return { view, cols, years, rows, max, partialYears, latest, firstObserved, firstForward };
 }
 
-/** Month-to-date comparison for a partial month (FE-009): this month so far against the same days in past years. */
 export type MonthToDate = {
   year: number;
-  month: number; // 1-12
-  days: number; // days with data in this month: 1..days
-  value: number; // harmonized detections, days 1..days
-  median: number; // median over `years` of harmonized detections on the same days
+  month: number;
+  days: number;
+  value: number;
+  median: number;
   p25: number;
   p75: number;
-  ratio: number | null; // value / median; null when the median is 0
-  years: [number, number]; // past years compared (the calendar baseline years, or every earlier year without one)
-  n: number; // how many of them had weekly data
-  // the same days in the 3 years before `year` (oldest first), so a long-run median isn't the only yardstick
+  ratio: number | null;
+  years: [number, number];
+  n: number;
   recent: { year: number; value: number }[];
 };
 
@@ -273,11 +245,6 @@ const median = (v: number[], q = 0.5) => {
   return s[lo] + (s[Math.ceil(k)] - s[lo]) * (k - lo);
 };
 
-/**
- * Harmonized detections (`viirs ?? pred`) on days `fromDay`..`toDay` of `month` in `year`, from the weekly series:
- * each week counts by the share of its days inside that window (model.py's day-share rule for monthly values, so a
- * whole month gives the monthly value back). null when the weekly series does not cover every week touched.
- */
 export function weeklyWindow(w: Weekly, year: number, month: number, fromDay: number, toDay: number): number | null {
   const mm = String(month).padStart(2, "0");
   const a = Date.parse(`${year}-${mm}-${String(fromDay).padStart(2, "0")}T00:00:00Z`);
@@ -295,12 +262,6 @@ export function weeklyWindow(w: Weekly, year: number, month: number, fromDay: nu
   return sum;
 }
 
-/**
- * When the last month of the ledger is partial (`monthly.last_month_days`, ML-017: the forward month to date), compares
- * it with the same days of that month in the baseline years: median and middle half of their harmonized detections on
- * days 1..N, from the weekly series. A partial month is never compared with whole months, and is not flagged. null when
- * the last month is complete or the bundle has no weekly series.
- */
 export function monthToDate(b: SeriesBundle): MonthToDate | null {
   const m = b.monthly, n = m.modis.length, w = b.weekly;
   const year = m.start_year + Math.floor((n - 1) / 12), month = ((n - 1) % 12) + 1;
@@ -317,8 +278,6 @@ export function monthToDate(b: SeriesBundle): MonthToDate | null {
     const v = y >= m.start_year ? weeklyWindow(w, y, month, 1, days) : null;
     return v == null ? [] : [{ year: y, value: v }];
   });
-  // this month's own value is the monthly one: model.py places forward days in their month exactly, while the weekly
-  // window would split the week that straddles the month start by day share
   const value = m.viirs[n - 1] ?? m.pred[n - 1];
   const med = median(past);
   return {
@@ -336,11 +295,6 @@ export function monthToDate(b: SeriesBundle): MonthToDate | null {
   };
 }
 
-/**
- * Keeps the year rows that the selected dates touch and marks months outside them (`inRange: false`). Takes
- * `YYYY-MM-DD` dates; a month or week counts as inside if any of its days is. `max`, `latest` and `firstObserved` still describe
- * the whole ledger, so colours and the latest-month card don't change with the filter.
- */
 export function sliceGrid(g: CalendarGrid, from: string, to: string): CalendarGrid {
   const keep = g.years.map((y) => y >= Number(from.slice(0, 4)) && y <= Number(to.slice(0, 4)));
   return {
@@ -351,16 +305,13 @@ export function sliceGrid(g: CalendarGrid, from: string, to: string): CalendarGr
   };
 }
 
-/** "29 Oct" from YYYY-MM-DD. */
 export const dayMonth = (d: string) => `${Number(d.slice(8, 10))} ${MONTHS[Number(d.slice(5, 7)) - 1]}`;
 
-/** "29 Oct to 4 Nov 2026" for a week, "October 2026" for a month. */
 export function periodLabel(cell: CalendarCell): string {
   if (cell.week == null) return `${MONTHS_LONG[cell.month - 1]} ${cell.year}`;
   return `${dayMonth(cell.start)} to ${dayMonth(cell.end)} ${cell.year}`;
 }
 
-/** Position on the colour ramp, 0-1, on a log scale (monthly fire counts span three orders of magnitude). */
 export function rampPosition(value: number, max: number): number {
   if (max <= 0 || value <= 0) return 0;
   return Math.min(1, Math.log1p(value) / Math.log1p(max));
@@ -368,8 +319,6 @@ export function rampPosition(value: number, max: number): number {
 
 type Oklch = [number, number, number];
 
-// Sequential ramps with strictly monotonic lightness, so order stays readable with any colour-vision deficiency.
-// Light mode runs pale to dark; dark mode runs dark to bright (low months recede into the page in both).
 export const RAMP: Record<"light" | "dark", Oklch[]> = {
   light: [
     [0.97, 0.02, 75],
@@ -377,7 +326,6 @@ export const RAMP: Record<"light" | "dark", Oklch[]> = {
     [0.64, 0.19, 40],
     [0.42, 0.16, 25],
   ],
-  // red thermal ramp (site theme): ember red through orange to pale gold; same lightness steps as before
   dark: [
     [0.25, 0.03, 25],
     [0.45, 0.15, 22],
@@ -386,7 +334,6 @@ export const RAMP: Record<"light" | "dark", Oklch[]> = {
   ],
 };
 
-/** WCAG relative luminance of an oklch colour (via OKLab -> linear sRGB, clipped to the sRGB gamut). */
 export function luminance([l, c, h]: Oklch): number {
   const a = c * Math.cos((h * Math.PI) / 180), b = c * Math.sin((h * Math.PI) / 180);
   const l_ = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
@@ -401,10 +348,6 @@ export function luminance([l, c, h]: Oklch): number {
 
 const contrast = (y1: number, y2: number) => (Math.max(y1, y2) + 0.05) / (Math.min(y1, y2) + 0.05);
 
-/**
- * Colour at ramp position t, plus whichever ink (white or black) contrasts more with it. Pure white/black are used
- * on purpose: with them the worst cell on any ramp still clears WCAG AA 4.5:1 for the small cell labels.
- */
 export function rampColor(t: number, mode: "light" | "dark"): { bg: string; ink: string; lightness: number; contrast: number } {
   const stops = RAMP[mode];
   const x = Math.max(0, Math.min(1, t)) * (stops.length - 1);
@@ -420,14 +363,12 @@ export function rampColor(t: number, mode: "light" | "dark"): { bg: string; ink:
   };
 }
 
-/** Short cell label: 46, 1.5k, 19k. */
 export function compact(v: number): string {
   if (v < 1000) return String(Math.round(v));
   if (v < 10000) return `${(v / 1000).toFixed(1).replace(/\.0$/, "")}k`;
   return `${Math.round(v / 1000)}k`;
 }
 
-/** Ratio to the month median: 0.18×, 2.4×, 12×. Two decimals below 1 so low months don't all read "0.1×". */
 export function times(r: number): string {
   return `${r < 1 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : Math.round(r)}×`;
 }
@@ -438,20 +379,10 @@ export const MONTHS_LONG = [
   "July", "August", "September", "October", "November", "December",
 ] as const;
 
-// FE-017: season timing. When in each fire season the running total reaches 10%, 50% and 90% of that season's total,
-// from the weekly cumulative sums `outlook.seasons()` builds (lib/outlook.ts imports this file, so seasons come in as a
-// plain shape here), and whether those dates drift over the years (Theil-Sen + Mann-Kendall, as the ledger trend).
-
-/** The fields of an outlook `Season` this needs: running total after each of its 52 weeks, first week `startWeek`. */
 export type SeasonCum = { year: number; label: string; start: string; cum: number[] };
 
 export const TIMING_SHARES = [0.1, 0.5, 0.9] as const;
 
-/**
- * Days into the season (fractional; 0 = start of its first day) at which the running total reaches `share` of the
- * season total, spreading each week's detections evenly over its days. Season week k is calendar week
- * `(startWeek + k) % 52`, so week 51's 8 or 9 days count in full. null for a season with no fire.
- */
 export function dayAtShare(cum: number[], startYear: number, startWeek: number, share: number): number | null {
   const total = cum.at(-1) ?? 0;
   if (!(total > 0)) return null;
@@ -459,7 +390,6 @@ export function dayAtShare(cum: number[], startYear: number, startWeek: number, 
   let days = 0, prev = 0;
   for (let k = 0; k < cum.length; k++) {
     const c = startWeek + k, len = weekSpan(startYear + Math.floor(c / 52), c % 52).length;
-    // tolerance: 0.1 * 30 is 3.0000000000000004, which must still be reached by a running total of exactly 3
     if (cum[k] >= target - 1e-9 * total) return days + (len * Math.max(0, target - prev)) / (cum[k] - prev);
     days += len;
     prev = cum[k];
@@ -472,23 +402,15 @@ export type SeasonTiming = {
   label: string;
   start: string;
   total: number;
-  /** day of the season (0-based) during which 10%, 50% and 90% are reached */
   days: [number, number, number];
-  /** the same days as dates, YYYY-MM-DD */
   dates: [string, string, string];
 };
 
-/**
- * 10% / 50% / 90% dates of every whole season. Pass complete seasons only (outlook's `past`: 52 whole weeks), so the
- * partial current season and a partial first or last year never enter; seasons without 52 weeks or without fire are
- * dropped here too.
- */
 export function seasonTiming(seasons: SeasonCum[], startWeek: number): SeasonTiming[] {
   return seasons.flatMap((s) => {
     if (s.cum.length !== 52) return [];
     const f = TIMING_SHARES.map((q) => dayAtShare(s.cum, s.year, startWeek, q));
     if (f.some((d) => d == null)) return [];
-    // ceil less a hair: a share reached exactly at the end of day 21 (d = 21 + float noise) belongs to day index 20
     const days = f.map((d) => Math.max(0, Math.ceil(d! - 1e-9) - 1)) as [number, number, number];
     const t0 = Date.parse(`${s.start}T00:00:00Z`);
     return [{
@@ -503,18 +425,14 @@ export function seasonTiming(seasons: SeasonCum[], startWeek: number): SeasonTim
 }
 
 export type TimingDrift = {
-  /** 0, 1, 2 for the 10%, 50%, 90% date */
   which: number;
-  /** Theil-Sen slope in days per decade (positive = later in the season), with its 90% interval */
   perDecade: number;
   lo: number;
   hi: number;
-  /** two-sided Mann-Kendall p; NaN when the dates never change */
   p: number;
   n: number;
 };
 
-/** Drift of the `which` date (0 = 10%, 1 = 50%, 2 = 90%) across seasons; null with fewer than 5 seasons. */
 export function timingDrift(rows: SeasonTiming[], which: number): TimingDrift | null {
   if (rows.length < 5) return null;
   const x = rows.map((r) => r.year), y = rows.map((r) => r.days[which]);
@@ -522,7 +440,6 @@ export function timingDrift(rows: SeasonTiming[], which: number): TimingDrift | 
   return { which, perDecade: 10 * slope, lo: 10 * lo, hi: 10 * hi, p: kendallP(x, y), n: rows.length };
 }
 
-/** "6 days later", "2.5 days earlier", "no change": a drift in days per decade. */
 export function driftDays(perDecade: number): string {
   const a = Math.abs(perDecade);
   if (a < 0.05) return "no change";
@@ -532,10 +449,6 @@ export function driftDays(perDecade: number): string {
 
 const TIMING_NAMES = ["first 10%", "halfway point", "90% point"] as const;
 
-/**
- * One sentence on whether onset (the 10% date) is drifting, with the halfway date as a second reading. "Drifting" =
- * Mann-Kendall p < SIGNIFICANT_P and a 90% interval that excludes 0, the same bar as the ledger trend sentence.
- */
 export function timingSentence(rows: SeasonTiming[], region: string): string {
   const on = timingDrift(rows, 0), mid = timingDrift(rows, 1);
   if (!on || !mid) return `Too few whole fire seasons in ${region} to tell whether the season's timing is drifting.`;

@@ -1,19 +1,3 @@
-"""Independent referee for the back-cast (ML-019, F-5a): MODIS burned area (MCD64CMQ) has no 2012 sensor break.
-
-If the harmonized ledger is right, fire detections per km^2 burned should stay about level across 2012, while the
-naive stitched ledger (MODIS until 2012, VIIRS after) should jump by roughly the VIIRS/MODIS factor.
-
-Two steps:
-  python referee.py extract <folder of MCD64CMQ .hdf files>   # needs pyhdf (only for this step; see README)
-      -> data/referee/burned_area.csv: region, year, month, burned_ha, unmapped_pct, collection; summed over the region's
-         0.25 deg grid cells (the cells in data/grid/fire_grid_daily_<region>.csv, i.e. the cells the model uses)
-  python referee.py                                            # numpy/pandas only
-      -> site/public/data/referee.json from burned_area.csv + each region's series.json
-
-MCD64CMQ (Giglio et al., Collection 6): global 0.25 deg monthly grid, 720 x 1440, upper-left cell centre 89.875 N,
-179.875 W; BurnedArea x 0.01 = hectares. Our grid names a cell by its south-west corner (build.py floors to 0.25),
-so cell (lat, lon) is row (89.75 - lat) / 0.25, column (lon + 180) / 0.25.
-"""
 import argparse, glob, json, os, re
 
 import numpy as np
@@ -21,21 +5,18 @@ import pandas as pd
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CELL = 0.25
-BEFORE, AFTER_START, LAST = (2003, 2011), 2013, 2025   # full Aqua years before VIIRS; full VIIRS years (to the last
-# complete year of burned area, at most 2025: 2026 is partial)
+BEFORE, AFTER_START, LAST = (2003, 2011), 2013, 2025
 NAME = re.compile(r"MCD64CMQ\.A(\d{4})(\d{3})\.(\d{3})\.")
 COLLECTION = {"006": "6", "061": "6.1"}
 
 
 def cell_index(lat, lon):
-    """Row/column of a grid cell (south-west corner lat/lon) in the MCD64CMQ 720 x 1440 array."""
     row = np.rint((89.75 - np.asarray(lat, float)) / CELL).astype(int)
     col = np.rint((np.asarray(lon, float) + 180) / CELL).astype(int)
     return row, col
 
 
 def file_month(path):
-    """(year, month, collection) of an MCD64CMQ file from its name (AYYYYDDD = first day of the month; 006 / 061)."""
     m = NAME.search(os.path.basename(path))
     if not m:
         raise ValueError(f"not an MCD64CMQ file name: {path}")
@@ -49,7 +30,7 @@ def region_cells(grid_dir, region_id):
 
 
 def extract(hdf_dir, grid_dir="data/grid", out_csv="data/referee/burned_area.csv", regions_file="regions.json"):
-    from pyhdf.SD import SD, SDC   # only needed here
+    from pyhdf.SD import SD, SDC
     with open(regions_file, encoding="utf-8") as f:
         ids = [r["id"] for r in json.load(f)]
     idx = {rid: cell_index(*region_cells(grid_dir, rid).T) for rid in ids}
@@ -60,8 +41,8 @@ def extract(hdf_dir, grid_dir="data/grid", out_csv="data/referee/burned_area.csv
     for f in files:
         yr, mo, coll = file_month(f)
         sd = SD(f, SDC.READ)
-        ba = sd.select("BurnedArea").get().astype(float) * 0.01        # hectares
-        um = sd.select("UnmappedFraction").get().astype(float)          # percent
+        ba = sd.select("BurnedArea").get().astype(float) * 0.01
+        um = sd.select("UnmappedFraction").get().astype(float)
         sd.end()
         for rid, (r, c) in idx.items():
             rows.append((rid, yr, mo, round(float(ba[r, c].sum()), 2), round(float(um[r, c].mean()), 3), coll))
@@ -74,7 +55,6 @@ def extract(hdf_dir, grid_dir="data/grid", out_csv="data/referee/burned_area.csv
 
 
 def monthly_records(series):
-    """Monthly stitched (viirs ?? modis) and harmonized (viirs ?? pred) arrays from a series.json dict."""
     m = series["monthly"]
     st = np.array([mo if v is None else v for v, mo in zip(m["viirs"], m["modis"])], float)
     ha = np.array([p if v is None else v for v, p in zip(m["viirs"], m["pred"])], float)
@@ -86,7 +66,6 @@ def _r(v, nd):
 
 
 def last_full_year(burned):
-    """Last year with all 12 months of burned area, capped at LAST."""
     n = burned.groupby("year").size()
     full = n[n == 12].index
     if len(full) == 0:
@@ -95,7 +74,6 @@ def last_full_year(burned):
 
 
 def region_check(burned, series, after=None):
-    """referee block for one region. burned: DataFrame year, month, burned_ha (one region); after: (first, last)."""
     AFTER = after or (AFTER_START, last_full_year(burned))
     y0, st, ha = monthly_records(series)
     n = len(st)
@@ -103,7 +81,7 @@ def region_check(burned, series, after=None):
                       "stitched": st, "harmonized": ha})
     t = t.merge(burned[["year", "month", "burned_ha"]], on=["year", "month"], how="inner")
     yearly = t.groupby("year")[["stitched", "harmonized", "burned_ha"]].sum()
-    yearly = yearly[t.groupby("year").size() == 12]                       # complete years only
+    yearly = yearly[t.groupby("year").size() == 12]
     yearly["burned_km2"] = yearly.burned_ha / 100
 
     def per1000(rec, span):
@@ -136,7 +114,7 @@ def run(burned_csv="data/referee/burned_area.csv", data_dir="site/public/data", 
     colls = sorted({str(c) for c in ba.get("collection", pd.Series(["6"]))})
     product_short = f"MCD64CMQ Collection {'/'.join(colls)}"
     product = f"{product_short} (MODIS burned area, 0.25 deg monthly)"
-    after = (AFTER_START, min(last_full_year(ba[ba.region == rid]) for rid in ids))   # same window everywhere
+    after = (AFTER_START, min(last_full_year(ba[ba.region == rid]) for rid in ids))
     res = {"schema": 1, "product": product, "product_short": product_short,
            "before": list(BEFORE), "after": list(after),
            "note": "detections per 1,000 km2 burned, summed over the model's grid cells; step = after / before",
@@ -163,7 +141,7 @@ def main():
     ap.add_argument("cmd", nargs="?", default="check", choices=["check", "extract"])
     ap.add_argument("hdf_dir", nargs="?", help="folder with MCD64CMQ .hdf files (extract only)")
     a = ap.parse_args()
-    hdf_dir = os.path.abspath(a.hdf_dir) if a.hdf_dir else None   # resolve before moving to the repo root
+    hdf_dir = os.path.abspath(a.hdf_dir) if a.hdf_dir else None
     os.chdir(ROOT)
     if a.cmd == "extract":
         if not hdf_dir:

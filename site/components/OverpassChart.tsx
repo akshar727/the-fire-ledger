@@ -1,21 +1,18 @@
-// FE-031 (F-3b): the MODIS orbit drift as a picture. Median daytime local overpass time of Terra, Aqua and Suomi NPP per year, one
-// thin line per deep dive (they lie on top of each other: the drift is the satellite's, not the place's), drifted years
-// shaded. Server component: plain SVG, no client JS. Data: annual.json `overpass` / `drifted` (ML-016), lib/overpass.ts.
 import { clock, driftedYears, linePath, runs, SENSOR_NAME, SENSORS, type OverpassSource, type Sensor } from "@/lib/overpass";
 
 const W = 640;
 const H = 280;
 const M = { top: 14, right: 16, bottom: 30, left: 52 };
-const Y0 = 8.5; // local hours shown: 8:30 to 15:30
+const Y0 = 8.5;
 const Y1 = 15.5;
 const COLOR: Readonly<Record<Sensor, string>> = { terra: "var(--modis)", aqua: "var(--modis)", snpp: "var(--viirs)" };
 const DASH: Readonly<Record<Sensor, string | undefined>> = { terra: undefined, aqua: "6 4", snpp: "1 4" };
-const WIDTH: Readonly<Record<Sensor, number>> = { terra: 1.5, aqua: 1.5, snpp: 2.5 }; // S-NPP dotted and heavier: not only colour
+const WIDTH: Readonly<Record<Sensor, number>> = { terra: 1.5, aqua: 1.5, snpp: 2.5 };
 
 export function OverpassChart({ records }: { records: { id: string; name: string; D: OverpassSource }[] }) {
   const rs = records.filter((r) => r.D.overpass);
   if (!rs.length) return null;
-  const years = [...new Set(rs.flatMap((r) => r.D.years))].sort((a, b) => a - b); // each line uses its own years
+  const years = [...new Set(rs.flatMap((r) => r.D.years))].sort((a, b) => a - b);
   const first = years[0];
   const last = years.at(-1)!;
   const x = (yr: number) => M.left + ((yr - first) / Math.max(last - first, 1)) * (W - M.left - M.right);
@@ -23,7 +20,6 @@ export function OverpassChart({ records }: { records: { id: string; name: string
   const drifted = driftedYears(rs.map((r) => r.D));
   const step = (W - M.left - M.right) / Math.max(last - first, 1);
   const ticksY = [9, 11, 13, 15];
-  // every 5 years plus the ends, but an end within 2 years of a 5-year tick replaces it (no "20252026" overlap)
   const fives = years.filter((yr) => yr % 5 === 0 && yr - first > 2 && last - yr > 2);
   const ticksX = [first, ...fives, last];
 

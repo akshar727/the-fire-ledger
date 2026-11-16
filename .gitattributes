@@ -1,4 +1,3 @@
-# Same bytes on every OS: generated data and code are always LF (build.py writes LF on Windows too)
 *.csv  text eol=lf
 *.json text eol=lf
 *.py   text eol=lf

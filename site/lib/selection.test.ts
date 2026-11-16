@@ -1,4 +1,3 @@
-// Run with `npm test`. The ?region=&from=&to= selection shared by the Record and Calendar views (FE-004).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -114,7 +113,6 @@ test("calendar view: ?view=week, anything else is month; month drops the paramet
   assert.equal(withView(q, "week").toString(), "region=ghana&from=2017-01-01&view=week");
   assert.equal(withView(new URLSearchParams("region=ghana&view=week"), "month").toString(), "region=ghana");
   assert.equal(q.toString(), "region=ghana&from=2017-01-01", "input is not mutated");
-  // the selection helpers keep the view
   assert.equal(withSelection(new URLSearchParams("view=week"), { region: "punjab" }, B).get("view"), "week");
 });
 
@@ -126,7 +124,6 @@ test("box: ?bbox= parses like the route handler, and bad values mean no box (FE-
     assert.equal(q(bad), null, bad);
     assert.throws(() => parseBbox(bad), /bbox/, `server must reject ${bad} too`);
   }
-  // every value the client accepts, the server accepts
   for (const good of ["-9,38.5,-8,39", "-180,-90,180,90", "73.75,28.75,77.5,32.5"]) {
     assert.deepEqual(parseBbox(good), q(good), good);
   }

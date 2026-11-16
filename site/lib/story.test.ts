@@ -1,4 +1,3 @@
-// Tests for lib/story.ts (FE-018): synthetic detections, plus the published Portugal 2017 points and annual files.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -35,11 +34,11 @@ test("passes joins one satellite's detections a minute or two apart and splits t
 test("closestPair picks the daytime MODIS and VIIRS passes nearest in time, inside the box", () => {
   const many = (n: number, time: string, sat: string, dn = "D", lat = 40) => Array.from({ length: n }, () => det(time, sat, lat, -8, dn));
   const rows = [
-    ...many(50, "1113", "Terra"), // 2 h 15 min from VIIRS
-    ...many(30, "1253", "Aqua"), // 35 min: chosen
+    ...many(50, "1113", "Terra"),
+    ...many(30, "1253", "Aqua"),
     ...many(200, "1328", "SNPP"),
-    ...many(900, "0205", "SNPP", "N"), // night, ignored
-    ...many(10, "1254", "Aqua", "D", 45), // outside the box
+    ...many(900, "0205", "SNPP", "N"),
+    ...many(10, "1254", "Aqua", "D", 45),
   ];
   const pair = closestPair(rows, "2017-06-18", { w: -9, s: 39, e: -7, n: 41 })!;
   assert.equal(pair.modis.time, "1253");
@@ -95,7 +94,6 @@ test("the published 2017 points give the story's Aqua and S-NPP passes over Pedr
   assert.equal(pair.modis.satellite, "Aqua");
   assert.equal(pair.viirs.satellite, "SNPP");
   assert.ok(pair.gapMinutes <= 60, `passes ${pair.gapMinutes} min apart`);
-  // MODIS sees a handful of 1 km pixels, VIIRS several times as many 375 m pixels (area ratio ~7)
   assert.ok(pair.ratio > 3 && pair.ratio < 12, `ratio ${pair.ratio}`);
 });
 

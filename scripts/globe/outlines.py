@@ -29,7 +29,6 @@ def rnd(coords):
     if isinstance(coords[0], (int, float)):
         return [round(coords[0], 2), round(coords[1], 2)]
     out = [rnd(c) for c in coords]
-    # drop consecutive duplicates made by rounding (rings keep their closing point)
     if out and isinstance(out[0][0], float):
         dedup = [out[0]]
         for p in out[1:]:
@@ -42,7 +41,6 @@ def rnd(coords):
 
 
 def split_overseas(features: list) -> list:
-    """French Guiana out of France (see the module docstring)."""
     out = []
     for f in features:
         g = f["geometry"]

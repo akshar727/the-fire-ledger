@@ -12,7 +12,6 @@ export default function LedgerPage() {
   const { first, lastComplete } = recordSpan();
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-6 pb-20 sm:px-6">
-      {/* FE-025: compact header so the controls and the chart fit on a laptop's first screen */}
       <section className="grid items-end gap-5 md:grid-cols-12">
         <div className="flex flex-col gap-2 md:col-span-8">
           <h1 className="text-3xl leading-tight font-bold tracking-tight text-balance md:text-4xl">
@@ -23,18 +22,15 @@ export default function LedgerPage() {
             to {lastComplete} compares fairly.
           </p>
         </div>
-        {/* region-specific parts read ?region=&from=&to=; Suspense keeps the page statically rendered */}
         <Suspense fallback={<div className="h-20 md:col-span-4" />}>
           <JumpStat />
         </Suspense>
       </section>
 
-      {/* FE-032: which method this country publishes and why (countries only; renders nothing for a deep dive) */}
       <Suspense fallback={null}>
         <MethodCard />
       </Suspense>
 
-      {/* the proof strip (FE-020) sits right under the chart, inside RecordExplorer (FE-025) */}
       <Suspense fallback={<RecordSkeleton />}>
         <RecordExplorer />
       </Suspense>

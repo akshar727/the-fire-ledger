@@ -1,10 +1,5 @@
 "use client";
 
-// FE-022: season outlook on /ledger, under the annual chart. This fire season's running total against every past
-// season since the ledger starts, with the forecast range to season end and how that forecast did on past seasons.
-// Every number comes from `outlook()` (lib/outlook.ts, FE-021) on the weekly harmonized ledger in series.json; the
-// sentences and the week-by-week range are in lib/outlook-view.ts. The date range above does not change it: it is
-// always the latest season. FE-017: the season timing section (SeasonTiming) follows, drawn from the same outlook.
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { SeasonTiming } from "@/components/SeasonTiming";
@@ -87,7 +82,6 @@ export function SeasonOutlook({ data, regionId, region }: { data: Annual; region
           <OutlookChart o={cur.o} weekly={cur.weekly} data={data} regionId={regionId} region={region} />
         )}
       </section>
-      {/* FE-017: 10% / 50% / 90% dates of every whole season, on the same seasons */}
       {cur?.status === "ready" && cur.o && <SeasonTiming o={cur.o} regionId={regionId} region={region} />}
     </>
   );
@@ -97,19 +91,17 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
   const [hoverAt, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // a region with no data this year (country tier) shows its last complete season instead of the running one
   const siteThrough = REGION_LIST.reduce((m, r) => (r.data_through > m ? r.data_through : m), "");
   const stale = isStale(o.through, siteThrough);
   const text = outlookText(o, stale);
   const sv = stale ? staleView(o) : null;
   const focus: Season = sv ? sv.focus : o.current;
-  const complete = sv ? sv.seasons : o.past; // every complete season drawn
+  const complete = sv ? sv.seasons : o.past;
   const others = complete.filter((s) => s !== focus);
   const path: RangePoint[] = stale ? [] : forecastPath(o);
   const { quietest, busiest } = extremes(complete);
   const fwd = stale ? [] : forwardWeeks(weekly, o.startWeek, focus);
   const bt = stale ? null : backtestNow(o);
-  // x of the focus season's last point: a partial last week sits at its fraction
   const focusEnd = stale || o.current.complete ? focus.cum.length : o.weeks + o.frac;
   const start = focus.start;
 
@@ -117,12 +109,10 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
   const x = (k: number) => L + (k / WK) * (W - L - R);
   const y = (v: number) => H - B - (v * (H - T - B)) / max;
 
-  // date of season week k (0-based) and of its end, from the calendar weeks (week 51 is 8 or 9 days)
   const span = (k: number) => {
     const c = o.startWeek + k;
     return weekSpan(focus.year + Math.floor(c / WK), c % WK);
   };
-  // month ticks: x of the 1st of each month inside the season
   const ticks: { x: number; label: string }[] = [];
   for (let k = 0; k < WK; k++) {
     const s = span(k), d0 = Date.parse(`${s.start}T00:00:00Z`);
@@ -147,7 +137,6 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
     : "";
   const median = path.length ? "M" + path.map((p) => `${x(p.x)} ${y(p.median)}`).join("L") : "";
 
-  // labels at the right edge, pushed apart so they don't overlap
   const nowVal = focus.cum.at(-1) ?? 0;
   const labels = spread(
     [
@@ -162,7 +151,6 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
     H - B - 2,
   );
 
-  // keyboard / hover readout over the 52 weeks of the season (1-based: after week k)
   const hover = hoverAt != null && hoverAt >= 1 && hoverAt <= WK ? hoverAt : null;
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "ArrowRight") setHover(Math.min(WK, (hover ?? 0) + 1));
@@ -304,7 +292,6 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
               </g>
             ))}
 
-            {/* past seasons: thin grey; the quietest and busiest a little stronger */}
             {others.map((s) => (
               <path
                 key={s.year}
@@ -339,7 +326,6 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
               </>
             )}
 
-            {/* forward-link weeks: a bar along the bottom, as on the calendar */}
             {fwd.map((k) => (
               <rect
                 key={`fwd-${k}`}
@@ -414,7 +400,6 @@ function OutlookChart({ o, weekly, data, regionId, region }: { o: Outlook; weekl
       <div className="sr-only">
         <table>
           <caption>
-            {/* FE-029: a record that has ended (every whole country) has no running season, so one total column, not two equal ones */}
             {stale
               ? `Fire detections per season in ${region}, at season end.`
               : `Running total of fire detections per season in ${region}, at ${shortDay(o.through)} (week ${seasonWeek(o)} of the season) and at season end.`}
@@ -466,13 +451,11 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Gridline step: 1, 2 or 5 times a power of ten nearest to max / 5 (as RecordChart). */
 function tickStep(max: number): number {
   const raw = Math.max(1, max) / 5, p = 10 ** Math.floor(Math.log10(raw));
   return [1, 2, 5, 10].map((m) => m * p).reduce((best, s) => (Math.abs(s - raw) < Math.abs(best - raw) ? s : best));
 }
 
-/** Pushes labels apart vertically (13 px) inside [top, bottom], keeping their order. */
 function spread<T extends { y: number }>(items: T[], top: number, bottom: number, gap = 13): T[] {
   const s = [...items].sort((a, b) => a.y - b.y).map((l) => ({ ...l }));
   for (let i = 0; i < s.length; i++) s[i].y = Math.max(s[i].y, i ? s[i - 1].y + gap : top);

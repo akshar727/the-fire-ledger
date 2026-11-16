@@ -1,21 +1,12 @@
 "use client";
 
-// The scroll scene behind the landing story (FE-019): 360 pre-rendered frames (public/scene/, made by
-// scripts/landing_scene/scene.py from SRTM terrain and the 2017 detections) scrubbed on one <canvas> by scroll
-// position. Decoration only: the canvas is aria-hidden and every word and figure of the story is the HTML above it.
-// Loaded by StorySceneGate after first paint, on wide screens with motion allowed; nothing here runs otherwise.
-//
-// Frames arrive as blobs, coarse to fine (lib/scene.ts loadOrder), and only the few around the current position are
-// kept decoded (CACHE bitmaps, ~6 MB of pixels each), so memory stays flat. Between two frames the upper one is
-// faded over the lower one by the fraction (lib/scene.ts blendPair), and the glide towards the scroll position runs
-// on elapsed time, not on the display's refresh rate: the picture moves continuously instead of stepping.
 import { useEffect, useRef } from "react";
 import { blendPair, FRAME_COUNT, FRAME_H, FRAME_W, follow, frameAt, frameUrl, loadOrder, nearest, rateFor } from "@/lib/scene";
 
-const CACHE = 20; // decoded frames kept
-const AHEAD = 6; // frames decoded ahead of the scroll direction
-const DECODES = 3; // decodes in flight at once: a jump to the far end must not queue a hundred of them
-const PARALLEL = 4; // downloads at once
+const CACHE = 20;
+const AHEAD = 6;
+const DECODES = 3;
+const PARALLEL = 4;
 
 export default function StoryScene({ onReady }: { onReady: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -63,8 +54,6 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
     };
     const near = (i: number) => Math.abs(i - shown) <= CACHE / 2;
     const best = () => nearest(shown, FRAME_COUNT, (k) => blobs[k] !== undefined);
-    // `wanted` = the closest frame that has downloaded: decoded however far it is, so a slow or stalled connection
-    // still shows the nearest frame it has instead of holding an old one
     const decode = (i: number, wanted = false) => {
       const blob = blobs[i];
       if (!blob || bitmaps.has(i) || decoding.has(i) || decoding.size >= DECODES || !(wanted || near(i))) return;
@@ -72,8 +61,6 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
       createImageBitmap(blob).then(
         (bitmap) => {
           decoding.delete(i);
-          // the scroll moved on while this decoded (or the scene is gone): drop it, unless nothing is on screen yet
-          // or it is still the closest frame there is
           if (!alive || (!near(i) && drawn >= 0 && i !== best())) {
             bitmap.close();
             return schedule();
@@ -84,7 +71,7 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
         },
         () => {
           decoding.delete(i);
-          blobs[i] = undefined; // a frame that will not decode is skipped; its neighbours stand in
+          blobs[i] = undefined;
           schedule();
         },
       );
@@ -96,7 +83,7 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
       const want = best();
       if (want >= 0) {
         decode(want, true);
-        if (Math.ceil(shown) !== want) decode(Math.min(FRAME_COUNT - 1, Math.ceil(shown))); // the pair to blend
+        if (Math.ceil(shown) !== want) decode(Math.min(FRAME_COUNT - 1, Math.ceil(shown)));
         if (Math.floor(shown) !== want) decode(Math.floor(shown));
         const dir = target >= shown ? 1 : -1;
         for (let k = 1; k <= AHEAD; k++) {
@@ -120,15 +107,13 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
           onReady();
         }
       }
-      // keep going while gliding; a blend partner that is still decoding calls schedule() when it lands
       if (shown !== target) schedule();
       last = shown !== target ? now : 0;
     }
 
     measure();
-    shown = target; // open on the frame for wherever the page already is (reload half-way down)
+    shown = target;
 
-    // downloads: the frame for the current position first, then coarse to fine
     const first = Math.round(target);
     const queue = [first, ...loadOrder().filter((i) => i !== first)];
     const worker = async () => {
@@ -140,7 +125,6 @@ export default function StoryScene({ onReady }: { onReady: () => void }) {
           blobs[i] = await res.blob();
           schedule();
         } catch {
-          // offline or aborted: the frames that did arrive keep working
         }
       }
     };

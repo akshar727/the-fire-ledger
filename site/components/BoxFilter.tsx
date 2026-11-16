@@ -1,8 +1,5 @@
 "use client";
 
-// FE-020: optional latitude/longitude box for the hotspot CSV, typed as four edges. Applied with the button (or Enter),
-// not on every keystroke, so a half-typed "-9." never reaches the URL. Same rules as /api/hotspots (`boxError`), plus
-// the box must touch the region's own box, or no detection could match.
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { boxError, boxesOverlap, boxLabel, type Box } from "@/lib/selection";
@@ -31,7 +28,7 @@ export function BoxFilter({
   regionName,
   onApply,
 }: {
-  box: Box | null; // the box in the URL, already checked against the region
+  box: Box | null;
   region: Box;
   regionName: string;
   onApply: (box: Box | null) => void;
@@ -41,7 +38,6 @@ export function BoxFilter({
   const [shown, setShown] = useState(keyOf(box));
   const [error, setError] = useState<string | null>(null);
   if (keyOf(box) !== shown) {
-    // the URL changed (applied, cleared, region switch): show the new value
     setShown(keyOf(box));
     setDraft(toDraft(box));
     setError(null);

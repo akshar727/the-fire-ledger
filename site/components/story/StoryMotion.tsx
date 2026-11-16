@@ -1,8 +1,5 @@
 "use client";
 
-// The only JavaScript on the landing story: reveals each chapter as it scrolls into view and counts the big numbers
-// up. It renders nothing. Without JavaScript, or under prefers-reduced-motion, it never runs and every chapter shows
-// its final, static state (the CSS hides nothing unless `data-motion` is set here).
 import { useEffect } from "react";
 
 const COUNT_MS = 1400;
@@ -28,7 +25,6 @@ export function StoryMotion() {
       el.setAttribute("data-in", "");
       el.querySelectorAll<HTMLElement>("[data-count]").forEach(countUp);
     };
-    // chapters already on screen stay visible (no flash); only the ones below the fold wait for the scroll
     const onScreen = (el: HTMLElement) => el.getBoundingClientRect().top < window.innerHeight * 0.8;
     chapters.filter(onScreen).forEach((el) => el.setAttribute("data-in", ""));
     root.setAttribute("data-motion", "");
@@ -40,12 +36,9 @@ export function StoryMotion() {
           io.unobserve(e.target);
         }
       },
-      // threshold 0 + a margin, not a ratio: a chapter taller than the viewport (400% zoom, landscape phone) could
-      // never reach a ratio and would stay hidden
       { threshold: 0, rootMargin: "0px 0px -15% 0px" },
     );
     chapters.filter((el) => !el.hasAttribute("data-in")).forEach((el) => io.observe(el));
-    // a keyboard user tabbing into a chapter must never land in a hidden one
     const onFocus = (e: FocusEvent) => {
       const ch = (e.target as HTMLElement).closest<HTMLElement>("[data-chapter]");
       if (ch && !ch.hasAttribute("data-in")) show(ch);

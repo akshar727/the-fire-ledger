@@ -4,7 +4,6 @@ import { test } from "node:test";
 import { parseSeries, type CalendarStats } from "./series.ts";
 import { monthWeather, parseWeather, summarySentence, weatherPhrase, weatherSentence, weatherSummary, weatherVerdict, type Weather } from "./weather.ts";
 
-// Two years of a toy file: 24 months, `index` rising through the years so the second year is the ledger for each month.
 function toy(pctl: number[], opts: { complete?: boolean; days?: number; peak7?: number[] } = {}): Weather {
   const n = pctl.length;
   return {
@@ -62,7 +61,6 @@ test("verdict: weather explains high fire, or points to people; low fire; normal
 
 test("record month, partial month and months the file does not reach", () => {
   const W = toy([...Array(12).fill(40), ...Array(12).fill(60)]);
-  // the toy has only 2 of each month: too few to call a record
   assert.equal(monthWeather(W, 2002, 3)!.record, false);
   const many = toy(Array.from({ length: 72 }, (_, i) => (i < 60 ? 40 : 98)));
   assert.equal(monthWeather(many, 2006, 3)!.record, true);
@@ -79,7 +77,7 @@ test("summary counts fire flags against fire-prone weather, skipping a partial l
   const W = toy([90, 90, 10, 10, 80, 20, 50, 50, 50, 50, 50, 50], { complete: false, days: 5 });
   const stats = { flag: [1, 1, 1, -1, 0, 0, 0, 0, 0, 0, 0, 1] } as unknown as CalendarStats;
   const s = weatherSummary(W, stats, 2001, false)!;
-  assert.equal(s.n, 11); // the weather file's last month is partial
+  assert.equal(s.n, 11);
   assert.deepEqual(s.high, { prone: 2, other: 1 });
   assert.deepEqual(s.low, { prone: 0, other: 1 });
   assert.deepEqual(s.normal, { prone: 1, other: 6 });
@@ -89,7 +87,6 @@ test("summary counts fire flags against fire-prone weather, skipping a partial l
   assert.equal(weatherSummary(W, stats, 2010, false), null);
 });
 
-// Real data: the summary the calendar shows (snapshot of DP-014's files; update when weather.py is rerun).
 test("real data: high-fire months line up with fire-prone weather far more often than chance", () => {
   for (const r of ["portugal", "ghana", "punjab"]) {
     const W = parseWeather(JSON.parse(readFileSync(new URL(`../public/data/${r}/weather.json`, import.meta.url), "utf8")))!;

@@ -1,8 +1,3 @@
-"""Tests for scripts/check_outputs.py (no network; each case builds a throwaway git repo in a temp dir).
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import importlib.util
 import json
 import os
@@ -19,7 +14,7 @@ HAVE_GIT = shutil.which("git") is not None
 
 spec = importlib.util.spec_from_file_location("check_outputs", SCRIPT)
 check_outputs = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(check_outputs)   # nothing runs at import: main() is behind __name__
+spec.loader.exec_module(check_outputs)
 
 
 @unittest.skipUnless(HAVE_GIT, "git not available")
@@ -28,7 +23,6 @@ class CheckOutputsTests(unittest.TestCase):
         self.repo = Path(tempfile.mkdtemp(prefix="test_check_outputs_"))
         self.addCleanup(shutil.rmtree, self.repo, ignore_errors=True)
         self.git("init", "-q")
-        # same bytes on every OS: no CRLF conversion, no user hooks or signing
         for k, v in (("core.autocrlf", "false"), ("core.safecrlf", "false"), ("commit.gpgsign", "false"),
                      ("core.hooksPath", os.devnull), ("user.name", "test"), ("user.email", "test@example.com")):
             self.git("config", k, v)
@@ -40,7 +34,6 @@ class CheckOutputsTests(unittest.TestCase):
         self.git("add", "-A")
         self.git("commit", "-q", "-m", "init")
 
-    # helpers
     def git(self, *args):
         return subprocess.run(["git", "-C", str(self.repo), *args], check=True, capture_output=True)
 
@@ -59,11 +52,10 @@ class CheckOutputsTests(unittest.TestCase):
         self.assertEqual(got, code, out)
         return out
 
-    # porcelain parsing
     def test_porcelain_rename_and_spaces(self):
-        self.git("mv", "a b.txt", "c d.txt")             # staged rename: "R  c d.txt\0a b.txt\0"
-        self.write("new dir/new file.txt", "x\n")         # untracked, path with spaces
-        self.write("code.py", "print('changed')\n")       # plain modification
+        self.git("mv", "a b.txt", "c d.txt")
+        self.write("new dir/new file.txt", "x\n")
+        self.write("code.py", "print('changed')\n")
         old = os.getcwd()
         os.chdir(self.repo)
         try:
@@ -72,7 +64,6 @@ class CheckOutputsTests(unittest.TestCase):
             os.chdir(old)
         self.assertEqual(sorted(paths), ["c d.txt", "code.py", "new dir/new file.txt"])
 
-    # numeric tolerance
     def test_clean_repo_passes(self):
         self.assertIn("baseline: HEAD", self.assertCheck(0))
 
@@ -90,7 +81,7 @@ class CheckOutputsTests(unittest.TestCase):
         self.write("out.json", json.dumps({"x": 1.0, "v": [1, 2.5], "s": "a"}) + "\n")
         self.assertIn("length 2 != 3", self.assertCheck(1))
         self.write("out.json", json.dumps({"x": 1.0, "v": [1, 2.5, 0], "s": "a"}) + "\n")
-        self.assertIn("$.v[2]", self.assertCheck(1))   # null -> 0 is not "within tolerance"
+        self.assertIn("$.v[2]", self.assertCheck(1))
 
     def test_js_const_form(self):
         self.write("data.js", 'const DATA = {"x": 1.000000000001};\n')
@@ -100,7 +91,6 @@ class CheckOutputsTests(unittest.TestCase):
         self.write("data.js", 'export default {"x": 1.0};\n')
         self.assertIn("could not compare", self.assertCheck(1))
 
-    # byte-exact and new files
     def test_csv_byte_change_fails(self):
         self.write("out.csv", "a,b\n1,3\n")
         out = self.assertCheck(1)
@@ -124,10 +114,9 @@ class CheckOutputsTests(unittest.TestCase):
         self.write("out.json.part", "half-written")
         self.assertCheck(0)
 
-    # snapshot baseline
     def test_snapshot_keeps_an_uncommitted_code_edit(self):
         self.write("code.py", "print('work in progress')\n")
-        self.assertCheck(1)                                    # against HEAD the edit is a change
+        self.assertCheck(1)
         self.assertIn("snapshot saved: 1 dirty path", self.assertCheck(0, "--snapshot"))
         self.write("out.json", json.dumps({"x": 1.0 + 1e-12, "v": [1, 2.5, None], "s": "a"}) + "\n")
         out = self.assertCheck(0)
@@ -143,10 +132,9 @@ class CheckOutputsTests(unittest.TestCase):
     def test_path_restored_to_head_passes(self):
         self.write("out.csv", "a,b\nedited,before snapshot\n")
         self.assertCheck(0, "--snapshot")
-        self.git("checkout", "--", "out.csv")                 # pipeline wrote the committed bytes back
+        self.git("checkout", "--", "out.csv")
         self.assertCheck(0)
 
-    # arguments and environment
     def test_unknown_argument_exits_2(self):
         for args in (["--bogus"], ["--snapshot", "extra"]):
             code, out = self.run_check(*args)

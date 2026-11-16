@@ -1,8 +1,3 @@
-"""peaks.py: peak and top-3 fire days per month (synthetic grid, temp dirs, no network).
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import json
 import sys
 import tempfile
@@ -39,10 +34,10 @@ class PeakTests(unittest.TestCase):
         res = build([row("2005-03-04", 1, 1), row("2005-03-04", 2, 0, lat=41.0, dn="N"), row("2005-03-04", 0, 3, lon=-7.0),
                      row("2005-03-10", 5), row("2005-03-20", 1), row("2005-03-21", 2), row("2005-03-22", 1, 1)])
         self.assertEqual([entry(res, "2005-03", i) for i in range(3)],
-                         [(4, 7, "modis"), (10, 5, "modis"), (21, 2, "modis")])   # 22 ties 21 at 2 -> earliest
+                         [(4, 7, "modis"), (10, 5, "modis"), (21, 2, "modis")])
         self.assertEqual(month(res, "2005-03")["peak"], month(res, "2005-03")["top3"][0])
-        self.assertEqual(len(month(res, "2005-03")["top3"]), 3)   # 4 non-zero days, only 3 kept
-        self.assertEqual(res["sensors"], ["modis", "snpp", "noaa20"])   # FE-024 indexes into this order
+        self.assertEqual(len(month(res, "2005-03")["top3"]), 3)
+        self.assertEqual(res["sensors"], ["modis", "snpp", "noaa20"])
         self.assertIn("not harmonized", res["counts"])
         self.assertEqual(res["start"], "2001-01")
         self.assertEqual((res["snpp_from"], res["snpp_through"], res["noaa20_through"]),
@@ -65,7 +60,7 @@ class PeakTests(unittest.TestCase):
     def test_noaa20_after_archive_through(self):
         res = build([row("2020-06-10", viirs=5, n20=1), row("2020-06-11", viirs=99, n20=3), row("2020-06-12", viirs=7)])
         self.assertEqual([entry(res, "2020-06", i) for i in range(2)], [(10, 5, "snpp"), (11, 3, "noaa20")])
-        self.assertEqual(len(month(res, "2020-06")["top3"]), 2)   # day 12: S-NPP ignored, NOAA-20 has 0
+        self.assertEqual(len(month(res, "2020-06")["top3"]), 2)
 
     def test_n20_ends_before_archive_keeps_snpp_days(self):
         res = build([row("2020-06-08", viirs=50)], archive="2020-06-10", n20_end="2020-06-06")
@@ -121,14 +116,14 @@ class PeakTests(unittest.TestCase):
             self.assertNotIn(b"NaN", raw)
             loaded = json.loads(raw)
             self.assertEqual(loaded["region"], "x")
-            self.assertEqual(loaded["last_day"], "2020-06-15")   # data_through, not last_date
+            self.assertEqual(loaded["last_day"], "2020-06-15")
             for m in loaded["months"]:
                 for day, count, sensor in m["top3"]:
                     self.assertIs(type(count), int)
                     self.assertIs(type(day), int)
                     self.assertIs(type(sensor), int)
             peaks.run("x", grid, out)
-            self.assertEqual(path.read_bytes(), raw)   # deterministic
+            self.assertEqual(path.read_bytes(), raw)
             self.assertFalse((out / "x" / "peaks.json.part").exists())
 
 

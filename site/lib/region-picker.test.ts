@@ -1,5 +1,3 @@
-// Run with `npm test`. FE-008: the region picker's groups and filtering, on the site's index.json and on a fixture
-// with countries (none are published yet).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fold, groupRegions, PICKER_ITEMS, pickerItems } from "./region-picker.ts";
@@ -13,7 +11,7 @@ const fixture = pickerItems({
     { id: "argentina", name: "Argentina", tier: "country", iso_a3: "ARG", data_through: "2025-12-31", first_year: 2001, ship: "ratio" },
     { id: "cote-divoire", name: "Côte d'Ivoire", tier: "country", iso_a3: "CIV", data_through: "2025-12-31", first_year: 2001 },
     { id: "nauru", name: "Nauru", tier: "country", iso_a3: "NRU", data_through: "2025-12-31", first_year: 2001, ship: "sparse" },
-    { id: "chad", name: "Chad", tier: "country", data_through: "2025-12-31" }, // no record yet: not listed
+    { id: "chad", name: "Chad", tier: "country", data_through: "2025-12-31" },
   ],
 });
 const ids = (q: string) => groupRegions(fixture, q).map((g) => [g.label, g.items.map((it) => it.id)]);
@@ -37,7 +35,7 @@ test("empty query: deep dives in index order, then countries A to Z with their s
 
 test("typing filters both groups; names starting with the text come first; empty groups vanish", () => {
   assert.deepEqual(ids("in"), [
-    ["Deep dives", ["portugal", "punjab"]], // "Mainland Portugal", "NW India"
+    ["Deep dives", ["portugal", "punjab"]],
     ["Countries", ["india", "argentina"]],
   ]);
   assert.deepEqual(ids("  PORT "), [["Deep dives", ["portugal"]]]);

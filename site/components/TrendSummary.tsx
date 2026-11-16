@@ -1,10 +1,5 @@
 "use client";
 
-// FE-014 (F-7): "is the trend real?" under the ledger chart. One sentence and a small graphic of the Theil-Sen slope
-// and its 90% interval for the stitched and the harmonized ledger, recomputed for the complete years in the selected
-// range (lib/trend.ts, a port of trend_stats.py). The stitched 2012 total needs the weekly file, so series.json is
-// fetched only when 2012 is in a range other than the published 2001-2025 block (whose answer annual.json already
-// holds); the harmonized row never waits for it.
 import { useEffect, useRef, useState } from "react";
 
 import { Disclosure } from "@/components/Disclosure";
@@ -18,7 +13,6 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
   const D = data as Annual & { trend?: TrendBlock };
   const [loaded, setLoaded] = useState<Weekly | null>(null);
   const w = loaded?.region === regionId ? loaded : null;
-  // fetch once per region; a later range that needs it reuses what is loaded
   const fetchNow = rangeYears(D, years).needsWeekly && !(w && !w.failed);
 
   useEffect(() => {
@@ -34,7 +28,6 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
   }, [regionId, fetchNow]);
 
   const r = rangeTrend(D, years, w?.weekly);
-  // weekly file missing or broken: say so instead of "loading" forever
   const sentence = trendSentence(r, !!w?.failed);
 
   return (
@@ -44,7 +37,6 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
         {sentence}
       </p>
       {r.years.length >= 3 && <SlopeIntervals stitched={r.stitched} harmonized={r.harmonized} boot={r.boot} />}
-      {/* FE-025: the method note on request */}
       <Disclosure summary="How the trend is measured">
         <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
           Theil-Sen slope as a share of the median year, with its {Math.round(ALPHA * 100)}% interval; significant means a
@@ -59,11 +51,10 @@ export function TrendSummary({ data, regionId, years }: { data: Annual; regionId
 }
 
 const MAX_W = 640;
-const L = 92; // label column
+const L = 92;
 const R = 16;
 const ROW = 34;
 
-/** Dot = slope, bar = interval, dashed line = no change; one row per record. */
 function SlopeIntervals({ stitched, harmonized, boot }: { stitched: TrendStat | null; harmonized: TrendStat; boot: [number, number] | null }) {
   const rows: { label: string; t: TrendStat | null; color: string }[] = [
     { label: "Stitched", t: stitched, color: "var(--muted-foreground)" },
@@ -73,7 +64,6 @@ function SlopeIntervals({ stitched, harmonized, boot }: { stitched: TrendStat | 
   const nums = vals.filter((v): v is number => v !== null && Number.isFinite(v));
   const step = niceStep(Math.max(1, ...nums.map(Math.abs)));
   const lim = step * Math.max(1, Math.ceil(Math.max(1e-9, ...nums.map(Math.abs)) / step));
-  // drawn at its real pixel width (not a scaled viewBox), so the 11-12 px labels stay readable on a phone
   const box = useRef<HTMLElement>(null);
   const [W, setW] = useState(MAX_W);
   useEffect(() => {
@@ -145,7 +135,6 @@ function describe(t: TrendStat | null): string {
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
-/** 1, 2, 2.5 or 5 × 10^k so that about two steps cover m. */
 function niceStep(m: number): number {
   const raw = m / 2;
   const p = 10 ** Math.floor(Math.log10(raw));

@@ -1,4 +1,3 @@
-// Run with `npm test`. FE-031: the overpass drift helpers, on a fixture and on the published deep dives.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

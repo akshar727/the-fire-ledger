@@ -1,6 +1,3 @@
-// Chapters 4 and 5: the annual ledger as raw (MODIS, then VIIRS from VIIRS_FROM) or harmonized (back-cast with its
-// 5-95% band, then observed VIIRS). Both views share one y scale, so the leap and its removal read as the same chart.
-// Server component: static SVG; lines draw in only when lib motion (StoryMotion) marks the chapter as in view.
 import { VIIRS_FROM } from "@/lib/annual";
 import { compact } from "@/lib/series";
 import type { LineSeries } from "@/lib/story";
@@ -51,7 +48,6 @@ export function StoryLine({ lines, mode, label }: { lines: LineSeries; mode: "ra
       {mode === "raw" ? (
         <>
           <path d={path(lines.raw, 0, j)} pathLength={1} fill="none" stroke="var(--modis)" strokeWidth={2.5} className="story-draw" />
-          {/* the leap itself: last MODIS year to first VIIRS year */}
           <path d={path(lines.raw, j - 1, j + 1)} fill="none" stroke="var(--primary)" strokeWidth={2.5} strokeDasharray="4 4" className="story-fade story-late" />
           <path d={path(lines.raw, j, n)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.5} className="story-draw story-late" />
         </>
@@ -60,7 +56,6 @@ export function StoryLine({ lines, mode, label }: { lines: LineSeries; mode: "ra
           <path d={band()} fill="var(--primary)" opacity={0.2} className="story-fade" />
           <path d={path(lines.harmonized, 0, j + 1)} pathLength={1} fill="none" stroke="var(--primary)" strokeWidth={2.5} className="story-draw" />
           <path d={path(lines.harmonized, j, n)} pathLength={1} fill="none" stroke="var(--viirs)" strokeWidth={2.5} className="story-draw" />
-          {/* the raw MODIS years, faint, so the move from raw to harmonized stays visible */}
           <path d={path(lines.raw, 0, j)} fill="none" stroke="var(--modis)" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.6} />
         </>
       )}
@@ -68,7 +63,6 @@ export function StoryLine({ lines, mode, label }: { lines: LineSeries; mode: "ra
   );
 }
 
-/** Legend under a StoryLine (HTML, so it wraps on small screens). */
 export function StoryLegend({ mode }: { mode: "raw" | "harmonized" }) {
   const items =
     mode === "raw"

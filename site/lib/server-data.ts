@@ -1,13 +1,5 @@
-// Server-only helpers for the /api/* route handlers. Do not import from client components
-// (the `server-only` package is not a dependency, so this is enforced by convention).
-//
-// Plan B (not implemented): if fetching our own /data/ files fails on Vercel,
-// switch to fs.readFile(path.join(process.cwd(), "public/data/...")) plus
-// outputFileTracingIncludes for "/api/**" in next.config.ts. Only this file would change.
-
 import { MAX_SPAN_DAYS } from "./selection.ts";
 
-// kept in lib/selection.ts so the Download CSV button (client) uses the same limit
 export { MAX_SPAN_DAYS };
 export const REGION_RE = /^[a-z0-9-]+$/;
 export const HOTSPOT_HEADER =
@@ -16,7 +8,6 @@ export const HOTSPOT_HEADER =
 const DAY_MS = 86_400_000;
 
 export class ApiError extends Error {
-  // explicit field, not a `public status` parameter property: Node's type stripping (npm test) can't handle those
   status: number;
   constructor(status: number, message: string) {
     super(message);
@@ -44,7 +35,6 @@ export function parseRegion(v: string | null): string {
   return v;
 }
 
-/** Strict YYYY-MM-DD real calendar date -> UTC ms. */
 export function parseDate(name: string, v: string | null): number {
   const m = v ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(v) : null;
   if (!m) throw new ApiError(400, `${name} must be YYYY-MM-DD`);
@@ -96,11 +86,6 @@ export function parseHotspotQuery(sp: URLSearchParams): HotspotQuery {
   return { region, from: sp.get("from")!, to: sp.get("to")!, years, bbox };
 }
 
-/**
- * Own-origin fetch of /data/<region>/<file>. Returns null on 404.
- * region and file are validated here so the URL can never leave /data/.
- * Throws ApiError(502) on other failures or when the content type is not one of `types`.
- */
 export async function fetchData(
   request: Request,
   region: string,
@@ -130,7 +115,6 @@ export async function fetchData(
   return res;
 }
 
-/** Fetch and parse JSON; null on 404, 502 on bad content type or parse failure. */
 export async function fetchJson(
   request: Request,
   region: string,
@@ -145,13 +129,6 @@ export async function fetchJson(
   }
 }
 
-/**
- * Stream the given CSV responses as one CSV: header once, then rows with
- * from <= date <= to (and inside bbox if given). Reads incrementally; stops
- * reading a file once date > to.
- * Status 200 and headers go out before the first upstream read, so a read error
- * mid-stream ends as a truncated download (aborted connection), not a JSON error.
- */
 export function filterCsvStream(
   responses: Response[],
   q: { from: string; to: string; bbox: Bbox | null },
@@ -165,7 +142,6 @@ export function filterCsvStream(
   let headerSkipped = false;
   let headerSent = false;
 
-  // Appends the line to out if it matches; returns true when date > to (stop this file).
   const handle = (raw: string, out: string[]): boolean => {
     const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
     if (line === "") return false;
@@ -174,7 +150,7 @@ export function filterCsvStream(
       return false;
     }
     const comma = line.indexOf(",");
-    if (comma < 0) return false; // malformed row; the contract rules these out
+    if (comma < 0) return false;
     const date = line.slice(0, comma);
     if (date > to) return true;
     if (date < from) return false;
@@ -202,7 +178,6 @@ export function filterCsvStream(
         return;
       }
       try {
-        // Loop until something is enqueued or all input is consumed.
         for (;;) {
           if (idx >= responses.length) {
             controller.close();

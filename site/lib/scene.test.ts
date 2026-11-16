@@ -1,5 +1,3 @@
-// Tests for lib/scene.ts (FE-019): frame maths for the scroll scene, the rendered frames, and agreement with the
-// Blender-side layout (scripts/landing_scene/layout.py).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -29,9 +27,9 @@ test("frameAt never runs backwards as the page scrolls down, and survives odd la
     last = f;
   }
   assert.equal(frameAt([], 100), 0);
-  assert.equal(frameAt([300, 300, 900, 1200, 1500, 1800], 300), 0); // two chapters at one height: no division by zero
+  assert.equal(frameAt([300, 300, 900, 1200, 1500, 1800], 300), 0);
   assert.ok(Number.isFinite(frameAt([300, 300, 900, 1200, 1500, 1800], 301)));
-  assert.equal(frameAt([100, 200], 150), 36); // fewer chapters than anchors: uses the ones there are
+  assert.equal(frameAt([100, 200], 150), 36);
 });
 
 test("loadOrder fetches every frame once, the first one first, coarse before fine", () => {
@@ -41,7 +39,6 @@ test("loadOrder fetches every frame once, the first one first, coarse before fin
   assert.equal(order[0], 0);
   const early = order.slice(0, Math.ceil(FRAME_COUNT / 32) + 1);
   assert.ok(early.includes(FRAME_COUNT - 1), "the last frame is among the first fetched");
-  // after the coarse pass no position is more than 16 frames from a fetched one, after the next one 8
   for (let i = 0; i < FRAME_COUNT; i++) assert.ok(early.some((k) => Math.abs(k - i) <= 16), `frame ${i}`);
   const next = order.slice(0, Math.ceil(FRAME_COUNT / 16) + 1);
   for (let i = 0; i < FRAME_COUNT; i++) assert.ok(next.some((k) => Math.abs(k - i) <= 8), `frame ${i}`);
@@ -49,12 +46,12 @@ test("loadOrder fetches every frame once, the first one first, coarse before fin
 });
 
 test("nearest picks the closest available frame, or -1 when there is none", () => {
-  const have = new Set([0, 16, 32, 179]);  // any count above 179 works here
+  const have = new Set([0, 16, 32, 179]);
   const has = (i: number) => have.has(i);
   assert.equal(nearest(0, FRAME_COUNT, has), 0);
   assert.equal(nearest(7.6, FRAME_COUNT, has), 0);
   assert.equal(nearest(8.6, FRAME_COUNT, has), 16);
-  assert.equal(nearest(24, FRAME_COUNT, has), 16); // a tie goes to the lower frame
+  assert.equal(nearest(24, FRAME_COUNT, has), 16);
   assert.equal(nearest(120, FRAME_COUNT, has), 179);
   assert.equal(nearest(500, FRAME_COUNT, has), 179);
   assert.equal(nearest(-3, FRAME_COUNT, has), 0);
@@ -79,7 +76,7 @@ test("rateFor gives the same glide per second at any refresh rate", () => {
   assert.ok(Math.abs(at60 - at120) < 1e-9);
   assert.ok(rateFor(1000 / 60) > 0.1 && rateFor(1000 / 60) < 0.25);
   assert.equal(rateFor(-5), 0);
-  assert.equal(rateFor(5000), rateFor(100)); // a long pause does not jump straight to the target
+  assert.equal(rateFor(5000), rateFor(100));
 });
 
 test("blendPair fades the next frame over the current one, and falls back to the nearest frame alone", () => {
@@ -88,7 +85,7 @@ test("blendPair fades the next frame over the current one, and falls back to the
   assert.deepEqual(blendPair(10, FRAME_COUNT, all), { base: 10, over: -1, alpha: 0 });
   assert.deepEqual(blendPair(FRAME_COUNT - 1, FRAME_COUNT, all), { base: FRAME_COUNT - 1, over: -1, alpha: 0 });
   const some = (i: number) => i === 10;
-  assert.deepEqual(blendPair(10.6, FRAME_COUNT, some), { base: 10, over: -1, alpha: 0 }); // partner not decoded yet
+  assert.deepEqual(blendPair(10.6, FRAME_COUNT, some), { base: 10, over: -1, alpha: 0 });
   assert.equal(blendPair(3, FRAME_COUNT, () => false).base, -1);
 });
 
@@ -106,7 +103,6 @@ test("the stylesheet gates the scene caption with the same media query, and ever
   assert.ok(css.includes(`@media not (${SCENE_MEDIA})`), "globals.css negates SCENE_MEDIA for .story-scene-note");
   const scene = css.slice(css.indexOf("/* Scroll scene (FE-019)")).replace(/\/\*[\s\S]*?\*\//g, "");
   assert.ok(scene.length > 500);
-  // outside [data-scene], the only things the scene's CSS may hide are its own canvas holder and its caption
   const hidden = [...scene.matchAll(/([^{}]+)\{[^{}]*(?:visibility:\s*hidden|display:\s*none|opacity:\s*0)[^{}]*\}/g)].map((m) => m[1].trim());
   for (const sel of hidden) assert.match(sel, /^\.story-scene( canvas)?$|^\.story-scene-note$/, sel);
   assert.match(scene, /\.story-shell\[data-scene\]\s*\{\s*overflow:\s*clip/, "the pinned scene is clipped to the story, so it cannot cover the footer");

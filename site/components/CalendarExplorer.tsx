@@ -1,8 +1,5 @@
 "use client";
 
-// Burn calendar with the shared selection controls. Region, dates and the Month / Week view live in the URL
-// (?region=&from=&to=&view=, FE-001 decision; view FE-016) so a demo link can open straight on one view.
-// FE-025: region and dates share one row, so the calendar starts on a laptop's first screen.
 import { BurnCalendar } from "@/components/BurnCalendar";
 import { DateRange } from "@/components/DateRange";
 import { DownloadCsv } from "@/components/DownloadCsv";
@@ -12,7 +9,7 @@ import { useCalendarView, useSelection } from "@/lib/use-selection";
 
 export function CalendarExplorer() {
   const { sel } = useSelection();
-  const [view, setView] = useCalendarView(); // ?view=week (FE-016)
+  const [view, setView] = useCalendarView();
   const region = sel.region;
   return (
     <div className="flex flex-col gap-6">

@@ -1,8 +1,3 @@
-"""Gridding and point export in build.py (small hand-made tables, temp folders, no network).
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import contextlib
 import io
 import json
@@ -69,7 +64,7 @@ class GridTests(unittest.TestCase):
         self.assertEqual(list(self.out.columns), [
             "date", "lat", "lon", "daynight", "terra_n", "aqua_n", "viirs_n",
             "terra_frp_mean", "aqua_frp_mean", "viirs_frp_mean",
-            "n20_n", "n21_n", "n20_frp_mean", "n21_frp_mean"])   # DP-013: NOAA columns appended, model's unchanged
+            "n20_n", "n21_n", "n20_frp_mean", "n21_frp_mean"])
         keys = list(zip(self.out.date, self.out.lat, self.out.lon, self.out.daynight))
         self.assertEqual(keys, [
             ("2020-01-01", -0.25, -8.0, "D"),
@@ -79,7 +74,6 @@ class GridTests(unittest.TestCase):
         ])
 
     def test_cell_is_south_west_corner(self):
-        # -0.1 -> -0.25, -8.0 stays, 0.24 -> 0.0, 41.999 -> 41.75
         self.assertEqual(self.out.lat.tolist(), [-0.25, -0.25, 0.0, 0.0])
         self.assertEqual(self.out.lon.tolist(), [-8.0, -8.0, 41.75, 0.0])
 
@@ -92,7 +86,7 @@ class GridTests(unittest.TestCase):
 
     def test_mean_frp_empty_when_no_detections_and_two_decimals(self):
         r = self.out
-        self.assertEqual(r.terra_frp_mean[0], 4.41)  # mean(1.0, 2.234, 10.0) = 4.411; median would be 2.23
+        self.assertEqual(r.terra_frp_mean[0], 4.41)
         self.assertEqual(r.aqua_frp_mean[0], 5.0)
         self.assertTrue(pd.isna(r.viirs_frp_mean[0]))
         self.assertTrue(pd.isna(r.terra_frp_mean[1]))
@@ -116,9 +110,9 @@ class GridTests(unittest.TestCase):
         self.assertEqual(out.n20_n.tolist(), [2, 0])
         self.assertEqual(out.n21_n.tolist(), [0, 1])
         self.assertEqual(out.n20_frp_mean[0], 5.0)
-        self.assertEqual(out.viirs_frp_mean[0], 2.0)            # S-NPP values untouched by NOAA rows in the same cell
+        self.assertEqual(out.viirs_frp_mean[0], 2.0)
         self.assertEqual(out.n21_frp_mean[1], 1.5)
-        self.assertEqual((out.terra_n[1], out.aqua_n[1], out.viirs_n[1]), (0, 0, 0))   # NOAA-only row
+        self.assertEqual((out.terra_n[1], out.aqua_n[1], out.viirs_n[1]), (0, 0, 0))
 
     def test_noaa_rows_never_change_model_columns(self):
         base = [det(-0.1, -8.0, sat="Terra", frp=1.0), det(-0.1, -8.0, sat="N", frp=2.0, dn="N"),
@@ -132,10 +126,10 @@ class GridTests(unittest.TestCase):
 
     def test_check_model_cells(self):
         base = [det(-0.1, -8.0, sat="Terra"), det(0.3, 0.3, date="2020-01-03", sat="Aqua")]
-        build.check_model_cells(build.grid(frame(base + [det(0.3, 0.3, date="2020-01-05", sat="N20")])), "x")   # fine
-        with self.assertRaises(SystemExit):   # a cell only NOAA saw
+        build.check_model_cells(build.grid(frame(base + [det(0.3, 0.3, date="2020-01-05", sat="N20")])), "x")
+        with self.assertRaises(SystemExit):
             build.check_model_cells(build.grid(frame(base + [det(5.0, 5.0, sat="N21")])), "x")
-        with self.assertRaises(SystemExit):   # NOAA brings a cell forward: model.py's cell order would change
+        with self.assertRaises(SystemExit):
             build.check_model_cells(build.grid(frame(base + [det(0.3, 0.3, date="2019-12-31", sat="N20")])), "x")
 
     def test_input_not_modified(self):
@@ -146,7 +140,6 @@ class GridTests(unittest.TestCase):
 
 
 class RawDirCase(unittest.TestCase):
-    """Temp RAW dir, fake region 'XX', SRC limited to 2020, downloads forbidden."""
     BBOX = [-8.0, 36.0, -6.0, 38.0]
 
     def setUp(self):
@@ -181,7 +174,7 @@ class LoadRegionTests(RawDirCase):
             write_raw(self.raw, "viirs-snpp_2020_XX.csv", [det(37, -7, sat="N", date="2020-06-02")])
             df, through = quiet(build.load_region, self.region, ends)
         self.assertEqual(sorted(df.satellite), ["N", "N20", "Terra"])
-        self.assertEqual(through, "2020-06-02")              # NOAA-20 reaching further does not move it
+        self.assertEqual(through, "2020-06-02")
         self.assertEqual(ends, {"terra": "2020-06-01", "aqua": "2020-06-01", "viirs": "2020-06-02", "n20": "2020-12-31"})
 
     def test_type_filter_drops_non_zero(self):
@@ -191,18 +184,18 @@ class LoadRegionTests(RawDirCase):
 
     def test_bbox_edges_west_south_inclusive_east_north_exclusive(self):
         rows = [
-            det(37, -8.0, time="0001"),     # on west edge: kept
-            det(37, -8.001, time="0002"),   # just west: dropped
-            det(37, -7.999, time="0003"),   # just inside west: kept
-            det(37, -6.0, time="0004"),     # on east edge: dropped
-            det(37, -6.001, time="0005"),   # just inside east: kept
-            det(37, -5.999, time="0006"),   # just east: dropped
-            det(36.0, -7, time="0007"),     # on south edge: kept
-            det(35.999, -7, time="0008"),   # just south: dropped
-            det(36.001, -7, time="0009"),   # just inside south: kept
-            det(38.0, -7, time="0010"),     # on north edge: dropped
-            det(37.999, -7, time="0011"),   # just inside north: kept
-            det(38.001, -7, time="0012"),   # just north: dropped
+            det(37, -8.0, time="0001"),
+            det(37, -8.001, time="0002"),
+            det(37, -7.999, time="0003"),
+            det(37, -6.0, time="0004"),
+            det(37, -6.001, time="0005"),
+            det(37, -5.999, time="0006"),
+            det(36.0, -7, time="0007"),
+            det(35.999, -7, time="0008"),
+            det(36.001, -7, time="0009"),
+            det(38.0, -7, time="0010"),
+            det(37.999, -7, time="0011"),
+            det(38.001, -7, time="0012"),
         ]
         df, _ = self.load(rows)
         self.assertEqual(sorted(df.acq_time), ["0001", "0003", "0005", "0007", "0009", "0011"])
@@ -223,10 +216,9 @@ class LoadRegionTests(RawDirCase):
             [det(37, -7, sat="N", date="2020-05-09"), det(50, 10, sat="N", date="2020-06-01")])
         self.assertEqual(sorted(df.satellite), ["Aqua", "N", "Terra"])
         self.assertIn("0905", df.acq_time.tolist())
-        self.assertEqual(through, "2020-06-01")  # latest date before the bbox filter
+        self.assertEqual(through, "2020-06-01")
 
     def test_existing_files_never_downloaded(self):
-        # fail_download is patched in setUp; reaching here without AssertionError proves no download
         self.load([det(37, -7)])
         self.assertEqual(sorted(os.listdir(self.raw)), ["modis_2020_XX.csv", "viirs-snpp_2020_XX.csv"])
 
@@ -237,7 +229,6 @@ class LoadRegionTests(RawDirCase):
 
 
 class ProbeTests(RawDirCase):
-    """The early probe fetches the first year SRC lists, nothing else."""
 
     def run_load(self, src, files=()):
         for name in files:
@@ -255,12 +246,10 @@ class ProbeTests(RawDirCase):
                             ["viirs-snpp_2020_XX.csv", "modis_2019_XX.csv"])
         self.assertIn("viirs-snpp_2020_XX.csv", self.probe_line(out))
         self.assertNotIn("modis", self.probe_line(out))
-        # printed before anything else the loop prints, with the full path
         self.assertTrue(out.splitlines()[0].startswith(f"probe {build.RAW}/viirs-snpp_2020_XX.csv: "), out.splitlines()[0])
         self.assertEqual(sorted(os.listdir(self.raw)), ["modis_2019_XX.csv", "viirs-snpp_2020_XX.csv"])
 
     def test_probe_accepts_any_iterable_of_years(self):
-        # a set (or list/tuple) of years works too; the probe is the loop's first year
         out = self.run_load({"viirs-snpp": {2020}, "modis": [2019]}, ["viirs-snpp_2020_XX.csv", "modis_2019_XX.csv"])
         self.assertIn("viirs-snpp_2020_XX.csv", self.probe_line(out))
 
@@ -298,10 +287,10 @@ class ProbeTests(RawDirCase):
             calls.append(os.path.basename(path))
             raise SystemExit("x")
 
-        write_raw(self.raw, "modis_2020_XX.csv", [])  # present, but must not be reached
+        write_raw(self.raw, "modis_2020_XX.csv", [])
         with mock.patch.object(build, "download", record), self.assertRaises(SystemExit):
             quiet(self.run_load, {"viirs-snpp": range(2020, 2021), "modis": range(2020, 2021)})
-        self.assertEqual(calls, ["viirs-snpp_2020_XX.csv"])  # exactly one attempt
+        self.assertEqual(calls, ["viirs-snpp_2020_XX.csv"])
         self.assertEqual(os.listdir(self.raw), ["modis_2020_XX.csv"])
 
 
@@ -350,7 +339,7 @@ class WritePointsTests(unittest.TestCase):
                                ("0.2000", "-7.0000", "Terra"), ("0.5000", "-7.0000", "Terra")])
 
     def test_rounding_onto_east_north_edge_is_clamped(self):
-        self.write([det(0.99999, -6.00001)])  # both round to the excluded edge
+        self.write([det(0.99999, -6.00001)])
         self.assertEqual(self.lines(2020)[1], "2020-01-01,1200,0.9999,-6.0001,Terra,50,1.0,D")
 
     def test_satellite_names_in_output(self):
@@ -373,7 +362,7 @@ class WritePointsTests(unittest.TestCase):
         self.assertEqual((years, n), ([2020, 2021], 4))
         rows = [ln.split(",")[:2] for ln in self.lines(2020)[1:4]]
         self.assertEqual(rows, [["2020-01-01", "0200"], ["2020-01-01", "1300"], ["2020-01-02", "0100"]])
-        self.assertEqual(len(self.lines(2021)), 3)  # header, one row, trailing empty
+        self.assertEqual(len(self.lines(2021)), 3)
 
     def test_stale_year_files_removed_other_files_kept(self):
         os.makedirs(self.folder)
@@ -399,12 +388,12 @@ class WriteIndexTests(unittest.TestCase):
             index = os.path.join(tmp, "sub", "index.json")
             with mock.patch.object(build, "INDEX", index):
                 build.write_index(regions, manifest, {"a": ([2019, 2020], 10), "b": ([2020], 5)})
-                build.write_index(regions, manifest, {"a": ([2021], 3)})  # only a rebuilt
+                build.write_index(regions, manifest, {"a": ([2021], 3)})
             text = read_text(index)
         self.assertNotIn("\r", text)
         data = json.loads(text)
         by_id = {e["id"]: e for e in data["regions"]}
-        self.assertEqual(sorted(by_id), ["a", "b"])  # c has no manifest entry
+        self.assertEqual(sorted(by_id), ["a", "b"])
         self.assertEqual((by_id["a"]["point_years"], by_id["a"]["point_rows"]), ([2021], 3))
         self.assertEqual((by_id["b"]["point_years"], by_id["b"]["point_rows"]), ([2020], 5))
         self.assertEqual(by_id["b"]["data_through"], "2020-12-31")
@@ -426,8 +415,8 @@ class EndToEndTests(RawDirCase):
         modis = [det(37, -7, sat="Terra", time="0905"),
                  det(37, -7, sat="Terra", time="0906", frp=3.0, date="2020-01-05"),
                  det(37.1, -7.1, sat="Aqua", dn="N", time="2200"),
-                 det(37, -7, typ=1),                       # dropped: type
-                 det(40, -7)]                              # dropped: outside bbox
+                 det(37, -7, typ=1),
+                 det(40, -7)]
         viirs = [det(36.0, -8.0, sat="N", date="2020-02-02", time="0030"),
                  det(37.9, -6.1, sat="N", date="2020-02-02", time="0031")]
         df, through = self.load(modis, viirs)

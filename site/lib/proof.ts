@@ -1,19 +1,12 @@
-// FE-020: wording for the validation strip on the Ledger page (under the ledger chart since FE-025), from annual.json `score` (whole-year hold-out)
-// and referee.json (MODIS burned area). Pure and import-free apart from types, so `node --test` covers every sentence.
 import type { Score } from "./annual.ts";
 import type { RefereeRegion } from "./referee.ts";
 
 export type Proof = {
-  /** "4.3%" */
   error: string;
-  /** true when one constant VIIRS/MODIS factor had the lower hold-out error (NW India) */
   ratioWins: boolean;
-  /** sentence under the error number */
   errorText: string;
-  /** "5 of 6" */
   band: string;
   bandText: string;
-  /** "×4.56 → ×1.04", or null when referee.json has no usable steps for the region */
   jump: string | null;
   jumpText: string | null;
 };
@@ -21,11 +14,6 @@ export type Proof = {
 const pct = (v: number) => `${v.toFixed(1)}%`;
 const step = (v: number) => `×${v.toFixed(2)}`;
 
-/**
- * FE-029: what the record shows for a whole country (annual.json `method`, `ship`, `model_score`; ML-023). Omitted for
- * the deep dives, which always show the model. "ratio": the line before 2012 is a constant-ratio estimate and
- * `score.mape_model` is its error, so the wording never calls it the model; "sparse": too little fire to score at all.
- */
 export type Estimate = { kind: "model" | "ratio"; sparse?: boolean; modelScore?: Pick<Score, "mape_model"> | null };
 
 export function proof(

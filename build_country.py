@@ -1,42 +1,21 @@
-"""Country grids (DP-011): stream NASA FIRMS country archive files into the same 0.25 deg per-cell daily table that
-model.py trains on, without keeping the detections. build.py holds every detection of a region in memory and writes
-points/<year>.csv for the site; a whole country (Brazil, Australia: ~150 MB of files per year) needs neither, so here
-each year's files are read, filtered and gridded, and that year's grid rows are appended to the output file.
-
-Usage: python build_country.py <country_id> [...] [--delete-raw] [--jobs N] [--skip-done]
-       python build_country.py --all --jobs 6 --skip-done --delete-raw      (every country, countries.json order)
-Writes data/grid/country/fire_grid_daily_<id>.csv and data/grid/country/manifest.json (git-ignored), in the format
-model.run(region_id, grid_dir="data/grid/country") reads. Nothing under site/. No key: archive files only, so a
-country's data end where the FIRMS country archive ends (build.py adds recent area-API chunks for the 3 deep dives).
-Only the model's sensors are read (MODIS Terra/Aqua, VIIRS S-NPP): NOAA-20/21 feed only the forward link past S-NPP's
-end, which needs the area API, so for a country they would add downloads and could only reorder the model's cells
-(build.check_model_cells). The n20/n21 grid columns are kept, all zero, so the table has the usual columns.
---delete-raw removes each file this run downloaded once its year is gridded (files already on disk are kept, and so
-are files of a year that failed), so disk use stays at about one country. --jobs N downloads a country's missing
-files N at a time before gridding it. A file FIRMS does not have (HTTP 404: e.g. a year before the country existed,
-or a year with no fire) counts as no detections and is listed in the manifest's `missing_files`; a country whose
-files are all missing fails. One failing country does not stop the others (exit code 1 at the end). The manifest is
-updated under a lock file, so two runs can share it. --skip-done skips countries already in the manifest.
-Source: https://firms.modaps.eosdis.nasa.gov/country/ (MODIS C6.1, VIIRS S-NPP), the same files as build.py."""
 import argparse, concurrent.futures, json, os, re, time, urllib.error
 import pandas as pd
 import build
 
 COUNTRIES = "countries.json"
 OUT = "data/grid/country"
-ARCHIVES = ("modis", "viirs-snpp")             # the model's sensors only (see the docstring)
-SENSORS = build.LEGACY_KEYS                    # terra, aqua, viirs
+ARCHIVES = ("modis", "viirs-snpp")
+SENSORS = build.LEGACY_KEYS
 COLUMNS = ["date", "lat", "lon", "daynight"] + [f"{k}_{f}" for g in (build.LEGACY_KEYS, ("n20", "n21"))
-                                                for f in ("n", "frp_mean") for k in g]   # build.grid's order
-LOCK_WAIT = 120                                # seconds to wait for another run's manifest lock
-CHUNK = 1_000_000                              # rows per read: a Brazil S-NPP year is ~1.5M rows before filtering
+                                                for f in ("n", "frp_mean") for k in g]
+LOCK_WAIT = 120
+CHUNK = 1_000_000
 
 
 def check_countries(countries):
-    """Fail early on a malformed countries.json."""
     ids = set()
     for c in countries:
-        missing = [k for k in ("id", "name", "country") if k not in c]   # fire_type optional for countries
+        missing = [k for k in ("id", "name", "country") if k not in c]
         if missing:
             raise SystemExit(f"{COUNTRIES}: {c.get('id', '?')} is missing {missing}")
         if not re.fullmatch(r"[a-z0-9-]+", c["id"]) or c["id"] in ids:
@@ -49,7 +28,6 @@ def check_countries(countries):
 
 
 def year_files():
-    """{year: [archive, ...]} for the model's archives, so each year's files are read together."""
     years = {}
     for archive in ARCHIVES:
         for y in build.SRC[archive]:
@@ -58,9 +36,6 @@ def year_files():
 
 
 def read_filtered(path, bbox):
-    """Detections of one file with type 0 (presumed vegetation fire), inside bbox if given (same edge rule as
-    build.load_region: west <= lon < east, south <= lat < north). Returns (rows, last acq_date before filtering).
-    rows is None when nothing is kept (a header-only file too), so no all-object empty frame reaches build.grid."""
     parts, last = [], None
     try:
         for d in pd.read_csv(path, usecols=build.COLS, dtype=build.STR_COLS, chunksize=CHUNK):
@@ -78,7 +53,6 @@ def read_filtered(path, bbox):
 
 
 class Coverage:
-    """build.coverage's per-sensor fields, accumulated one year at a time instead of from all detections."""
 
     def __init__(self):
         self.s = {k: {"first_date": None, "last_date": None, "detections": 0} for k in SENSORS}
@@ -95,27 +69,23 @@ class Coverage:
                 e["detections"] += int(len(dates))
 
     def end(self, archive, last):
-        """Latest acq_date in an archive file (before filtering): how far that archive reaches."""
         if last:
             for k in build.ARCHIVE_KEYS[archive]:
                 self.ends[k] = max(self.ends.get(k) or "", last)
 
     def manifest(self, grid_rows):
-        """No n20/n21 keys, so model.forward_through finds no NOAA data and no forward link runs."""
         legacy = [self.ends[k] for k in ("terra", "viirs") if self.ends.get(k)]
-        archive_through = max(legacy) if legacy else None   # build.load_region: latest day in any MODIS/S-NPP file
+        archive_through = max(legacy) if legacy else None
         sensors = {k: {**v, "data_through": archive_through} for k, v in self.s.items()}
         return {"archive_through": archive_through, "sensors": sensors, "grid_rows": int(grid_rows), "tier": "country"}
 
 
 def not_found(e):
-    """True if a download failed because FIRMS has no such file (HTTP 404)."""
     cause = e.__cause__ if isinstance(e, SystemExit) else e
     return isinstance(cause, urllib.error.HTTPError) and cause.code == 404
 
 
 def prefetch(c, raw, fetch, jobs):
-    """Download a country's missing files, `jobs` at a time. Returns (paths downloaded, file names FIRMS lacks)."""
     todo = [(f"{build.BASE}/{a}/{y}/{a}_{y}_{c['country']}.csv", os.path.join(raw, f"{a}_{y}_{c['country']}.csv"))
             for y, archives in year_files().items() for a in archives]
     todo = [(u, p) for u, p in todo if not os.path.exists(p)]
@@ -125,7 +95,7 @@ def prefetch(c, raw, fetch, jobs):
         try:
             fetch(*up)
             return up[1], None
-        except BaseException as e:   # build.download raises SystemExit
+        except BaseException as e:
             if not_found(e):
                 return None, os.path.basename(up[1])
             raise
@@ -140,7 +110,6 @@ def prefetch(c, raw, fetch, jobs):
 
 
 class Lock:
-    """Exclusive lock file next to the manifest (O_EXCL create), so parallel runs don't drop each other's entries."""
 
     def __init__(self, path, wait=LOCK_WAIT):
         self.path, self.wait = path + ".lock", wait
@@ -162,16 +131,12 @@ class Lock:
 
 
 def build_country(c, raw=build.RAW, out_dir=OUT, delete_raw=False, fetch=None, jobs=1):
-    """Grid one country year by year into <out_dir>/fire_grid_daily_<id>.csv (rows appended to a .part file per year,
-    renamed at the end, so memory holds one year and a failed run leaves the previous file as it was) and add its
-    entry to <out_dir>/manifest.json. fetch(url, path) defaults to build.download (tests pass a stub). Returns the
-    manifest entry."""
     fetch = fetch or build.download
     name, bbox, t0 = c["country"], c.get("bbox"), time.time()
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, f"fire_grid_daily_{c['id']}.csv")
     part = path + ".part"
-    pd.DataFrame(columns=COLUMNS).to_csv(part, index=False, lineterminator="\n")   # header
+    pd.DataFrame(columns=COLUMNS).to_csv(part, index=False, lineterminator="\n")
     cov, rows_out, read, nbytes, files, cells = Coverage(), 0, 0, 0, 0, set()
     made_all, absent = [], []
     try:
@@ -194,9 +159,6 @@ def build_country(c, raw=build.RAW, out_dir=OUT, delete_raw=False, fetch=None, j
                 if missing:
                     raise SystemExit(f"{fpath} is missing columns {missing}; delete that file and re-run.")
                 rows, last = read_filtered(fpath, bbox)
-                # a yearly archive file covers the whole year: a country with no fire after 24 Dec still has data to
-                # 31 Dec, and a header-only file is a year FIRMS covered with no fire (the last fire would mark 2025
-                # partial and drop it from the ledger)
                 cov.end(archive, f"{y}-12-31")
                 nbytes += os.path.getsize(fpath)
                 files += 1
@@ -211,8 +173,6 @@ def build_country(c, raw=build.RAW, out_dir=OUT, delete_raw=False, fetch=None, j
                 cov.add(df)
                 g = build.grid(df)[COLUMNS]
                 if not (g.date.astype(str).str[:4] == str(y)).all():
-                    # appending per year is only the same as gridding everything at once if a year file holds only
-                    # its own year (otherwise one cell-day could be split over two rows)
                     raise SystemExit(f"{name} {y}: a {y} file holds detections from another year; use build.py")
                 g.to_csv(part, mode="a", header=False, index=False, lineterminator="\n")
                 rows_out += len(g)
@@ -220,7 +180,7 @@ def build_country(c, raw=build.RAW, out_dir=OUT, delete_raw=False, fetch=None, j
                 del df, g
             print(f"{name} {y}: {sum(len(f) for f in frames)} detections kept, {rows_out} grid rows so far")
             del frames
-            if delete_raw:   # only after the year is gridded: a failed year keeps its files for the re-run
+            if delete_raw:
                 for p in made:
                     os.remove(p)
     except BaseException:
@@ -250,7 +210,7 @@ def load_manifest(out_dir=OUT):
 
 
 def main(argv=None):
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))   # paths are relative to the repo root
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open(COUNTRIES, encoding="utf-8") as f:
         countries = json.load(f)
     check_countries(countries)
@@ -278,7 +238,7 @@ def main(argv=None):
         print(f"[{i}/{len(todo)}] {c['id']} ({(time.time() - t0) / 60:.0f} min so far)", flush=True)
         try:
             build_country(c, delete_raw=args.delete_raw, jobs=args.jobs)
-        except (Exception, SystemExit) as e:   # one country must not stop the world run; Ctrl+C still stops it
+        except (Exception, SystemExit) as e:
             print(f"FAILED {c['id']}: {e}", flush=True)
             failed.append(c["id"])
     print(f"done: {len(todo) - len(failed)} of {len(todo)} countries in {(time.time() - t0) / 60:.0f} min"

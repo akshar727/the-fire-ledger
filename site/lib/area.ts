@@ -1,31 +1,19 @@
-// Burn calendar for any sum of cells (FE-010): a port of calendar_stats.py `calendar_block` (ML-005) so the site can
-// compute the calendar statistics for an area the user picks, plus an approximate 5-95% band for that area from the
-// region's fitted parameters (`score.alpha`, `score.sigma_year` in annual.json). `sumCells` turns per-cell monthly
-// series into a SeriesBundle, so `buildGrid` and `BurnCalendar` draw a custom area exactly like a whole region.
-// Pure and import-free apart from types, so client components and `node --test` can both use it.
 import type { CalendarStats, Flag, SeriesBundle, Source } from "./series.ts";
 
-/**
- * Python's `round(x, nd)`: the decimal nearest to the exact binary value of `x`, ties to even. `Math.round` and
- * `toFixed` both break ties upward (round(0.125, 2) is 0.12 in Python, 0.13 with toFixed), so the port uses this to get
- * the same numbers as calendar_stats.py. Exact for every double with at most 100 decimal places, i.e. any value whose
- * size matters here (smaller ones round to 0 either way).
- */
 export function pyRound(x: number, nd: number): number {
   if (!Number.isFinite(x) || x === 0) return x;
   const neg = x < 0;
-  const s = Math.abs(x).toFixed(100); // exact decimal expansion of the double
+  const s = Math.abs(x).toFixed(100);
   const dot = s.indexOf(".");
-  const keep = s.slice(0, dot) + s.slice(dot + 1, dot + 1 + nd); // integer digits + nd decimals
+  const keep = s.slice(0, dot) + s.slice(dot + 1, dot + 1 + nd);
   const rest = s.slice(dot + 1 + nd);
   let up: boolean;
   if (rest[0] > "5") up = true;
   else if (rest[0] < "5") up = false;
   else if (/[1-9]/.test(rest.slice(1))) up = true;
-  else up = Number(keep[keep.length - 1]) % 2 === 1; // exact tie: to even
+  else up = Number(keep[keep.length - 1]) % 2 === 1;
   let digits = keep;
   if (up) {
-    // add 1 to the digit string (no BigInt: the site targets ES2017)
     const d = digits.split("");
     let i = d.length - 1;
     while (i >= 0 && d[i] === "9") d[i--] = "0";
@@ -36,14 +24,10 @@ export function pyRound(x: number, nd: number): number {
   return Number(`${neg ? "-" : ""}${digits}e-${nd}`);
 }
 
-/**
- * NumPy's default percentile (method "linear") of an ascending array, `q` in [0, 1]. Same arithmetic as NumPy's
- * `_lerp`, including its switch to `b - (b - a) * (1 - t)` for t >= 0.5, so results match to the last bit.
- */
 export function percentileLinear(sorted: number[], q: number): number {
   const n = sorted.length;
   if (n === 0) throw new RangeError("percentile of an empty array");
-  const v = n * q - q; // NumPy: n*q + (alpha + q*(1 - alpha - beta)) - 1 with alpha = beta = 1
+  const v = n * q - q;
   const lo = Math.min(Math.max(Math.floor(v), 0), n - 1);
   const hi = Math.min(lo + 1, n - 1);
   const t = v - Math.floor(v);
@@ -58,15 +42,6 @@ function clean(v: number | null | undefined): number | null {
   return v;
 }
 
-/**
- * Port of calendar_stats.py `calendar_block`: the `calendar` block of series.json for a monthly series (index i is year
- * startYear + floor(i / 12), month i % 12 + 1; the last year may be partial). null / NaN = missing; negative or infinite
- * values throw RangeError. Baseline = complete years (all 12 months present) with baseline[0] <= year <= baseline[1];
- * RangeError if there is none. Per-month median / p25 / p75 (NumPy linear percentile) are rounded to 3 decimals before
- * the anomaly (value / median, 4 decimals, null where the median is 0 or the value is missing) and the flag: +1 if
- * value > p75 and value >= 2 x median and value >= median + 20, -1 if value < p25 and value <= 0.5 x median and
- * value <= median - 20, else 0 (missing months 0).
- */
 export function calendarBlock(
   harmonized: readonly (number | null | undefined)[],
   startYear: number,
@@ -109,19 +84,10 @@ export function calendarBlock(
   return { baseline_years: [b0, b1], month_median: med, month_p25: p25, month_p75: p75, anomaly, flag };
 }
 
-/** z of the 95th percentile of a standard normal. */
 export const Z95 = 1.6448536269514722;
 
-/** Fitted parameters of a region's model (annual.json `score`): NB dispersion and the year-level log error. */
 export type BandParams = { alpha: number; sigma_year: number };
 
-/**
- * Approximate 5-95% band for the total of several cells over one period, from each cell's model mean `mus`:
- * variance = sum(mu + alpha mu^2) (negative-binomial count noise per cell) + (sigma_year sum(mu))^2 (the year factor
- * all cells share), then a lognormal with that mean and variance. "Approximate": model.py's bands come from a
- * bootstrap, which also holds the fit's parameter noise and splits each cell into day/night x week rows (so its
- * alpha term is smaller than summing it per cell-month, as here). A zero total gives a zero band.
- */
 export function approxBand(mus: readonly number[], { alpha, sigma_year }: BandParams): { mean: number; lo: number; hi: number } {
   let mean = 0, v = 0;
   for (const mu of mus) {
@@ -136,25 +102,17 @@ export function approxBand(mus: readonly number[], { alpha, sigma_year }: BandPa
   return { mean, lo: Math.exp(m - Z95 * s), hi: Math.exp(m + Z95 * s) };
 }
 
-/** One cell's monthly series (same indexing as series.json `monthly`); `viirs` null before VIIRS. */
 export type CellSeries = { modis: readonly number[]; viirs: readonly (number | null)[]; pred: readonly number[] };
 
 export type SumOptions = {
-  region: string; // label written into the bundle, e.g. "portugal:custom"
+  region: string;
   start_year: number;
   params: BandParams;
-  last_month_days?: number; // the last month may be partial (series.json monthly.last_month_days)
-  source?: readonly Source[]; // the region's monthly.source (same for every cell), so forward months stay marked
+  last_month_days?: number;
+  source?: readonly Source[];
   baseline?: [number, number];
 };
 
-/**
- * Sums cells into a SeriesBundle (monthly only) that `buildGrid` and `BurnCalendar` draw like a region: modis / viirs /
- * pred are the cell sums (1 dp, as series.json); viirs is null for a month where any cell has none; lo / hi come from
- * `approxBand`; `calendar` is `calendarBlock` on the harmonized sum (viirs ?? pred), leaving out a partial last month as
- * model.py does. Throws RangeError for no cells, cells of different lengths, a missing / NaN / negative / infinite
- * modis, viirs or pred value (viirs may be null), or no complete baseline year.
- */
 export function sumCells(cells: readonly CellSeries[], o: SumOptions): SeriesBundle {
   if (cells.length === 0) throw new RangeError("no cells selected");
   const n = cells[0].pred.length;
@@ -164,7 +122,7 @@ export function sumCells(cells: readonly CellSeries[], o: SumOptions): SeriesBun
       throw new RangeError("cell series differ in length");
     for (let i = 0; i < n; i++)
       if (clean(c.modis[i]) == null || (c.viirs[i] != null && clean(c.viirs[i]) == null))
-        throw new RangeError(`cell value at month ${i} is missing or NaN`); // clean() throws on negative / infinite
+        throw new RangeError(`cell value at month ${i} is missing or NaN`);
   }
   if (o.source && o.source.length !== n) throw new RangeError("source differs in length from the cells");
   const r1 = (x: number) => pyRound(x, 1);

@@ -1,6 +1,3 @@
-// Chapter 6: the real burn calendar (year x month, harmonized monthly detections) as one static SVG. Same log-scale
-// ramp as /calendar (lib/series.ts), with the light and dark colours both written into each cell and picked by CSS.
-// Server component; the interactive version is /calendar.
 import { compact, MONTHS, rampColor, rampPosition, type CalendarGrid } from "@/lib/series";
 
 const CW = 22, CH = 13, GAP = 2, LX = 40, TY = 18;

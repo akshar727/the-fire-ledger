@@ -1,12 +1,10 @@
-// FE-032: "How this record was made" card on a country's ledger page: which method was published (annual.json `ship`)
-// and why, with both hold-out errors. Pure, so `node --test` can check every label. Deep dives have no `ship`: no card.
 import { HOLD_FROM, type Annual } from "./annual.ts";
 
 export type MethodCard = {
   ship: NonNullable<Annual["ship"]>;
-  badge: string; // the published method in plain words
-  why: string; // one sentence, with both numbers from the hidden years
-  band?: string; // `caveat` only: why the band is flagged
+  badge: string;
+  why: string;
+  band?: string;
 };
 
 export const BADGE: Readonly<Record<NonNullable<Annual["ship"]>, string>> = {
@@ -32,7 +30,6 @@ export function methodCard(D: Pick<Annual, "ship" | "score" | "model_score">): M
     };
   if (ship === "ratio") {
     const m = D.model_score?.mape_model;
-    // ML-027: a ratio country's `score` is the single ratio's own (mape_model = mape_ratio); the losing model is in model_score
     const why =
       m != null && Number.isFinite(m)
         ? `We tried our model here: ${pct(m)} average error on the hidden years ${yrs} vs ${pct(s.mape_ratio)} for one constant ratio, so the ratio is published.`

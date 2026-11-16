@@ -22,35 +22,29 @@ const SECTIONS = [
   { id: "scoreboard", title: "The world scoreboard" },
   { id: "referee", title: "An independent check" },
   { id: "caveats", title: "Known limits" },
+  { id: "drift", title: "Why the satellites drift" },
   { id: "sources", title: "Sources" },
 ] as const;
 
 const ARCHIVE_URL = "https://firms.modaps.eosdis.nasa.gov/country/";
 const AREA_API_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/";
 
-// Every region, in index.json order, with its annual ledger (scores, years) and display name. DP-009: the cell regions
-// make up the main text and table; whole countries get their own table under the hold-out.
 const ALL = REGION_LIST.map((r) => ({ id: r.id, name: REGIONS[r.id], D: loadAnnual(r.id), through: r.data_through, tier: r.tier }));
 const RECORDS = ALL.filter((r) => r.tier === "region");
 const COUNTRY_RECORDS = ALL.filter((r) => r.tier === "country");
 const SPAN = recordSpan();
-// FE-028: every record's own hold-out check, deep dives first, then whole countries (index.json order)
 const SCORE_ROWS = ALL.map((r) => scoreRow(r.id, r.name, r.tier === "country", r.D as unknown as ScoreSource));
 const BOARD = summarize(SCORE_ROWS);
 const REF = loadReferee();
-// FE-031: how far the MODIS orbits moved, training years against the last year (deep dives' annual.json `overpass`)
 const DRIFT = driftSummary(RECORDS.map((r) => r.D as unknown as OverpassSource), [VIIRS_FROM, HOLD_FROM - 1]);
-// End of the downloaded ledger (index.json archive_through, the same for every region), e.g. 2026-11-02.
 const THROUGH = RECORDS.map((r) => r.through).sort().at(-1)!;
-const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1; // yearly archives run to the year before the area API takes over
+const ARCHIVE_END = Number(THROUGH.slice(0, 4)) - 1;
 
-// FE-019: the landing page's scroll scene, described from the same files it is drawn from
 const STORY = loadStory();
 const deg = (v: number, pos: string, neg: string) => `${Math.abs(v)}° ${v >= 0 ? pos : neg}`;
 const SCENE_AREA = `${deg(SCENE_BBOX.s, "N", "S")} to ${deg(SCENE_BBOX.n, "N", "S")}, ${deg(SCENE_BBOX.w, "E", "W")} to ${deg(SCENE_BBOX.e, "E", "W")}`;
 
 const pct = (v: number) => `${v.toFixed(1)}%`;
-// FE-009: regions whose annual.json carries the NOAA-20/21 forward link (ML-017), with its hold-out score
 const FORWARD = RECORDS.flatMap((r) => (r.D.score.forward && r.D.forward_through ? [{ ...r, F: r.D.score.forward }] : []));
 const span = ([a, b]: string[]) => `${dayLabel(a)} to ${dayLabel(b)}`;
 const forwardText = (name: string, F: ForwardScore) =>
@@ -455,7 +449,7 @@ export default function MethodPage() {
               Ghana and north-west India. The published ledger uses observed VIIRS from {VIIRS_FROM} on, so the line
               itself is not affected, but the model should not be read as a forecast from recent MODIS data. Suomi
               NPP, the VIIRS satellite, kept its time.
-              <div className="mt-4">
+              <div id="drift" className="mt-4 scroll-mt-20">
                 <OverpassChart records={RECORDS.map((r) => ({ id: r.id, name: r.name, D: r.D as unknown as OverpassSource }))} />
               </div>
             </li>
@@ -499,7 +493,6 @@ export default function MethodPage() {
 
 type Rec = { id: string; name: string; D: Annual; through: string };
 
-/** Hold-out scores, one column per deep dive (FE-007 table). Whole countries are in the world scoreboard (FE-028). */
 function ScoreTable({ records, caption }: { records: Rec[]; caption: string }) {
   const [h0, h1] = holdoutYears(records[0].D);
   return (

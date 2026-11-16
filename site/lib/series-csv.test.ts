@@ -24,16 +24,14 @@ test("filename carries the range", () => {
 
 test("partial: annual from the file, monthly and weekly only the last period, by its days", () => {
   const m: Block = { start_year: 2026, pred: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], last_month_days: 14 };
-  assert.equal(isPartial("monthly", m, 10, 11), 1); // 14 of 30 November days
+  assert.equal(isPartial("monthly", m, 10, 11), 1);
   assert.equal(isPartial("monthly", m, 9, 11), 0);
   assert.equal(isPartial("monthly", { ...m, last_month_days: 30 }, 10, 11), 0);
   assert.equal(isPartial("monthly", { ...m, last_month_days: undefined }, 10, 11), 0);
-  // week 51 of 2026 (not a leap year) is days 358-365: 24-31 Dec, 8 days
   const w: Block = { start_year: 2026, pred: Array(52).fill(1), last_week_days: 7 };
   assert.equal(isPartial("weekly", w, 51, 52), 1);
   assert.equal(isPartial("weekly", { ...w, last_week_days: 8 }, 51, 52), 0);
-  assert.equal(isPartial("weekly", { ...w, last_week_days: 3 }, 50, 52), 0); // only the last week can be partial
-  // leap year: week 51 of 2024 is 23-31 Dec, 9 days
+  assert.equal(isPartial("weekly", { ...w, last_week_days: 3 }, 50, 52), 0);
   assert.equal(isPartial("weekly", { start_year: 2024, pred: Array(52).fill(1), last_week_days: 8 }, 51, 52), 1);
   assert.equal(isPartial("weekly", { start_year: 2024, pred: Array(52).fill(1), last_week_days: 9 }, 51, 52), 0);
   assert.equal(isPartial("annual", { start_year: 0, partial: [0, 1] }, 1, 2), 1);
@@ -49,7 +47,6 @@ test("annual CSV on real data: header, rounding, partial 2026, forward source", 
   assert.ok(!/\d\.\d{2,}/.test(csv), "no value has more than one decimal");
   assert.match(rows.at(-1)!, /^2026,.*,forward,1$/);
   assert.match(rows.at(-2)!, /^2025,.*,observed,0$/);
-  // a filtered file keeps each year's own partial flag
   const only = seriesCsv("annual", a, "2025", "2026", a.years).trim().split("\n").slice(1);
   assert.deepEqual(only.map((r) => r.split(",")[0] + ":" + r.split(",").at(-1)), ["2025:0", "2026:1"]);
 });
@@ -59,7 +56,7 @@ test("monthly CSV: range filter, last month partial", () => {
   const rows = seriesCsv("monthly", b.monthly, "2026-10", null).trim().split("\n").slice(1);
   assert.deepEqual(rows.map((r) => r.split(",")[0]), ["2026-10", "2026-11"]);
   assert.equal(rows[0].split(",").at(-1), "0");
-  assert.equal(rows[1].split(",").at(-1), "1"); // November 2026 to 14 Nov
+  assert.equal(rows[1].split(",").at(-1), "1");
 });
 
 test("weekly CSV: week dates, week 51 to 31 Dec, labels unchanged", () => {
