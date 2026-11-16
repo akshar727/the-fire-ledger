@@ -1,4 +1,4 @@
-# spaceapps-primary
+# The Fire Ledger
 
 **Fire Ledger**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one ledger (mainland Portugal, Ghana and NW India, 2001 to 2 November 2026; one model fit per region). NASA Space Apps Challenge 2026.
 
