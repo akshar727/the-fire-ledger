@@ -34,7 +34,7 @@ export function ValidationStrip({ data: D }: { data: Annual }) {
   return (
     <section aria-labelledby="proof-heading" className="flex flex-col gap-1 border-y">
       <h2 id="proof-heading" className="pt-4 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
-        Checked, not assumed
+        Performance Metrics
       </h2>
       <div className="grid grid-cols-1 divide-y md:grid-cols-3 md:divide-x md:divide-y-0">
         <Item value={p.error} text={p.errorText} href="/method#holdout" accent={!p.ratioWins} />

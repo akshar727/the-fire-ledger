@@ -159,7 +159,7 @@ export function SpaceView({
       points.status === "ready"
         ? points.points.map((p, i) => {
             const xy = toPixel(p.lat, p.lon, bbox, size);
-            return xy && <circle key={i} cx={xy[0]} cy={xy[1]} r={4} fill="#ff4d00" fillOpacity={0.75} stroke="#fff" strokeWidth={1} />;
+            return xy && <circle key={i} cx={xy[0]} cy={xy[1]} r={7} fill="#ff2a00" fillOpacity={0.95} stroke="#fff" strokeWidth={2} />;
           })
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps

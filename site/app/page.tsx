@@ -303,7 +303,7 @@ export default function StoryPage() {
         <Chapter
           id="one-ledger"
           n={5}
-          title="One ledger, with honest error bars."
+          title="One unified ledger with error bars."
           figure={
             <div className="flex flex-col gap-3">
               <StoryLine

@@ -85,7 +85,7 @@ export function RecordExplorer() {
       <section aria-labelledby="holdout-heading" className="flex flex-col gap-6">
         <div className="flex max-w-[65ch] flex-col gap-2">
           <h2 id="holdout-heading" className="text-2xl font-semibold tracking-tight">
-            Tested on years it never saw
+            Validated on left out data
           </h2>
           <p className="leading-relaxed text-muted-foreground">
             {estimate === "ratio"
