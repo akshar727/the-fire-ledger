@@ -26,22 +26,22 @@ export function methodCard(D: Pick<Annual, "ship" | "score" | "model_score">): M
     return {
       ship,
       badge,
-      why: "This country has too few fire detections to test any method, so the years before 2012 are MODIS times one constant ratio and are not validated.",
+      why: "This country has too few fire detections to test any method, so the years before 2012 are MODIS times one constant ratio and aren't validated.",
     };
   if (ship === "ratio") {
     const m = D.model_score?.mape_model;
     const why =
       m != null && Number.isFinite(m)
-        ? `We tried our model here: ${pct(m)} average error on the hidden years ${yrs} vs ${pct(s.mape_ratio)} for one constant ratio, so the ratio is published.`
-        : `One constant ratio is published here: ${pct(s.mape_ratio)} average error on the hidden years ${yrs}.`;
+        ? `We tried our model for this location: ${pct(m)} was the average error on the hidden years ${yrs} vs ${pct(s.mape_ratio)} for one constant ratio, so the ratio is published.`
+        : `One constant ratio is published here: ${pct(s.mape_ratio)} was the average error on the hidden years ${yrs}.`;
     return { ship, badge, why };
   }
   const card: MethodCard = {
     ship,
     badge,
-    why: `Our model was closer on the hidden years ${yrs}: ${pct(s.mape_model)} average error vs ${pct(s.mape_ratio)} for one constant ratio.`,
+    why: `Our model was closer on the hidden years ${yrs}: ${pct(s.mape_model)} was the average error vs ${pct(s.mape_ratio)} for one constant ratio.`,
   };
   if (ship === "caveat")
-    card.band = `But only ${s.coverage} of the ${s.n_hold} hidden years fell inside its 5-95% band, so the band is too narrow here.`;
+    card.band = `But only ${s.coverage} of the ${s.n_hold} hidden years fell inside the 5-95% band, so it's too narrow here.`;
   return card;
 }

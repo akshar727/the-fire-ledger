@@ -18,8 +18,8 @@ export default function LedgerPage() {
             The Fire Ledger
           </h1>
           <p className="max-w-[62ch] leading-relaxed text-muted-foreground">
-            MODIS and VIIRS count fire differently, so we put the MODIS years into VIIRS terms and every year from {first}{" "}
-            to {lastComplete} compares fairly.
+            MODIS and VIIRS track fire differently, so we put the MODIS years into VIIRS terms and every year from {first}{" "}
+            to {lastComplete} can be used consistently.
           </p>
         </div>
         <Suspense fallback={<div className="h-20 md:col-span-4" />}>

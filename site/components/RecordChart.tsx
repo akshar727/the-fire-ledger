@@ -104,20 +104,20 @@ export function RecordChart({
   const noJump = sparse || !Number.isFinite(era.jump);
   const note =
     mode === "raw"
-      ? `Naively stitched ledger. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by ${by})` +
+      ? `This is a naively stitched ledger. The mean detections per year go from ${fmt(era.modis)} (MODIS era data) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by ${by})` +
         (noJump
           ? `: too few detections to read a jump.`
-          : `: ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire changed.`)
+          : `: ×${era.jump.toFixed(1)}, mostly because VIIRS has finer pixels, not because fire actually changed.`)
       : sparse
-        ? `Too little fire here to score the hold-out years ${h0}-${h1}: the back-cast is MODIS times one ratio and is not validated.`
+        ? `Too little fire here to score the hold-out years ${h0}-${h1}: the back-cast is MODIS times one ratio and isn't validated.`
         : by === "the ratio"
           ?
-            `Constant-ratio estimate. Hold-out ${h0}-${h1}: mean annual error ${s.mape_ratio.toFixed(1)}%` +
+            `This is a constant-ratio estimate. Hold-out years were ${h0}-${h1}: mean annual error ${s.mape_ratio.toFixed(1)}%` +
             (D.model_score?.mape_model != null && Number.isFinite(D.model_score.mape_model)
               ? ` vs ${D.model_score.mape_model.toFixed(1)}% for our model, which lost here`
               : "") +
-            `; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`
-          : `Hold-out ${h0}-${h1} (the model never saw these years): mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for a single constant factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`;
+            `. The 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years. The weekly correlation r = ${s.weekly_r.toFixed(3)}.`
+          : `Hold-out years were ${h0}-${h1} (the model never saw these years): mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for a single constant factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years. The weekly correlation r = ${s.weekly_r.toFixed(3)}.`;
 
   const legend: { color: string; label: string; kind?: "dash" | "ring" }[] =
     mode === "raw"

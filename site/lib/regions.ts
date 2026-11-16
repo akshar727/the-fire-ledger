@@ -27,7 +27,7 @@ export function countryNote(through: string): string {
   const end = `${MONTHS[Number(through.slice(5, 7)) - 1]} ${through.slice(0, 4)}`;
   return (
     `Whole-country record from the FIRMS yearly archive, ending in ${end}. Not available for a whole country: ` +
-    "per-detection download, fire weather, the NOAA-20/21 forward link and the burned-area check."
+    "the per-detection download, fire weather records, the NOAA-20/21 forward link, and the burned-area check."
   );
 }
 
@@ -37,7 +37,7 @@ export function shipNote(e: Pick<IndexEntry, "ship" | "ship_caveat">): string | 
       .filter(Boolean)
       .join(" ");
   if (e.ship === "sparse")
-    return "Too little fire to check: the hold-out has too few detections to test the conversion here, so treat the harmonized line as unchecked.";
+    return "Too little fire to check: the hold-out has too few detections to test the conversion here, so we treat the harmonized line as unchecked.";
   return e.ship_caveat || undefined;
 }
 
