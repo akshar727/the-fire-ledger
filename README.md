@@ -119,6 +119,8 @@ Code, page text and documentation in this repository were written with help from
 
 The frames in `site/public/scene/` are not AI-generated images: they are Blender renders of the scene that `scripts/landing_scene/scene.py` builds from SRTM elevation and FIRMS detections. That script, like the rest of the code, was written with help from Claude.
 
+Claude was only used to accelerate development in such a short time, and was not used as a replacement for ideation. All design ideas, model creation strategies, training strategies, and model architectures were completely derived by humans before development of the actual project.
+
 ## References
 
 Data
