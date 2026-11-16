@@ -2,9 +2,11 @@
 
 **Fire Ledger**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one ledger (mainland Portugal, Ghana and NW India, 2001 to 2 November 2026; one model fit per region). NASA Space Apps Challenge 2026.
 
+**Live Website URL: https://the-fire-ledger.vercel.app**
+
 ## Features
 
-- **Landing story (`/`)**: a scroll-driven story over a Blender-rendered scene of the 2017 central Portugal fires. It explains how the satellites see fire and why their counts need harmonizing, then ends on the burn calendar.
+- **Landing story (`/`)**: a scroll-driven story over a Blender-rendered scene of the 2017 central Portugal fires. It explains how the satellites see fire and why their counts need harmonizing, then ends on the burn calendar. It shows the problem when Aqua MODIS counted 35 hot pixels and Suomi NPP VIIRS counted 239 pixels just 35 minutes after.
 - **3D globe (`/globe`)**: spin a globe of every country with a fire record and colour it by one year or by the trend since 2001. Play through the years, or click a country to see its numbers.
 - **Ledger (`/ledger`)**: the harmonized fire record for a region, with a region switcher, date range and plain-language trend summary. A method card says how the record was built and how far to trust it.
 - **This fire season so far**: the latest season's running total of fire drawn over every past season, so you can see whether this year is running ahead or behind.
