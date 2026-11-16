@@ -10,7 +10,12 @@ export type RefereeRegion = {
   burned_km2_per_year: { before: number | null; after: number | null };
   stitched: RefereeRecord;
   harmonized: RefereeRecord;
-  yearly: { years: number[]; burned_km2: (number | null)[]; stitched: (number | null)[]; harmonized: (number | null)[] };
+  yearly: {
+    years: number[];
+    burned_km2: (number | null)[];
+    stitched: (number | null)[];
+    harmonized: (number | null)[];
+  };
 };
 
 export type Referee = {
@@ -24,7 +29,7 @@ export type Referee = {
 };
 
 export function stepLabel(step: number | null): string {
-  return step === null ? "n/a" : `×${step.toFixed(2)}`;
+  return step === null ? "n/a" : `${step.toFixed(2)}x`;
 }
 
 export function backcastOffset(step: number | null): string | null {
@@ -36,7 +41,9 @@ export function backcastOffset(step: number | null): string | null {
 export function stepRange(steps: (number | null)[]): string | null {
   const v = steps.filter((s): s is number => s !== null).sort((a, b) => a - b);
   if (v.length === 0) return null;
-  return v[0] === v.at(-1) ? stepLabel(v[0]) : `${stepLabel(v[0])} to ${stepLabel(v.at(-1)!)}`;
+  return v[0] === v.at(-1)
+    ? stepLabel(v[0])
+    : `${stepLabel(v[0])} to ${stepLabel(v.at(-1)!)}`;
 }
 
 export function nearLevel(r: RefereeRegion, tol = 0.25): boolean {
@@ -46,6 +53,7 @@ export function nearLevel(r: RefereeRegion, tol = 0.25): boolean {
 
 export function harmonizedCloser(r: RefereeRegion): boolean {
   const { stitched: s, harmonized: h } = r;
-  if (s.step === null || h.step === null || s.step <= 0 || h.step <= 0) return false;
+  if (s.step === null || h.step === null || s.step <= 0 || h.step <= 0)
+    return false;
   return Math.abs(Math.log(h.step)) < Math.abs(Math.log(s.step));
 }
