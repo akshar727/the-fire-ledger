@@ -225,25 +225,6 @@
   &::after { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
 }
 
-@utility kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--primary);
-  &::before {
-    content: "";
-    flex: none;
-    width: 8px;
-    height: 8px;
-    background: var(--primary);
-    box-shadow: 0 0 10px var(--primary);
-  }
-}
-
 @utility btn-console {
   display: inline-flex;
   flex-shrink: 0;

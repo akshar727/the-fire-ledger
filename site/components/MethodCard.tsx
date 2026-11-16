@@ -19,7 +19,7 @@ export function MethodCard() {
       className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-4 sm:flex-row sm:items-center sm:gap-6 sm:px-6"
     >
       <div className="flex shrink-0 flex-col gap-1.5">
-        <h2 id="method-card-heading" className="kicker">
+        <h2 id="method-card-heading" className="text-base">
           How this record was made
         </h2>
         <span

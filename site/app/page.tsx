@@ -174,9 +174,6 @@ export default function StoryPage() {
                       href={t.href}
                       className="group flex w-full flex-col gap-1.5 bg-background px-4 py-4 transition-colors hover:bg-card focus-visible:bg-card focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
                     >
-                      <span className="font-mono text-[11px] tracking-[0.14em] text-primary uppercase">
-                        {t.tag}
-                      </span>
                       <span className="flex items-start justify-between gap-3 text-base leading-snug font-medium text-foreground">
                         {t.title}
                         <ArrowRightIcon

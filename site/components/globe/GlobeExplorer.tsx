@@ -285,7 +285,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
 
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <span className="kicker">View</span>
             <ToggleGroup
               type="single"
               variant="outline"
@@ -308,7 +307,7 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
 
           <div className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between">
-              <label htmlFor="globe-year" className="kicker">
+              <label htmlFor="globe-year" className="text-sm text-muted-foreground">
                 Year
               </label>
               <output htmlFor="globe-year" className="font-mono text-3xl font-semibold tabular-nums" aria-live="off">
@@ -359,7 +358,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
           <Legend view={state.view} edges={edges} colors={colors} />
 
           <div className="panel flex h-[19rem] flex-col gap-1.5 overflow-hidden p-4">
-            <span className="kicker">Readout</span>
             {active ? (
               <>
                 <p className="line-clamp-2 text-lg leading-snug font-semibold">{active.name}</p>
@@ -505,7 +503,7 @@ function Legend({ view, edges, colors }: { view: View; edges: number[]; colors: 
     const ranges = [`≤ ${TREND_EDGES[0]}`, ...TREND_EDGES.slice(0, -1).map((e, i) => `${e} to ${TREND_EDGES[i + 1]}`), `≥ ${TREND_EDGES.at(-1)}`];
     return (
       <figure className="flex flex-col gap-2">
-        <figcaption className="kicker">Trend, % a year</figcaption>
+        <figcaption className="text-sm text-muted-foreground">Trend, % a year</figcaption>
         <ul className="grid grid-cols-3 gap-x-3 gap-y-1.5 font-mono text-[11px] text-muted-foreground">
           {TREND_STOPS.map((c, i) => (
             <li key={c} className="flex items-center gap-1.5">
@@ -521,7 +519,7 @@ function Legend({ view, edges, colors }: { view: View; edges: number[]; colors: 
   const labelled = legendLabels(edges);
   return (
     <figure className="flex flex-col gap-2">
-      <figcaption className="kicker">Detections per 1,000 km²</figcaption>
+      <figcaption className="text-sm text-muted-foreground">Detections per 1,000 km²</figcaption>
       <div className="flex flex-col px-4" aria-hidden>
         <div className="flex h-3">
           {colors.map((c) => (

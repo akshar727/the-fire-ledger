@@ -23,7 +23,7 @@ export function JumpStat() {
   const noJump = isSparse(data) || !Number.isFinite(era.jump);
   return (
     <div className="flex flex-col gap-0.5 border-l-2 border-primary pl-5 md:col-span-4 md:justify-self-end">
-      <span className="kicker">
+      <span className="text-sm text-muted-foreground">
         {REGIONS[sel.region]}, {data.years[0]}-{lastCompleteYear(data)}
         {label && <span className="text-muted-foreground"> · {label}</span>}
       </span>
