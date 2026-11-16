@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { FlameIcon } from "@phosphor-icons/react/dist/ssr";
 import { NavLinks, SiteNav } from "@/components/SiteNav";
 
 export function SiteHeader() {
@@ -11,7 +10,8 @@ export function SiteHeader() {
           href="/"
           className="flex items-center gap-2 border-r px-3 font-mono text-[10px] font-semibold tracking-[0.06em] whitespace-nowrap uppercase sm:gap-2.5 sm:px-4 sm:text-[11px] sm:tracking-[0.14em]"
         >
-          <FlameIcon weight="fill" className="size-4 text-primary drop-shadow-[0_0_6px_var(--primary)]" aria-hidden />
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny static SVG logo (app/icon.svg) */}
+          <img src="/icon.svg" alt="" width={20} height={20} className="size-5 shrink-0" aria-hidden />
           Fire Ledger
         </Link>
         <Suspense fallback={<NavLinks />}>
