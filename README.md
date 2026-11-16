@@ -9,15 +9,16 @@
 - **Ledger (`/ledger`)**: the harmonized fire record for a region, with a region switcher, date range and plain-language trend summary. A method card says how the record was built and how far to trust it.
 - **This fire season so far**: the latest season's running total of fire drawn over every past season, so you can see whether this year is running ahead or behind.
 - **When each season burns**: the days on which each past season reached 10%, 50% and 90% of its fire, showing whether seasons start or peak earlier than they used to.
-- **Burn calendar (`/calendar`)**: one square per month since 2001, all on one scale, so bad and quiet seasons stand out at a glance. Each region gets a line on fire weather (dry air, wind, rain) from NASA POWER.
+- **Burn calendar (`/calendar`)**: one square per month since 2001, all on one scale, so bad and quiet seasons stand out at a glance. Each region gets a line on fire weather (dry air, wind, rain) from NASA POWER. A month/week switcher shows the weekly counts as well. A "This month so far" section shows the running month against the same days of past years, with the NASA POWER fire-weather percentile.
 - **Listen to the calendar**: plays the calendar as sound, one note per month, with higher notes meaning more fire. A short tour plays the raw and harmonized counts around the 2012 change of satellite, so you can hear the jump that harmonizing removes.
 - **From space**: below the calendar, pick a month and its fire detections appear over NASA satellite imagery of that month's peak fire day.
 - **Downloads**: every chart can be saved as a picture, and the data can be downloaded as CSV for any date range and map box. The same CSVs are served at `/api/hotspots` and `/api/series`.
-- **Proof on unseen years**: the model is trained on 2012 to 2019 and scored on 2020 to 2025 against what VIIRS really counted. The scores are shown on the ledger and the method page.
-- **World scoreboard (`/method#scoreboard`)**: in every country, our model is tested against one simple constant ratio. Where the ratio did better, the site publishes the ratio.
-- **Independent check (`/method#referee`)**: fire detections are compared with MODIS burned area before and after 2012 as a check that does not depend on our model.
-- **Satellite drift (`/method#drift`)**: shows how the Terra and Aqua overpass times have drifted, and why that changes the share of each day's fire that MODIS sees.
+- **Proof on unseen years**: the model is trained on 2012 to 2019 and scored on 2020 to 2025 against what VIIRS really counted. The scores are shown on the ledger and the method page. Ghana was 4.3% vs 6.8% for one ratio; in NW India the ratio wins (3.2% vs 7.3%) and the page publishes such results.
+- **World scoreboard (`/method#scoreboard`)**: in every country, our model is tested against one simple constant ratio. Where the ratio did better, the site publishes the ratio. The model won in 92 of 176 countries. Seven, however, are too sparse to check.
+- **Independent check (`/method#referee`)**: fire detections are compared with MODIS burned area before and after 2012 as a check that does not depend on our model. The 2012 jump in detections per km^2 burned is 2.2–4.6x stitched and 0.84–1.04x harmonized.
+- **Satellite drift (`/method#drift`)**: shows how the Terra and Aqua overpass times have drifted, and why that changes the share of each day's fire that MODIS sees. Terra now passes about 1.5 hours earlier and Aqua about 1.5 hours later than in training, so recent MODIS isn't very usable and reliable.
 - **Accessible charts**: charts can be read with the keyboard (arrow keys step through values), and each one has a text description for screen readers.
+- **Was it the weather?**: the site shows high and low-fire months compared against top-quarter fire weather.
 
 The Python pipeline behind these pages (download, harmonization model, fire weather, peak days, referee check, landing scene) is described step by step in "Run it" below.
 
@@ -143,6 +144,7 @@ Claude was only used to accelerate development in such a short time, and was not
 ## References
 
 Data
+
 - Region boxes in `regions.json` (Portugal, Ghana, NW India) were chosen by the team; no external source.
 - NASA Fire Information for Resource Management System (FIRMS), yearly country archive CSVs — source of every fire detection in this project — https://firms.modaps.eosdis.nasa.gov/download/ — NASA data, openly shared without restriction (EOSDIS data use guidance); provided "as is" (https://www.earthdata.nasa.gov/data/projects/lance/disclaimer). Acknowledgment (verbatim from https://www.earthdata.nasa.gov/data/tools/firms, checked 2026-11-14): "We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations (LANCE) (https://earthdata.nasa.gov/lance) and NASA's Earth Science Data and Information System (ESDIS)."
 - MODIS active fire locations, MCD14ML (Terra + Aqua, 1 km), standard processing via the FIRMS country archive — MODIS detections 2000–2025 — https://doi.org/10.5067/FIRMS/MODIS/MCD14ML — Giglio, L. (2000). MODIS Thermal Anomalies/Fire Products [Dataset]. NASA Land Atmosphere Near real-time Capability for EOS Fire Information for Resource Management System. https://doi.org/10.5067/FIRMS/MODIS/MCD14ML (citation from the DOI's DataCite record, checked 2026-11-14). The archive files' `version` field reads 6.2 (2000–2017), 6.03 (2018–2022) and 61.03 (2023–2025).
@@ -168,6 +170,7 @@ Data
 - Pedrógão Grande fire, 17 June 2017 (the fire the landing page and its scene follow): place and date only; every detection drawn is from the FIRMS files above (`site/public/data/portugal/points/2017.csv`). The setting sun in the opening frames is placed at azimuth 300° (west-north-west), about where the sun sets at 40° N in mid-June (general astronomical fact; decoration, not data). Torre, Serra da Estrela (1,993 m, 40.3217 N, 7.6130 W) is used by `tests/test_landing_scene.py` to check that the SRTM mosaic is placed correctly (general geographic fact).
 
 Python libraries (precompute; exact versions in `requirements.txt`)
+
 - numpy 2.4.4: arrays and bootstrap sampling. https://numpy.org . BSD-3-Clause
 - pandas 3.0.2: reading, filtering and aggregating the CSVs. https://pandas.pydata.org . BSD-3-Clause
 - statsmodels 0.14.6: Poisson GLM fit. https://www.statsmodels.org . BSD-3-Clause
@@ -180,6 +183,7 @@ Python libraries (precompute; exact versions in `requirements.txt`)
 - `bpy` and `mathutils` (Blender's own Python modules, part of Blender 5.3 above): scene building and vector maths in `scene.py`. GPL-2.0-or-later
 
 Website (`site/`, versions pinned in `site/package-lock.json`)
+
 - Next.js 16: web framework. https://nextjs.org . MIT
   - `turbopackFileSystemCache` docs (https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopackFileSystemCache): basis for turning off Turbopack's on-disk build cache in `site/next.config.ts`, after a restored Vercel build cache shipped stale theme CSS.
 - React 19, React DOM: UI library. https://react.dev . MIT
@@ -198,6 +202,7 @@ Website (`site/`, versions pinned in `site/package-lock.json`)
 - ESLint, eslint-config-next, babel-plugin-react-compiler: linting and build tooling. https://eslint.org , https://react.dev/learn/react-compiler . MIT
 
 Code
+
 - `site/fixtures/series.portugal.sample.json`: test fixture built from this repo's Portugal grid (then `fire_grid_daily.csv`, now `data/grid/fire_grid_daily_portugal.csv`; NASA FIRMS data above); its harmonized values are placeholders, not model output.
 - The burn calendar (`/calendar`) reads this project's own model export, `site/public/data/<region>/series.json` (harmonized monthly counts from `model.py`, month medians, middle half and unusual-month flags from `calendar_stats.py`; NASA FIRMS data above). The fire-season line per region is reworded from `site/public/data/index.json` (team-written region notes). No new library, data source or asset.
 - `peaks.py`: no new data source (reads `data/grid`; NASA FIRMS data above).
@@ -211,10 +216,11 @@ Code
 - 3D globe page `/globe` (FE-026: `site/app/globe/page.tsx`, `site/components/globe/GlobeExplorer.tsx`, `GlobeCanvas.tsx`, `site/lib/globe.ts`, `globe-server.ts`, `globe.test.ts`, `scripts/globe/outlines.py`): written for this project. Numbers from this project's own `site/public/data/globe.json` (ML-023's `globe.py`), or until it is committed each region's own `annual.json` (NASA FIRMS data above); outlines and areas from Natural Earth (above), area = d3-geo spherical area × the IUGG mean Earth radius 6,371.0088 km (Moritz, H. (2000). Geodetic Reference System 1980. Journal of Geodesy 74, 128-133, https://doi.org/10.1007/s001900050278). The 2001-2025 trend and its significance are the ML-020 Theil-Sen / Mann-Kendall block already cited above. Colours are the site's own theme plus ramps written for this project. Kosovo's FIRMS code `XKX` is matched to Natural Earth's `KOS`. The deep-dive boxes come from this project's own `regions.json`.
 - Project scaffold from `create-next-app` (MIT). https://nextjs.org/docs/app/api-reference/cli/create-next-app
 
-
 Images
+
 - `site/public/scene/f000.webp` to `f359.webp` (360 frames, 1600 x 900): rendered by this project with Blender from `scripts/landing_scene/scene.py` (SRTM elevation and FIRMS detections cited above). No third-party image, model or texture.
 - `site/app/icon.svg` (the site icon, "Pixel Flame"): drawn for this project as plain SVG squares; coarse cells on the left and fine cells on the right stand for the MODIS 1 km and VIIRS 375 m pixel sizes cited above. Colours are the site's own theme colours. Served by Next.js's `icon` file convention (https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons). No third-party image, icon set or font.
 
 AI
+
 - Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude
