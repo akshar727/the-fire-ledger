@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
+import { MethodCard } from "@/components/MethodCard";
 import { JumpStat, RecordExplorer, RecordSkeleton } from "@/components/RecordExplorer";
 import { recordSpan } from "@/lib/data-server";
 
@@ -27,6 +28,11 @@ export default function LedgerPage() {
           <JumpStat />
         </Suspense>
       </section>
+
+      {/* FE-032: which method this country publishes and why (countries only; renders nothing for a deep dive) */}
+      <Suspense fallback={null}>
+        <MethodCard />
+      </Suspense>
 
       {/* the proof strip (FE-020) sits right under the chart, inside RecordExplorer (FE-025) */}
       <Suspense fallback={<RecordSkeleton />}>
