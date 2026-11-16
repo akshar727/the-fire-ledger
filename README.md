@@ -7,9 +7,12 @@
 ## Features
 
 - **Landing story (`/`)**: a scroll-driven story over a Blender-rendered scene of the 2017 central Portugal fires. It explains how the satellites see fire and why their counts need harmonizing, then ends on the burn calendar. It shows the problem when Aqua MODIS counted 35 hot pixels and Suomi NPP VIIRS counted 239 pixels just 35 minutes after.
-- **3D globe (`/globe`)**: spin a globe of every country with a fire record and colour it by one year or by the trend since 2001. Play through the years, or click a country to see its numbers.
-- **Ledger (`/ledger`)**: the harmonized fire record for a region, with a region switcher, date range and plain-language trend summary. A method card says how the record was built and how far to trust it.
-- **This fire season so far**: the latest season's running total of fire drawn over every past season, so you can see whether this year is running ahead or behind.
+- **Feature tiles (`/`)**: link from under the hero to the main features. Each tile has its own live number.
+- **3D globe (`/globe`)**: spin a globe of every country with a fire record and colour it by one year or by the trend since 2001. Play through the years, or click a country to see its numbers. A sortable table displayed below it lists every place with the observed trend and a label.
+- **Ledger (`/ledger`)**: the harmonized fire record for a region, with a region switcher, date range and plain-language trend summary. A method card says how the record was built and how far to trust it. The Raw to Harmonized switch shows Ghana's x4.1 jump from collection methods in 2012 going away when 2001-2011 data are back-cast to the VIIRS scale with a 5-95% band to prevent pushing our predictions as definite facts.
+- **Record labels**: every ledger(3 regions + 176 countries) is a labelled model, model + a caveat(band held in less than 4 of the 6 hold-out years), constant-ratio estimate, or too sparse. It includes the reason for this.
+- **Trend Tests**: the 2001-2025 trend on the stitched and harmonized records is tested with a 90% interval. For example, Ghana: stitched +5.1%/year while harmonized -1.1%/year, which are both significant.
+- **This fire season so far**: the latest season's running total of fire drawn over every past season, so you can see whether this year is running ahead or behind. It ranks the season and forecasts that season's total with a 5-95% range that's back-tested on 25 seasons. For NW India, it held 21 out of 25 seasons.
 - **When each season burns**: the days on which each past season reached 10%, 50% and 90% of its fire, showing whether seasons start or peak earlier than they used to.
 - **Burn calendar (`/calendar`)**: one square per month since 2001, all on one scale, so bad and quiet seasons stand out at a glance. Each region gets a line on fire weather (dry air, wind, rain) from NASA POWER.
 - **Listen to the calendar**: plays the calendar as sound, one note per month, with higher notes meaning more fire. A short tour plays the raw and harmonized counts around the 2012 change of satellite, so you can hear the jump that harmonizing removes.
