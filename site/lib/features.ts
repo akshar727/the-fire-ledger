@@ -10,26 +10,35 @@ export type FeatureTile = {
 };
 
 export function worldCounts(index: { regions: Entry[] }) {
-  const countries = index.regions.filter((r) => r.tier === "country" && typeof r.first_year === "number");
-  const model = countries.filter((r) => r.ship === "model" || r.ship === "caveat").length;
-  const deepDives = index.regions.filter((r) => r.tier !== "country" && typeof r.first_year === "number").length;
+  const countries = index.regions.filter(
+    (r) => r.tier === "country" && typeof r.first_year === "number",
+  );
+  const model = countries.filter(
+    (r) => r.ship === "model" || r.ship === "caveat",
+  ).length;
+  const deepDives = index.regions.filter(
+    (r) => r.tier !== "country" && typeof r.first_year === "number",
+  ).length;
   return { countries: countries.length, model, deepDives };
 }
 
-export function featureTiles(index: { regions: Entry[] }, spaceRegion: string): FeatureTile[] {
+export function featureTiles(
+  index: { regions: Entry[] },
+  spaceRegion: string,
+): FeatureTile[] {
   const { countries, model } = worldCounts(index);
   const tiles: FeatureTile[] = [];
   if (countries > 0) {
     tiles.push({
       tag: "Globe",
-      title: `Explore ${countries} countries on a 3D globe`,
-      text: "Spin the world, pick a year, and see where fire rose or fell since 2001.",
+      title: `Explore ${countries} countries on the globe`,
+      text: "Pick any country and any year and see where fire rose or fell since 2001.",
       href: "/globe",
     });
     tiles.push({
       tag: "Scoreboard",
-      title: `Our model against one simple ratio: it won in ${model} of ${countries} countries`,
-      text: "Every country tested on years it never saw. Where the ratio did better, we publish the ratio.",
+      title: `Our model vs a simple ratio: it performed better in ${model} of ${countries} countries`,
+      text: "Our model and a ratio was tested on every country in unseen data. We showed whichever is better.",
       href: "/method#scoreboard",
     });
   }
@@ -37,13 +46,13 @@ export function featureTiles(index: { regions: Entry[] }, spaceRegion: string): 
     {
       tag: "Proof",
       title: "Checked on years the model never saw",
-      text: "Trained on 2012 to 2019, scored on 2020 to 2025 against what VIIRS really counted.",
+      text: "Trained on 2012-2019 and scored on 2020-2025 against what VIIRS really measured.",
       href: "/method#holdout",
     },
     {
       tag: "Calendar",
-      title: "Every month since 2001 on one scale",
-      text: "One square per month: spot the bad seasons and the quiet ones at a glance.",
+      title: "Every month since 2001 on one grid",
+      text: "One square per month: spot the bad and tranquil seasons at a glance.",
       href: "/calendar",
     },
     {
@@ -54,8 +63,8 @@ export function featureTiles(index: { regions: Entry[] }, spaceRegion: string): 
     },
     {
       tag: "Drift",
-      title: "Why the satellites drift, and why it matters",
-      text: "Terra and Aqua now pass at different hours, so MODIS sees a different share of each day's fire.",
+      title: "Satellite drifts, and this is why it matters",
+      text: "Terra and Aqua now pass at different hours, so MODIS can see different states of a day's fire.",
       href: "/method#drift",
     },
   );
@@ -64,5 +73,7 @@ export function featureTiles(index: { regions: Entry[] }, spaceRegion: string): 
 
 export const FEATURE_TILES: readonly FeatureTile[] = featureTiles(
   regionIndex as { regions: Entry[] },
-  (regionIndex as { regions: Entry[] }).regions.find((r) => r.tier !== "country")?.id ?? "portugal",
+  (regionIndex as { regions: Entry[] }).regions.find(
+    (r) => r.tier !== "country",
+  )?.id ?? "portugal",
 );

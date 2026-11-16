@@ -32,10 +32,7 @@ const MONTH_NAMES = [
   "November",
   "December",
 ];
-const longDay = (iso: string) => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return `${d} ${MONTH_NAMES[m - 1]} ${y}`;
-};
+
 const monthYear = (iso: string) =>
   `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
@@ -148,17 +145,17 @@ export default function StoryPage() {
               Fire is everywhere. What changes is how much, and when.
             </h1>
             <p className="max-w-[58ch] text-lg leading-[1.65] text-muted-foreground">
-              NASA&apos;s MODIS instruments have watched for fire from orbit
-              since {monthYear(terraSince)}, and VIIRS since {VIIRS_FROM}. They
-              work differently, so the ledger breaks in {VIIRS_FROM}. Fire
-              Ledger mends it for{" "}
+              NASA used its MODIS instruments up to 2012, and then VIIRS from
+              2012 on. These two see fire very differently, so the record of
+              fire detections breaks in 2012. Fire Ledger unites the two records
+              into one ledger for{" "}
               {countries > 0
                 ? `${countries} whole countries (labelled where it is only an estimate), and in detail for ${span.regions}.`
                 : `${span.regions}.`}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/ledger" className={primaryLink}>
-                Skip to the data
+                See the data
                 <ArrowRightIcon className="size-4" aria-hidden />
               </Link>
               <a href="#counts" className={quietLink}>
@@ -190,11 +187,12 @@ export default function StoryPage() {
               </ul>
             </nav>
             <p className="story-scene-note max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
-              Behind this page: the hills of central Portugal from NASA SRTM
-              elevation, and the {s.scene.detections.toLocaleString("en-US")}{" "}
-              fire detections NASA satellites made there in {s.scene.year}. As
-              you read the story, the detections light up in order from the
-              night of the Pedrógão Grande fire, and stack up day by day.
+              The animation behind this page takes you through the hills of
+              central Portugal from NASA SRTM elevation, and the{" "}
+              {s.scene.detections.toLocaleString("en-US")} fire detections NASA
+              satellites made there in {s.scene.year}. As you read the story,
+              the detections light up in order from the night of the Pedrógão
+              Grande fire.
             </p>
           </div>
         </section>
@@ -229,7 +227,7 @@ export default function StoryPage() {
                 </div>
               ))}
               <div className="flex items-baseline justify-between gap-4 bg-card px-5 py-4 font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
-                <dt>All three, to {dayLabel(top.through)}</dt>
+                <dt>All three, through {dayLabel(top.through)}</dt>
                 <dd className="font-mono tabular-nums">
                   {total.toLocaleString("en-US")}
                 </dd>
@@ -239,8 +237,9 @@ export default function StoryPage() {
         >
           <p>
             Each detection is a hot pixel seen from orbit. It means that a
-            satellite passing overhead found a spot burning hotter than the
-            ground around it. NASA FIRMS records all of these detections.
+            satellite passing over it found a spot burning hotter than the
+            surface around it. NASA FIRMS records and shares all of these
+            detections publically.
           </p>
         </Chapter>
 
@@ -256,18 +255,20 @@ export default function StoryPage() {
             <strong className="font-semibold text-primary">
               {modis.points.length}
             </strong>{" "}
-            hot pixels. {gapMinutes} minutes later, {sat(viirs)} counted{" "}
+            hot pixels. {gapMinutes} minutes later, {sat(viirs)} passed over the
+            fires and counted{" "}
             <strong className="font-semibold text-primary">
               {viirs.points.length}
             </strong>
             .
           </p>
           <p>
-            Nothing burned {ratio.toFixed(1)} times faster in between. A VIIRS
-            pixel is {PIXEL_M.viirs} m across, a MODIS pixel 1 km, so one MODIS
-            square covers about {Math.round(area)} VIIRS squares, and VIIRS also
-            catches smaller fires. That mostly explains the gap. Every square in
-            the panels is a real detection, drawn at its nominal size.
+            The fire didn't burn {ratio.toFixed(1)} times faster in between; the
+            difference comes from sensor resolution. A VIIRS pixel is{" "}
+            {PIXEL_M.viirs} m across, while a MODIS pixel is 1 km across, so a
+            MODIS square covers about {Math.round(area)} VIIRS squares, and
+            VIIRS also catches smaller fires. This helps explain the gap in the
+            records.
           </p>
         </Chapter>
 
@@ -275,7 +276,10 @@ export default function StoryPage() {
           id="the-leap"
           n={4}
           title={
-            <>Fire did not {jumpVerb(s.region.jump)}. The instrument changed.</>
+            <>
+              The fire didn't {jumpVerb(s.region.jump)}. The instrument got
+              better.
+            </>
           }
           figure={
             <div className="flex flex-col gap-3">
@@ -289,11 +293,11 @@ export default function StoryPage() {
           }
         >
           <p>
-            Glue the MODIS years to the VIIRS years and {s.region.name}&apos;s
-            yearly count averages about ×{s.region.jump.toFixed(1)} higher from{" "}
-            {VIIRS_FROM}, the year VIIRS starts, than before it. Any chart that
-            stitches the two records shows fire getting worse, and part of that
-            rise is the sensor, not the fire.
+            Mesh the MODIS years to the VIIRS years, and {s.region.name}&apos;s
+            yearly count averages about {s.region.jump.toFixed(1)}x higher from{" "}
+            {VIIRS_FROM}, when VIIRS starts recording data, than before it.
+            Stitching the two records shows the fire getting worse, and part of
+            that rise is the sensor, not the fire itself.
           </p>
         </Chapter>
 
@@ -313,25 +317,26 @@ export default function StoryPage() {
           }
         >
           <p>
-            We learned how MODIS maps to VIIRS in the years both flew,{" "}
-            {VIIRS_FROM} to {HOLD_FROM - 1}, then translated every MODIS year
-            into VIIRS terms, with a 5-95% band.
+            We coded a model to learn how MODIS maps to VIIRS in the years both
+            flew – {VIIRS_FROM} to {HOLD_FROM - 1} – and then translated every
+            MODIS year into the VIIRS scale with a 5-95% error band.
           </p>
           <p>
-            Tested on {h0} to {h1}, years the model never saw, it missed by{" "}
+            Tested on {h0} to {h1}, years the model wasn't trained on, it
+            missed, on average, by{" "}
             <strong className="font-semibold text-primary">
               {s.score.mape_model.toFixed(1)}%
             </strong>{" "}
-            a year on average, against {s.score.mape_ratio.toFixed(1)}% for one
-            constant factor; {s.score.coverage} of {s.score.n_hold} years fell
-            inside the band.
+            yearly, against {s.score.mape_ratio.toFixed(1)}% for a constant
+            ratio. {s.score.coverage} of the {s.score.n_hold} tested years fell
+            inside the error band, showing the model's accuracy.
           </p>
         </Chapter>
 
         <Chapter
           id="calendar"
           n={6}
-          title={`Every month since ${s.grid.years[0]}, on one scale.`}
+          title={`Every month since ${s.grid.years[0]} on one scale.`}
           className="border-b-0"
           figure={
             <div className="flex flex-col gap-3">
@@ -344,9 +349,10 @@ export default function StoryPage() {
           }
         >
           <p>
-            {FIRE_SEASON[s.region.id]} With the break mended, this month can be
-            held up against every month before it, and the busiest years stand
-            out for what burned, not for which satellite looked.
+            In the grid to the right is the {FIRE_SEASON[s.region.id]} With the
+            break mended, these months can be held up against every month before
+            it, and the busiest years stand out for what burned, regardless of
+            which satellite scanned.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link href={record} className={primaryLink}>
@@ -364,7 +370,10 @@ export default function StoryPage() {
             </Link>
           </div>
           <p className="pt-1 text-sm">
-            <Link href="/globe" className="underline underline-offset-4 hover:text-primary">
+            <Link
+              href="/globe"
+              className="underline underline-offset-4 hover:text-primary"
+            >
               See every place on the globe
             </Link>
             , coloured by its fire ledger from 2001.
