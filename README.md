@@ -200,25 +200,6 @@ Landing-page scene (`scripts/landing_scene/`, FE-019): the 360 frames in `site/p
 /Applications/Blender.app/Contents/MacOS/Blender --factory-startup -P scripts/landing_scene/scene.py   # open the scene (new, unsaved file) and scrub frames 0-179
 ```
 
-## Check before you open a PR
-
-There is no CI: run these yourself before every pull request to `main`, from the repo root, in the virtual environment from "Run it" (Node.js 24 or newer for `npm test`):
-
-```bash
-pip install -r requirements.txt                  # pinned versions (Python 3.12+)
-python -m unittest discover -s tests -v
-python scripts/check_outputs.py --snapshot       # before the pipeline: remembers your working tree
-python build.py portugal                         # no network: Portugal's raw files are committed
-python model.py
-python scripts/check_outputs.py
-```
-
-```bash
-cd site && npm ci && npm run lint && npm test && npm run build
-```
-
-Local runs compare against your working tree as it was before the pipeline ran (the `--snapshot` step), so uncommitted code edits are fine; without a snapshot the baseline is `HEAD`. `check_outputs.py` fails if rerunning the pipeline changed any committed output (beyond float rounding in JSON) or left a new untracked file: regenerate and commit the outputs together with your code change. Any untracked file that `.gitignore` doesn't cover (e.g. a `.DS_Store`) is reported as new, so delete it or ignore it.
-
 ## Use of AI
 
 Code, page text and documentation in this repository were written with help from Claude (Anthropic).
@@ -314,7 +295,3 @@ Images
 
 - `site/public/scene/f000.webp` to `f359.webp` (360 frames, 1600 x 900): rendered by this project with Blender from `scripts/landing_scene/scene.py` (SRTM elevation and FIRMS detections cited above). No third-party image, model or texture.
 - `site/app/icon.svg` (the site icon, "Pixel Flame"): drawn for this project as plain SVG squares; coarse cells on the left and fine cells on the right stand for the MODIS 1 km and VIIRS 375 m pixel sizes cited above. Colours are the site's own theme colours. Served by Next.js's `icon` file convention (https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons). No third-party image, icon set or font.
-
-AI
-
-- Claude (Anthropic): code, text and documentation assistance. https://www.anthropic.com/claude
