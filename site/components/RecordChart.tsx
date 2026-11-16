@@ -132,7 +132,13 @@ export function RecordChart({
       : sparse
         ? `Too little fire here to score the hold-out years ${h0}-${h1}: the back-cast is MODIS times one ratio and is not validated.`
         : by === "the ratio"
-          ? `Constant-ratio estimate. Hold-out ${h0}-${h1}: mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for one pooled factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`
+          ? // FE-032: since ML-027 a ratio country's score is the single ratio's own (mape_model = mape_ratio), so compare
+            // with the losing model's error when it ran
+            `Constant-ratio estimate. Hold-out ${h0}-${h1}: mean annual error ${s.mape_ratio.toFixed(1)}%` +
+            (D.model_score?.mape_model != null && Number.isFinite(D.model_score.mape_model)
+              ? ` vs ${D.model_score.mape_model.toFixed(1)}% for our model, which lost here`
+              : "") +
+            `; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`
           : `Hold-out ${h0}-${h1} (the model never saw these years): mean annual error ${s.mape_model.toFixed(1)}% vs ${s.mape_ratio.toFixed(1)}% for a single constant factor; the 5-95% band contains the observed total in ${s.coverage} of ${s.n_hold} years; weekly correlation r = ${s.weekly_r.toFixed(3)}.`;
 
   const legend: { color: string; label: string; kind?: "dash" | "ring" }[] =
