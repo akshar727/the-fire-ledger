@@ -63,7 +63,7 @@ export function DownloadCsv() {
             <span className="font-mono text-foreground tabular-nums">{sel.to}</span> ({fmt(days)} days)
             {country
               ? ": MODIS, VIIRS and harmonized, with the 5-95% band."
-              : ", raw detections, not harmonized; analytics are the monthly counts with their 5-95% band."}
+              : ", raw detections; analytics are the monthly counts with their 5-95% band."}
           </p>
         </div>
 
