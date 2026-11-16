@@ -197,7 +197,7 @@ export default function StoryPage() {
               elevation, and the {s.scene.detections.toLocaleString("en-US")}{" "}
               fire detections NASA satellites made there in {s.scene.year}. As
               you read the story, the detections light up in order from the
-              night of the Pedrógão Grande fire, stack up day by day.
+              night of the Pedrógão Grande fire, and stack up day by day.
             </p>
           </div>
         </section>
