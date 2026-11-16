@@ -480,8 +480,7 @@ export default function MethodPage() {
             </dl>
           </div>
           <p>
-            Use of AI: code, page text and documentation were written with help from Claude (Anthropic). The full list
-            of sources with licenses is in the project README.
+            The full list of sources with licenses is in the project README.
           </p>
         </section>
       </article>
