@@ -1,9 +1,3 @@
-"""ML-023: whole-country code in model.py (coarse cells, ratio method, labels), globe.py and run_countries.py.
-No network; about 30 s (two small model fits on the synthetic grid from test_model.py).
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import contextlib
 import datetime
 import io
@@ -56,20 +50,20 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(len(g), 2)
         a = g.loc[(10.0, 20.0)]
         self.assertEqual((a.terra_n, a.aqua_n, a.viirs_n), (4, 0, 5))
-        self.assertAlmostEqual(a.terra_frp_mean, (10 + 90) / 4)   # n * mean is the exact sum
-        self.assertTrue(np.isnan(a.aqua_frp_mean))                 # no detections: no mean, as build.py writes
+        self.assertAlmostEqual(a.terra_frp_mean, (10 + 90) / 4)
+        self.assertTrue(np.isnan(a.aqua_frp_mean))
         self.assertEqual(g.loc[(11.0, 20.0)].viirs_n, 4)
         self.assertEqual(model.coarsen(d, 1.0).terra_n.sum(), d.terra_n.sum())
 
     def test_pick_cell_deg(self):
         lat = np.repeat(np.arange(0, 10, 0.25), 40)
         lon = np.tile(np.arange(0, 10, 0.25), 40)
-        d = pd.DataFrame({"lat": lat, "lon": lon, "terra_n": 1, "aqua_n": 0, "viirs_n": 0})   # 1,600 small cells
-        cell, counts = model.pick_cell_deg(d)                         # first size with <= 400 burning cells
+        d = pd.DataFrame({"lat": lat, "lon": lon, "terra_n": 1, "aqua_n": 0, "viirs_n": 0})
+        cell, counts = model.pick_cell_deg(d)
         self.assertEqual((cell, counts), (0.5, {0.25: 1600, 0.5: 400}))
         cell, counts = model.pick_cell_deg(d, max_cells=100)
         self.assertEqual((cell, counts), (1.0, {0.25: 1600, 0.5: 400, 1.0: 100}))
-        self.assertEqual(model.pick_cell_deg(d, steps=(0.25, 0.5), max_cells=10)[0], 0.5)   # none fit: the largest
+        self.assertEqual(model.pick_cell_deg(d, steps=(0.25, 0.5), max_cells=10)[0], 0.5)
         self.assertEqual(model.burning_cells(d.assign(terra_n=0), 1.0), 0)
 
     def test_ship_rule(self):
@@ -83,7 +77,7 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(model.ship_rule(s(None, 8, 6), "model", False), "sparse")
 
     def test_mape_and_corr_never_nan(self):
-        self.assertAlmostEqual(model.mape([110, 5], [100, 0]), 10.0)   # the zero year is left out
+        self.assertAlmostEqual(model.mape([110, 5], [100, 0]), 10.0)
         self.assertIsNone(model.mape([1, 2], [0, 0]))
         self.assertIsNone(model.corr([1, 1, 1], [1, 2, 3]))
         self.assertAlmostEqual(model.corr([1, 2, 3], [2, 4, 6]), 1.0)
@@ -94,11 +88,10 @@ class HelperTests(unittest.TestCase):
         self.assertIsNone(model.country_caveat("model", sc, None, ann, []))
         self.assertIn("Only 2 of the 6", model.country_caveat("caveat", sc, None, ann, []))
         self.assertIn("8.0% vs 5.0%", model.country_caveat("ratio", sc, sc, ann, []))
-        self.assertIsNone(model.country_caveat("ratio", sc, None, ann, []))   # ratio asked for: nothing to explain
+        self.assertIsNone(model.country_caveat("ratio", sc, None, ann, []))
         self.assertIn("Too little fire", model.country_caveat("sparse", sc, None, ann, []))
         early = ann.assign(harmonized=[300.0] + [100.0] * 24)
         self.assertIn("2001-2002", model.country_caveat("model", sc, None, early, []))
-        # Terra-only years have half the MODIS detections: that alone is no warning
         terra_only = ann.assign(modis_n=[5.0, 5.0] + [10.0] * 23)
         self.assertIsNone(model.country_caveat("model", sc, None, terra_only, []))
         m = model.country_caveat("model", sc, None, ann, ["modis_2000_Testland.csv", "viirs-snpp_2013_Testland.csv"])
@@ -113,12 +106,11 @@ class CountryRunTests(unittest.TestCase):
         cls.out = os.path.join(cls.tmp, "out")
         g = synthetic_grid()
         write_grid(cls.grid, CID, g, missing_files=["viirs-snpp_2013_Testland.csv"])
-        # sparse: a handful of fires a year, VIIRS in only some years
         rng = np.random.default_rng(3)
         sp = g.sample(400, random_state=1).assign(viirs_n=lambda x: rng.integers(0, 2, len(x)) * (x.viirs_n > 0))
         write_grid(cls.grid, "tiny", sp)
         write_grid(cls.grid, "empty", g.assign(viirs_n=0))
-        cls.ratio = quiet(model.run, CID, 50, grid_dir=cls.grid, out_dir=cls.out, method="ratio", tier="country")   # 5 draws: band too noisy
+        cls.ratio = quiet(model.run, CID, 50, grid_dir=cls.grid, out_dir=cls.out, method="ratio", tier="country")
         cls.a_ratio = load_strict(os.path.join(cls.out, CID, "annual.json"))
         cls.s_ratio = load_strict(os.path.join(cls.out, CID, "series.json"))
         quiet(model.run, CID, 5, grid_dir=cls.grid, out_dir=os.path.join(cls.tmp, "m"), cell_deg=1.0,
@@ -136,7 +128,7 @@ class CountryRunTests(unittest.TestCase):
         self.assertEqual([k for k in a if k in COUNTRY_KEYS], COUNTRY_KEYS)
         self.assertEqual((a["tier"], a["method"], a["ship"], a["cell_deg"]), ("country", "ratio", "ratio", None))
         self.assertIsNone(a["model_score"])
-        self.assertIn("2013", a["caveat"])          # the missing file is named
+        self.assertIn("2013", a["caveat"])
         self.assertEqual(a["years"], YEARS)
         self.assertEqual(len(a["harmonized"]), 25)
         self.assertTrue(all(v > 0 for v in a["harmonized"]))
@@ -147,7 +139,6 @@ class CountryRunTests(unittest.TestCase):
             self.assertEqual(self.s_ratio[k], a[k])
 
     def test_ratio_backcast_is_modis_times_ratio(self):
-        # synthetic VIIRS is ~2.5 x MODIS: the ratio back-cast lands near 2.5 x MODIS in the Aqua years
         a = self.a_ratio
         for i, yr in enumerate(YEARS):
             if 2003 <= yr <= 2011:
@@ -157,7 +148,7 @@ class CountryRunTests(unittest.TestCase):
         a = self.a_model
         self.assertEqual(a["tier"], "country")
         self.assertIn(a["ship"], ("model", "caveat", "ratio"))
-        if a["ship"] == "ratio":   # the model lost to the ratio: published as ratio, the model's score kept
+        if a["ship"] == "ratio":
             self.assertEqual((a["method"], a["cell_deg"]), ("ratio", None))
             self.assertIsNotNone(a["model_score"])
         else:
@@ -175,7 +166,6 @@ class CountryRunTests(unittest.TestCase):
             quiet(model.run, "empty", 5, grid_dir=self.grid, out_dir=self.out, method="ratio", tier="country")
 
     def test_regions_unchanged_without_tier(self):
-        # tier=None (the 3 deep dives): none of the country keys
         out = os.path.join(self.tmp, "r")
         quiet(model.run, CID, 5, grid_dir=self.grid, out_dir=out, method="ratio")
         a = load_strict(os.path.join(out, CID, "annual.json"))
@@ -214,7 +204,7 @@ class GlobeTests(unittest.TestCase):
         with open(cpath, "w", encoding="utf-8") as f:
             json.dump([{"id": "brazil", "iso_a3": "BRA"}], f)
         g = globe.write(self.tmp, cpath)
-        self.assertEqual(g["years"], list(range(2001, 2026)))          # the partial year is left out
+        self.assertEqual(g["years"], list(range(2001, 2026)))
         self.assertEqual([r["id"] for r in g["regions"]], ["portugal", "brazil", "andorra"])
         p, b, s = g["regions"]
         self.assertEqual((p["tier"], p["iso_a3"], p["bbox"], p["ship"], p["cell_deg"]),
@@ -222,15 +212,15 @@ class GlobeTests(unittest.TestCase):
         self.assertEqual((b["tier"], b["iso_a3"], b["bbox"], b["ship"], b["method"], b["caveat"]),
                          ("country", "BRA", None, "ratio", "ratio", "c"))
         self.assertEqual(len(b["harmonized"]), 25)
-        self.assertEqual(len(s["harmonized"]), 25)                       # a short record is padded, not cutting 2025
+        self.assertEqual(len(s["harmonized"]), 25)
         self.assertEqual(s["harmonized"][-2:], [None, None])
         self.assertEqual(s["harmonized"][0], 100.0)
         self.assertEqual(b["harmonized"][0], 100.0)
         self.assertEqual(b["lo"][10], 90.0)
-        self.assertIsNone(b["lo"][11])                                  # bands only before 2012
+        self.assertIsNone(b["lo"][11])
         self.assertEqual(b["trend"], {"slope_pct": 1.5, "lo_pct": 0.5, "hi_pct": 2.5, "p": 0.01})
         self.assertEqual(set(b["score"]), {"mape_model", "mape_ratio", "coverage", "n_hold"})
-        self.assertIsNone(b["score"]["mape_model"])                     # ratio tier: no model error to show
+        self.assertIsNone(b["score"]["mape_model"])
         self.assertEqual(p["score"]["mape_model"], 5.0)
         raw = Path(self.tmp, "globe.json").read_bytes()
         self.assertNotIn(b"\r", raw)
@@ -244,7 +234,7 @@ class RunnerTests(unittest.TestCase):
         os.makedirs(self.grid)
         man = {}
         for cid in ("a", "b", "c", "d"):
-            if cid != "d":   # d has a manifest entry but no grid file
+            if cid != "d":
                 Path(self.grid, f"fire_grid_daily_{cid}.csv").write_text("x\n")
             man[cid] = {}
         Path(self.grid, "manifest.json").write_text(json.dumps(man))
@@ -261,8 +251,8 @@ class RunnerTests(unittest.TestCase):
         return [c["id"] for c in run_countries.todo(self.countries, method, self.grid, self.out, **k)]
 
     def test_todo_order_and_resume(self):
-        self.assertEqual(self.ids("ratio"), [])                    # a, b and c all have a record
-        self.assertEqual(self.ids("model"), ["a"])                 # b's model lost, c is sparse: both done
+        self.assertEqual(self.ids("ratio"), [])
+        self.assertEqual(self.ids("model"), ["a"])
         self.assertEqual(self.ids("ratio", redo=True), ["c", "b", "a"])
         self.assertEqual(self.ids("model", only=["a"]), ["a"])
 
@@ -274,13 +264,13 @@ class RunnerTests(unittest.TestCase):
 
     def test_deadline_and_past(self):
         utc = datetime.timezone.utc
-        late = datetime.datetime(2026, 11, 15, 22, 0, tzinfo=utc)          # started the evening before
+        late = datetime.datetime(2026, 11, 15, 22, 0, tzinfo=utc)
         stop = run_countries.deadline("04:00", late)
         self.assertEqual(stop, datetime.datetime(2026, 11, 16, 4, 0, tzinfo=utc))
         self.assertFalse(run_countries.past(stop, late))
         self.assertFalse(run_countries.past(stop, stop - datetime.timedelta(minutes=1)))
         self.assertTrue(run_countries.past(stop, stop))
-        early = datetime.datetime(2026, 11, 16, 1, 0, tzinfo=utc)          # same day
+        early = datetime.datetime(2026, 11, 16, 1, 0, tzinfo=utc)
         self.assertEqual(run_countries.deadline("04:00", early), stop)
         self.assertIsNone(run_countries.deadline(None, late))
         self.assertFalse(run_countries.past(None, late))
@@ -305,7 +295,6 @@ class RunnerTests(unittest.TestCase):
 
 class ScriptTests(unittest.TestCase):
     def test_scripts_run_from_another_folder(self):
-        # ML-014: main() reads regions.json / countries.json relative to the repo, not the caller's folder
         with tempfile.TemporaryDirectory() as d:
             for script in ("model.py", "run_countries.py"):
                 p = subprocess.run([sys.executable, str(ROOT / script), "--help"], cwd=d, capture_output=True,

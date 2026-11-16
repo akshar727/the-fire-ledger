@@ -1,5 +1,3 @@
-"""ML-027 one-off: re-publish every country whose annual.json uses the ratio with the pooled single ratio, keeping a
-losing model's model_score. Run from this folder after the model batch ends:  ..\\spaceapps-primary\\.venv\\Scripts\\python.exe rerun_ratio_countries.py"""
 import contextlib, io, json, os, sys, time
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ".")

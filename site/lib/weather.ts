@@ -1,6 +1,3 @@
-// FE-012: "was it the weather?" Fire-weather percentiles from NASA POWER (site/public/data/<region>/weather.json,
-// DP-014, registry §3 "Fire weather per region-month") turned into words for the calendar readout, the latest-month
-// card and a fire-vs-weather summary. Pure, relative imports only, so `node --test` runs it. Never feeds the model.
 import { MONTHS_LONG, type CalendarStats } from "./series.ts";
 
 export type WeatherMonthly = {
@@ -8,9 +5,7 @@ export type WeatherMonthly = {
   t2m_max_c: (number | null)[];
   precip_mm: (number | null)[];
   index: (number | null)[];
-  /** 0-100: share of complete same-calendar-month `index` values below this one */
   pctl: (number | null)[];
-  /** 0-100: same for the month's worst 7-day heat/dryness spell (vpd_peak7_kpa) */
   pctl_peak7: (number | null)[];
   last_month_days: number;
   last_month_complete: boolean;
@@ -18,7 +13,6 @@ export type WeatherMonthly = {
 
 export type Weather = { schema: 1; region: string; source: string; through: string; monthly: WeatherMonthly };
 
-/** Lenient check of a parsed weather.json: null (no weather shown) when anything the site reads is missing. */
 export function parseWeather(raw: unknown): Weather | null {
   if (typeof raw !== "object" || raw === null) return null;
   const w = raw as Record<string, unknown>;
@@ -32,25 +26,19 @@ export function parseWeather(raw: unknown): Weather | null {
   return raw as Weather;
 }
 
-/** Fire-prone = top quarter of that calendar month's weather since 2001 (`pctl` ≥ 75). */
 export const PRONE = 75;
-/** Mild = bottom quarter. */
 export const MILD = 25;
 
 export type MonthWeather = {
   year: number;
-  month: number; // 1-12
+  month: number;
   pctl: number;
   peak7: number | null;
-  /** days of weather data when the month is still running, else null */
   partialDays: number | null;
-  /** the highest fire-weather index of this calendar month among complete months since `start_year` */
   record: boolean;
-  /** complete months of this calendar month in the file */
   n: number;
 };
 
-/** Weather for one month, or null when the file does not reach it or has no value. */
 export function monthWeather(W: Weather, year: number, month: number): MonthWeather | null {
   const m = W.monthly, i = (year - m.start_year) * 12 + month - 1, len = m.pctl.length;
   if (i < 0 || i >= len) return null;
@@ -81,12 +69,6 @@ const ordinal = (p: number) => {
   return `${r}${t >= 11 && t <= 13 ? "th" : (["th", "st", "nd", "rd"][r % 10] ?? "th")}`;
 };
 
-/**
- * One phrase for the month's weather: "the most fire-prone August weather since 2001", "fire-prone weather for
- * August (top 10%)", "hotter, drier or windier than most Augusts (78th percentile)", "ordinary weather for August
- * (52nd percentile)", "cooler, damper or calmer weather than most Augusts (12th percentile)"; plus the worst-week heat spell when that is in
- * the top 10% and the month as a whole is not.
- */
 export function weatherPhrase(w: MonthWeather, startYear: number): string {
   const name = MONTHS_LONG[w.month - 1];
   let s: string;
@@ -99,10 +81,6 @@ export function weatherPhrase(w: MonthWeather, startYear: number): string {
   return s;
 }
 
-/**
- * What the weather says about an unusual month (calendar flag 1 = high fire, -1 = low), or null for a normal month
- * or a month still running (a partial month is never flagged).
- */
 export function weatherVerdict(w: MonthWeather, flag: -1 | 0 | 1): string | null {
   if (w.partialDays != null || flag === 0) return null;
   if (flag === 1) {
@@ -115,7 +93,6 @@ export function weatherVerdict(w: MonthWeather, flag: -1 | 0 | 1): string | null
   return null;
 }
 
-/** Full sentence for a readout or card: "Weather: … ." with the days-so-far note and the verdict. */
 export function weatherSentence(W: Weather, year: number, month: number, flag: -1 | 0 | 1): string | null {
   const w = monthWeather(W, year, month);
   if (!w) return null;
@@ -125,22 +102,14 @@ export function weatherSentence(W: Weather, year: number, month: number, flag: -
 }
 
 export type WeatherSummary = {
-  /** months with both a fire flag and a weather value (complete months only) */
   n: number;
   years: [number, number];
-  /** counts[fire][weather]: fire high / normal / low × weather fire-prone (top quarter) / other */
   high: { prone: number; other: number };
   normal: { prone: number; other: number };
   low: { prone: number; other: number };
-  /** share of all months with fire-prone weather: what chance alone would give in every row */
   baseShare: number;
 };
 
-/**
- * Counts every complete month of the calendar by fire (unusually high / normal / unusually low, the calendar flags)
- * and weather (fire-prone = top quarter for that calendar month, or not). `lastMonthPartial` drops the series' last
- * month when it is still running. null when nothing overlaps.
- */
 export function weatherSummary(W: Weather, stats: CalendarStats, startYear: number, lastMonthPartial: boolean): WeatherSummary | null {
   const m = W.monthly;
   const cells = { high: { prone: 0, other: 0 }, normal: { prone: 0, other: 0 }, low: { prone: 0, other: 0 } };
@@ -165,7 +134,6 @@ export function weatherSummary(W: Weather, stats: CalendarStats, startYear: numb
   return { n, years: [first, last], ...cells, baseShare: prone / n };
 }
 
-/** Headline for the summary: "41 of 63 unusually high months had fire-prone weather; chance alone would give about 16." */
 export function summarySentence(s: WeatherSummary): string {
   const hi = s.high.prone + s.high.other;
   if (hi === 0) return "No month was unusually high, so there is nothing to explain.";
@@ -173,7 +141,6 @@ export function summarySentence(s: WeatherSummary): string {
   return `${s.high.prone} of ${hi} unusually high months had fire-prone weather (top quarter for that month); chance alone would give about ${chance}.`;
 }
 
-/** Region-specific note on what drives the fire season itself (the calendar's peaks), by region id. */
 export const SEASON_DRIVER: Record<string, string> = {
   punjab:
     "The two yearly peaks themselves come from the harvest, not the weather: farmers burn wheat stubble in April-May and rice straw in October-November every year. Weather only makes a given month busier or quieter than usual.",

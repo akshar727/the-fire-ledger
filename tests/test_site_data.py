@@ -1,13 +1,3 @@
-"""Validate every data file the website reads against the registered contracts.
-
-Stdlib-only. Run from the repo root:
-    python -m unittest discover -s tests -v
-
-Env var SITE_DATA_DIR points the suite at another copy of the data (e.g. for
-manual negative experiments); its basename must be "data". Default is
-site/public/data. The secret scan covers the parent of that root.
-Files that are not produced yet (series, cells, points) are skipped, not failed.
-"""
 import json
 import os
 import re
@@ -24,8 +14,6 @@ if os.environ.get("SITE_DATA_DIR"):
     print(f"test_site_data: data root = {DATA}", file=sys.stderr)
 PUBLIC = DATA.parent
 MAX_POINT_FILE_BYTES = 50 * 1024 * 1024
-# Regions the site must always ship (the MVP demo region). Git drops empty folders, so a
-# deleted annual.json would otherwise look like "not modelled yet" and silently pass.
 REQUIRED_REGIONS = ("portugal",)
 POINT_HEADER = "date,time_utc,lat,lon,satellite,confidence,frp_mw,daynight"
 HEX32 = re.compile(rb"(?<![0-9A-Fa-f])[0-9A-Fa-f]{32,}(?![0-9A-Fa-f])")
@@ -45,7 +33,6 @@ def load_json(path):
 
 
 def modelled(d):
-    """A region folder holding only points/ is not modelled yet."""
     return d.is_dir() and any(x.name != "points" for x in d.iterdir())
 
 
@@ -138,7 +125,6 @@ class SiteDataTests(unittest.TestCase):
                 self.assertTrue(is_int(pr) and pr >= 0, f"{p}:{rid}: point_rows")
                 if not py:
                     self.assertEqual(pr, 0, f"{p}:{rid}: point_rows must be 0 with no point_years")
-                # DP-009: tier (site_bundle.py adds whole countries, which never have point files)
                 tier = r.get("tier", "region")
                 self.assertIn(tier, ("region", "country"), f"{p}:{rid}: tier")
                 if tier == "country":
@@ -147,8 +133,6 @@ class SiteDataTests(unittest.TestCase):
                     self.assertTrue(k not in r or (isinstance(r[k], str) and r[k]), f"{p}:{rid}: {k}")
 
     def test_index_record_fields_match_annual(self):
-        """DP-018: the site reads first_year / forward_through / ship from index.json before it fetches annual.json;
-        a stale copy means site_bundle.py was not run after model.py."""
         self.assertFalse((DATA / "annual-all.json").exists(), "annual-all.json is gone since DP-018")
         for r in self.index()["regions"]:
             rid = r["id"]
@@ -162,7 +146,6 @@ class SiteDataTests(unittest.TestCase):
                 self.assertEqual(r.get("forward_through"), d.get("forward_through"), f"{rid}: forward_through")
                 if r.get("tier") == "country":
                     self.assertEqual(r.get("ship"), d.get("ship"), f"{rid}: ship")
-                    # None until ML-023 writes the ship rule into country annual.json
                     self.assertIn(r.get("ship"), ("model", "caveat", "ratio", "sparse", None), f"{rid}: ship label")
 
     def test_folders_match_regions(self):
@@ -211,11 +194,8 @@ class SiteDataTests(unittest.TestCase):
                     self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["partial"]), f"{p}: partial values")
                 if "data_through" in a:
                     self.assertTrue(iso(a["data_through"]), f"{p}: data_through")
-                # ML-009: harmonized (no nulls) and the blended-year flag; harmonized = viirs ?? pred except blended years
                 self.check_arrays(p, a, ["years", "harmonized", "viirs_partial"])
                 self.assertTrue(all(v in (0, 1) and is_int(v) for v in a["viirs_partial"]), f"{p}: viirs_partial")
-                # ML-017: per-year source; a forward year is blended the same way (weekly viirs is null for weeks with
-                # forward days, whose pred = back-cast to the S-NPP end + forward link after)
                 src = a.get("source")
                 if src is not None:
                     self.assertEqual(len(src), len(a["years"]), f"{p}: source length")
@@ -223,7 +203,6 @@ class SiteDataTests(unittest.TestCase):
                 for i, (v, pr, h, bl) in enumerate(zip(a["viirs"], a["pred"], a["harmonized"], a["viirs_partial"])):
                     fwd = src is not None and src[i] == "forward"
                     if bl or fwd:
-                        # blended year = model for weeks with null weekly viirs + observed for the rest (series.json)
                         self.assertIsNotNone(v, f"{p}: blended year {a['years'][i]} has no observed VIIRS")
                         sp = d / "series.json"
                         if sp.is_file():
@@ -234,7 +213,6 @@ class SiteDataTests(unittest.TestCase):
                             self.assertAlmostEqual(h, want, delta=1, msg=f"{p}: blended {a['years'][i]} vs weekly")
                     else:
                         self.assertAlmostEqual(h, pr if v is None else v, delta=0.05, msg=f"{p}: harmonized {a['years'][i]}")
-                # ML-016: overpass drift fields
                 ov = a.get("overpass")
                 self.assertIsInstance(ov, dict, f"{p}: overpass")
                 self.assertEqual(sorted(ov), ["aqua", "snpp", "terra"], f"{p}: overpass keys")
@@ -249,7 +227,6 @@ class SiteDataTests(unittest.TestCase):
                 for y, v, r in zip(a["years"], a["viirs"], a["obs_over_pred"]):
                     self.assertEqual(r is None, v is None, f"{p}: obs_over_pred null where viirs is ({y})")
                     self.assertTrue(r is None or r > 0, f"{p}: obs_over_pred {y}")
-                # ML-020: trend block (complete years only)
                 tr = a.get("trend")
                 self.assertIsInstance(tr, dict, f"{p}: trend")
                 full = [y for y, pa in zip(a["years"], a["partial"]) if not pa]
@@ -317,7 +294,6 @@ class SiteDataTests(unittest.TestCase):
             found = True
             with self.subTest(file=str(p)):
                 c = load_json(p)
-                # ML-018: schema 2 = monthly (cell c, month m at c * n_months + m), integers = value * scale
                 self.assertEqual(c.get("schema"), 2, f"{p}: schema")
                 self.assertEqual(c.get("region"), rid, f"{p}: region != folder name")
                 self.assertEqual(c.get("cell_deg"), 0.25, f"{p}: cell_deg")
@@ -379,7 +355,7 @@ class SiteDataTests(unittest.TestCase):
                 with self.subTest(file=str(f)):
                     total += self.check_point_file(f, y)
                     clean = True
-            if clean:  # skip the total when a file failed (avoids a confusing second error)
+            if clean:
                 with self.subTest(region=rid, check="point_rows"):
                     self.assertEqual(total, r["point_rows"], f"{rid}: counted rows vs point_rows in index.json")
         if not any(r["point_years"] for r in self.index()["regions"]):
@@ -397,7 +373,7 @@ class SiteDataTests(unittest.TestCase):
                         buf = tail + chunk
                         for m in HEX32.finditer(buf):
                             if m.end() == len(buf) and nxt:
-                                continue  # run may continue in the next chunk
+                                continue
                             self.fail(f"{p}: contains a hex run of 32+ chars (possible key)")
                         tail = HEX_TAIL.search(buf).group()
                         chunk = nxt

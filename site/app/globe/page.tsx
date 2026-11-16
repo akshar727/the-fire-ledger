@@ -8,9 +8,6 @@ export const metadata: Metadata = {
   description: "Every place with a harmonized MODIS + VIIRS fire ledger, on a 3D globe, coloured by detections per 1,000 km².",
 };
 
-// FE-026: static page. Build-time read of globe.json (or, until ML-023/ML-026 commit it, every region's annual.json)
-// and the Natural Earth outlines for each country's area; the browser gets the numbers in the HTML and loads the
-// WebGL globe after first paint.
 const { years, places, unmatched } = readPlaces();
 const hasCountries = places.some((p) => p.tier === "country");
 const edges = logBins(places.flatMap((p) => p.harmonized.map((v) => per1000(v, p.km2))));

@@ -1,7 +1,5 @@
 "use client";
 
-// FE-020: the proof up front. Hold-out error, band coverage and the burned-area check for the selected region, right under
-// the hero number on /ledger. Numbers come from annual.json `score` and referee.json; wording from lib/proof.ts.
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { estimateOf, holdoutYears, isSparse } from "@/lib/annual";
@@ -28,7 +26,6 @@ function Item({ value, text, href, accent }: { value: string; text: string; href
 
 export function ValidationStrip({ data: D }: { data: Annual }) {
   const { sel } = useSelection();
-  // FE-029: a whole country's line may be a constant-ratio estimate (or too sparse to check); the wording says which
   const p = proof(D.score, holdoutYears(D), REF.regions[sel.region], REF, {
     kind: estimateOf(D),
     sparse: isSparse(D),

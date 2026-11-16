@@ -1,4 +1,3 @@
-// Run with `npm test`. DP-018: fetchAnnual returns one promise per region, never rejects, and never refetches a failure.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { clearAnnualCache, fetchAnnual } from "./fetch-annual.ts";

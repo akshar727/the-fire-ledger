@@ -4,14 +4,11 @@ import { test } from "node:test";
 import { backtest, cumAt, forecastFrom, outlook, quantile, seasons, seasonStartWeek, weekAtShare } from "./outlook.ts";
 import { parseSeries, seasonTiming, type Weekly } from "./series.ts";
 
-// Synthetic weekly ledger: every year has the same shape (quietest week 40, peak around week 10), scaled by its own
-// factor, so every season finishes with the same ratio and a forecast must be exact.
 const shape = (wk: number) => {
   const d = Math.min(Math.abs(wk - 10), 52 - Math.abs(wk - 10));
   return wk === 40 ? 1 : 10 + 100 * Math.exp(-(d * d) / 50);
 };
 function synthetic(years: number, extraWeeks: number, lastWeekDays = 7, scale = (y: number) => 1 + 0.1 * y): Weekly {
-  // one scale per season (seasons start at week 40), so each season keeps the same shape
   const pred: number[] = [];
   for (let i = 0; i < years * 52 + extraWeeks; i++) {
     const y = Math.floor(i / 52), wk = i % 52;
@@ -63,7 +60,7 @@ test("same-shape seasons: forecast is exact and the back-test has no error", () 
     assert.ok(r.mape < 1e-9);
     assert.equal(r.covered, r.n);
   }
-  assert.equal(o.rankQuiet, o.past.length + 1); // scale 3 beats every past season
+  assert.equal(o.rankQuiet, o.past.length + 1);
 });
 
 test("partial last week counts by its share of days", () => {
@@ -97,7 +94,6 @@ test("weekAtShare and backtest rows", () => {
 
 test("back-test catches a season that finished unlike the others (no leak)", () => {
   const w = synthetic(12, 52 + 20);
-  // season 2006-07 (starts 2006 week 40): weeks 30-39 of the season burn 20 times more, so its finish is unlike any other
   for (let k = 30; k < 40; k++) w.pred[5 * 52 + 40 + k] *= 20;
   const rows = outlook(w, [2001, 2012])!.backtest;
   for (const r of rows) assert.ok(r.covered < r.n, `share ${r.share}: ${r.covered}/${r.n}`);
@@ -111,7 +107,6 @@ test("season-complete: the ledger ends on a season boundary", () => {
 });
 
 test("week 51 is complete only with all of its 8 or 9 days", () => {
-  // the ledger ends in week 51 of 2012, a leap year: 23-31 Dec, 9 days
   assert.equal(seasons(synthetic(12, 0, 8), 0).at(-1)!.complete, false);
   assert.equal(seasons(synthetic(12, 0, 9), 0).at(-1)!.complete, true);
 });
@@ -131,8 +126,6 @@ test("weekAtShare returns 52 when a share is never reached", () => {
   assert.equal(weekAtShare(past, 1.01), 52);
 });
 
-// The three real regions (snapshot of the numbers FE-022 will show; update when the model is rerun).
-// season start (MM-DD) found from the quietest week: Portugal late November, Ghana late June (rainy season), NW India mid August
 const START: Record<string, string> = { portugal: "11-26", ghana: "06-25", punjab: "08-13" };
 for (const region of ["portugal", "ghana", "punjab"]) {
   test(`real data: ${region}`, () => {
@@ -148,12 +141,10 @@ for (const region of ["portugal", "ghana", "punjab"]) {
 }
 
 test("FE-017: season timing on outlook().past leaves out the running season and a partial last week", () => {
-  // 12 years + 52 weeks whose last week has 3 of 7 days: that season is not complete, so it must not get dates
   const o = outlook(synthetic(12, 52, 3), [2001, 2012])!;
   assert.equal(o.current.complete, false);
   const rows = seasonTiming(o.past, o.startWeek);
   assert.equal(rows.length, o.past.length);
   assert.ok(rows.every((r) => r.year !== o.current.year));
-  // every season has the same shape around week 10 (early to mid March): the halfway date is there every year
   for (const r of rows) assert.match(r.dates[1], /^\d{4}-03-(0[5-9]|1\d)$/, `${r.label} ${r.dates[1]}`);
 });

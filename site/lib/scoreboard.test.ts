@@ -1,4 +1,3 @@
-// Run with `npm test`. FE-028: the world scoreboard rows, summary, sort and search.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -12,7 +11,6 @@ import {
   type ScoreSource,
 } from "./scoreboard.ts";
 
-// DP-018: every published ledger, read one annual.json per index.json region (annual-all.json is gone)
 const readData = (p: string) => JSON.parse(readFileSync(new URL(`../public/data/${p}`, import.meta.url), "utf8"));
 const bundle = Object.fromEntries(
   (readData("index.json").regions as { id: string; first_year?: number }[])
@@ -73,7 +71,6 @@ test("country label comes from ship; ratio-tier countries have no model error", 
 });
 
 test("FE-029: a country where the model ran and lost shows the model's error and counts as a loss", () => {
-  // ML-023: score = the published ratio estimate's; model_score = the model's run, against the same one ratio
   const r = scoreRow("in", "India", true, {
     ship: "ratio",
     method: "ratio",
@@ -87,7 +84,7 @@ test("FE-029: a country where the model ran and lost shows the model's error and
   const S = summarize([
     r,
     scoreRow("cn", "China", true, { ship: "model", method: "model", score: score(7.9, 10.2) }),
-    scoreRow("x", "X", true, { ship: "ratio", method: "ratio", score: score(5, 5) }), // ratio only: not compared
+    scoreRow("x", "X", true, { ship: "ratio", method: "ratio", score: score(5, 5) }),
   ]);
   assert.equal(S.compared, 2);
   assert.equal(S.modelWins, 1);

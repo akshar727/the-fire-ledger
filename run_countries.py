@@ -1,23 +1,10 @@
-"""ML-023 / ML-026: run every country with a grid through model.py, biggest fire first, a few processes at once.
-
-    python run_countries.py --method ratio --jobs 4          # every country in minutes: the constant-ratio tier
-    python run_countries.py --method model --jobs 3 --until 04:00   # upgrade to the cell model until 04:00 UTC
-
-Order = countries.json (largest fire volume first), only countries with a grid in data/grid/country/. A country is
-skipped when its annual.json already comes from that method or a better one (ratio < model), so re-running the same
-line resumes; --redo runs them again. Each country runs in its own process (`model.py <id> --no-bundle`), so memory is
-freed after each and one failure doesn't stop the rest. After each country this process refreshes index.json,
-annual-all.json (site_bundle.py) and globe.json, so a commit at any moment is consistent. Every run is appended to
-data/country_runs.csv (id, method asked, method published, label, cell size, seconds, scores, error).
---until HH:MM (UTC) starts no new country after that time; running ones finish.
-"""
 import argparse, concurrent.futures, csv, datetime, json, os, subprocess, sys, time
 
 GRID = "data/grid/country"
 OUT = "site/public/data"
 LOG = "data/country_runs.csv"
 RANK = {"ratio": 0, "model": 1}
-TIMEOUT = 3600   # seconds; a country that takes longer is logged as failed and its slot moves on
+TIMEOUT = 3600
 FIELDS = ["finished_utc", "id", "asked", "method", "ship", "cell_deg", "seconds", "mape_model", "mape_ratio",
           "coverage", "n_hold", "error"]
 
@@ -28,20 +15,17 @@ def load(path):
 
 
 def published(cid, out=OUT):
-    """(method, ship) of a country's annual.json, or (None, None) if it has none. A model run that lost to the ratio
-    is published as method "ratio" with model_score set: that counts as done at "model"."""
     p = os.path.join(out, cid, "annual.json")
     if not os.path.isfile(p):
         return None, None
     a = load(p)
     m = a.get("method", "model")
-    if m == "ratio" and (a.get("model_score") or a.get("ship") == "sparse"):   # model lost, or nothing to check it on
+    if m == "ratio" and (a.get("model_score") or a.get("ship") == "sparse"):
         m = "model"
     return m, a.get("ship")
 
 
 def todo(countries, method, grid=GRID, out=OUT, only=None, redo=False):
-    """Countries to run, in countries.json order: has a grid and a manifest entry, not already at this method."""
     man = load(os.path.join(grid, "manifest.json")) if os.path.exists(os.path.join(grid, "manifest.json")) else {}
     res = []
     for c in countries:
@@ -57,7 +41,6 @@ def todo(countries, method, grid=GRID, out=OUT, only=None, redo=False):
 
 
 def deadline(until, now=None):
-    """The next HH:MM UTC after now (today, or tomorrow if that has passed), or None."""
     if not until:
         return None
     now = now or datetime.datetime.now(datetime.timezone.utc)
@@ -67,7 +50,6 @@ def deadline(until, now=None):
 
 
 def past(stop, now=None):
-    """True once the clock reaches the deadline (None = never)."""
     return stop is not None and (now or datetime.datetime.now(datetime.timezone.utc)) >= stop
 
 
@@ -79,7 +61,7 @@ def run_one(c, method, nboot):
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT)
         err = "" if p.returncode == 0 else (p.stderr.strip().splitlines() or ["exit %d" % p.returncode])[-1][:300]
-    except Exception as e:   # timeout or anything else: log it and keep the batch going
+    except Exception as e:
         err = repr(e)[:300]
     return c, round(time.time() - t), err
 
@@ -91,7 +73,7 @@ def log_row(c, asked, secs, err, out=OUT, log=LOG):
     if not err and os.path.isfile(p):
         a = load(p)
         sc = dict(a.get("score") or {})
-        if a.get("method") == "ratio":   # same rule as globe.json: the model's error only if a model ran (and lost)
+        if a.get("method") == "ratio":
             ms = a.get("model_score") or {}
             sc.update(mape_model=ms.get("mape_model"), coverage=ms.get("coverage", sc.get("coverage")))
         row.update({"method": a.get("method"), "ship": a.get("ship"), "cell_deg": a.get("cell_deg"),
@@ -109,7 +91,6 @@ def log_row(c, asked, secs, err, out=OUT, log=LOG):
 
 
 def refresh():
-    """index.json + globe.json from every annual.json so far; a failure here is printed and the batch goes on."""
     import globe
     import site_bundle
     with open(os.devnull, "w") as quiet:

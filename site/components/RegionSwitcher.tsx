@@ -1,9 +1,5 @@
 "use client";
 
-// FE-008: region picker for every data view, a search box over ~180 places (WAI-ARIA combobox with a listbox popup).
-// Typing filters; the list has "Deep dives" (the cell regions) and "Countries" (A to Z, with the ship label as a tag);
-// an empty group is not shown. Arrow keys / Page Up / Page Down move, Enter picks, Escape closes. The choice is written
-// to ?region= as before (useSelection), so links are unchanged.
 import { useEffect, useId, useRef, useState } from "react";
 import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { groupRegions, PICKER_ITEMS } from "@/lib/region-picker";
@@ -11,7 +7,7 @@ import { isRegionId, REGIONS } from "@/lib/regions";
 import { useSelection } from "@/lib/use-selection";
 
 const field =
-  "h-9 w-full rounded-md border border-input bg-background pr-9 pl-8 text-base shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30 md:text-sm"; // 16px on phones so iOS does not zoom in on focus
+  "h-9 w-full rounded-md border border-input bg-background pr-9 pl-8 text-base shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30 md:text-sm";
 
 export function RegionSwitcher({ className = "" }: { className?: string }) {
   const { sel, update } = useSelection();
@@ -45,7 +41,6 @@ export function RegionSwitcher({ className = "" }: { className?: string }) {
   };
   const move = (by: number) => setActive((a) => Math.min(Math.max(a + by, 0), Math.max(options.length - 1, 0)));
 
-  // keep the highlighted option in view while moving with the keyboard (the list scrolls, never the page)
   useEffect(() => {
     const list = listRef.current;
     const opt = open ? document.getElementById(optId(active)) : null;
@@ -96,14 +91,11 @@ export function RegionSwitcher({ className = "" }: { className?: string }) {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          // closed: the field shows the current place; open: what is typed, with the current place as the hint
           value={open ? query : REGIONS[sel.region]}
           placeholder={REGIONS[sel.region]}
           onClick={show}
           onFocus={(e) => e.target.select()}
           onChange={(e) => {
-            // typed while the list was closed (tabbed in, or after Escape): the field held the current place's name,
-            // so search only for what was typed after it
             const v = e.target.value;
             const cur = REGIONS[sel.region];
             setQuery(!open && v.startsWith(cur) ? v.slice(cur.length) : v);
@@ -134,7 +126,6 @@ export function RegionSwitcher({ className = "" }: { className?: string }) {
           ref={listRef}
           role="listbox"
           aria-label="Regions and countries"
-          // a press anywhere in the list (heading, scrollbar, "no match") keeps focus in the field, so the list stays open
           onMouseDown={(e) => e.preventDefault()}
           className="absolute top-full right-0 left-0 z-50 mt-1 max-h-[min(20rem,60vh)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-1 text-popover-foreground shadow-lg"
         >
@@ -161,7 +152,6 @@ export function RegionSwitcher({ className = "" }: { className?: string }) {
                     className="flex min-h-9 cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm data-[active=true]:bg-primary/15"
                   >
                     <CheckIcon aria-hidden className={`size-3.5 shrink-0 text-primary ${selected ? "" : "invisible"}`} />
-                    {/* the tag sits under the name: the Ledger page's column is narrow */}
                     <span className="min-w-0 flex-1 leading-snug">
                       {it.name}
                       {it.tag && (

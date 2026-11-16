@@ -7,8 +7,6 @@ import { dayLabel } from "@/lib/annual";
 import { recordSpan } from "@/lib/data-server";
 import "./globals.css";
 
-// Red "Thermal console" theme (Ideas_2026-11-15.md §4, scheme A): Work Sans for text, IBM Plex Mono for every
-// number, label and control.
 const workSans = Work_Sans({
   variable: "--font-work-sans",
   subsets: ["latin"],

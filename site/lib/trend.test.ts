@@ -24,7 +24,6 @@ import {
 const REGIONS = ["portugal", "ghana", "punjab"];
 const read = (r: string, f: string) => JSON.parse(readFileSync(new URL(`../public/data/${r}/${f}`, import.meta.url), "utf8"));
 
-// Within the rounding model.py applies (2 dp for slopes, 4 dp for p): equal, or one unit apart on a rounding edge.
 function close(got: TrendStat, want: TrendStat, what: string) {
   for (const k of ["slope_pct", "lo_pct", "hi_pct"] as const) {
     if (want[k] === null) assert.equal(got[k], null, `${what} ${k}`);
@@ -49,17 +48,15 @@ test("median, Theil-Sen and Kendall on small cases", () => {
   assert.equal(median([3, 1, 2]), 2);
   assert.equal(median([4, 1, 3, 2]), 2.5);
   assert.equal(theilSen([1, 2, 3, 4], [2, 4, 6, 8]).slope, 2);
-  // perfect order, n = 5: exact p = 2 / 5! (scipy kendalltau gives 0.016666...)
   assert.ok(Math.abs(kendallP([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]) - 2 / 120) < 1e-15);
   assert.equal(kendallExactP(2, 1), 1);
-  // ties in y, so asymptotic with tie correction: scipy.stats.kendalltau(range(10), [3,1,4,1,5,9,2,6,5,3]).pvalue
   assert.ok(Math.abs(kendallP([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 1, 4, 1, 5, 9, 2, 6, 5, 3]) - 0.2772892580884726) < 1e-12);
   assert.ok(Number.isNaN(kendallP([1, 2, 3], [5, 5, 5])));
 });
 
 test("trend: nulls, constant series, too few years", () => {
   assert.deepEqual(trend([1, 2], [1, 2]), { slope_pct: null, lo_pct: null, hi_pct: null, p: null });
-  assert.deepEqual(trend([1, 2, 3, 4], [0, 0, 0, 5]), { slope_pct: null, lo_pct: null, hi_pct: null, p: null }); // median 0
+  assert.deepEqual(trend([1, 2, 3, 4], [0, 0, 0, 5]), { slope_pct: null, lo_pct: null, hi_pct: null, p: null });
   assert.deepEqual(trend([1, 2, 3], [7, 7, 7]), { slope_pct: 0, lo_pct: 0, hi_pct: 0, p: 1 });
 });
 
@@ -71,15 +68,12 @@ for (const r of REGIONS) {
     assert.ok(b.years, "trend.years");
     const got = rangeTrend(D, b.years, S.weekly as WeeklyRaw);
     assert.equal(got.years.length, b.n_years);
-    // recomputed from the weekly file (rangeTrend itself reuses the stored answer for this range)
     const st = stitchedTotals(D, S.weekly as WeeklyRaw);
     close(trend(got.years, rangeYears(D, b.years).idx.map((i) => st[i] as number)), b.stitched, "stitched");
-    // the published range needs no weekly file: stitched comes from annual.json
     assert.deepEqual(rangeTrend(D, b.years, null).stitched, b.stitched);
     assert.equal(rangeYears(D, b.years).needsWeekly, false);
     close(got.harmonized, b.harmonized, "harmonized");
     assert.deepEqual(got.boot, [b.harmonized.boot_lo_pct, b.harmonized.boot_hi_pct]);
-    // monthly: many zero months and ties, so this exercises the asymptotic p with tie corrections
     const m = S.monthly;
     const years = got.years;
     for (const [key, alt] of [["stitched", "modis"], ["harmonized", "pred"]] as const) {
@@ -104,7 +98,7 @@ test("stitchedTotals: 2012 needs the weekly file; other years come from annual.j
   assert.equal(without[0], D.modis[0]);
   assert.equal(without[i + 1], D.viirs[i + 1]);
   const withW = stitchedTotals(D, S.weekly);
-  assert.ok((withW[i] as number) > (D.viirs[i] as number)); // MODIS fills 1-19 Jan
+  assert.ok((withW[i] as number) > (D.viirs[i] as number));
 });
 
 test("rangeTrend: selected years, partial years out, no bootstrap range off the published block", () => {
@@ -113,16 +107,14 @@ test("rangeTrend: selected years, partial years out, no bootstrap range off the 
   const r = rangeTrend(D, [2015, last], null);
   assert.equal(r.years[0], 2015);
   assert.ok(!r.years.includes(last) || D.partial[D.years.length - 1] === 0);
-  assert.ok(r.stitched !== null); // 2012 not in range: no weekly file needed
+  assert.ok(r.stitched !== null);
   assert.equal(r.boot, null);
-  assert.equal(rangeTrend(D, [2005, 2015], null).stitched, null); // 2012 in range, weekly not loaded
+  assert.equal(rangeTrend(D, [2005, 2015], null).stitched, null);
   assert.equal(rangeYears(D, [2005, 2015]).needsWeekly, true);
-  assert.equal(rangeYears(D, [2012, 2013]).needsWeekly, false); // under 3 years: no trend, no fetch
+  assert.equal(rangeYears(D, [2012, 2013]).needsWeekly, false);
   assert.equal(rangeYears(D, [2015, 2020]).needsWeekly, false);
-  // a weekly file that starts after 2012 cannot give the 2012 total
   assert.equal(stitchedTotals(D, { start_year: 2013, weeks_per_year: 52, modis: [], viirs: [] })[D.years.indexOf(2012)], null);
   assert.equal(rangeTrend(D, [2010, 2011], null).years.length, 2);
-  // works without a trend block (older annual.json)
   const { trend: _drop, ...old } = D;
   void _drop;
   assert.equal(rangeTrend(old, [2001, 2025], null).boot, null);
@@ -137,7 +129,7 @@ test("wording: sign, significance, missing values", () => {
   assert.equal(slopeLabel(0.04), "no change");
   assert.equal(trendClause(stat(6, 0.01)), "+6.0% a year, significant");
   assert.equal(trendClause(stat(-2, 0.32)), "−2.0% a year, not significant");
-  assert.equal(trendClause(stat(3, 0.05)), "+3.0% a year, not significant"); // p < 0.05 strictly
+  assert.equal(trendClause(stat(3, 0.05)), "+3.0% a year, not significant");
   assert.equal(trendClause(stat(null, null)), "no trend can be measured (too little fire)");
   assert.equal(trendClause(null), "loading");
   assert.equal(trendClause(stat(0.01, 0.01)), "no change");

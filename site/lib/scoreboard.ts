@@ -1,10 +1,3 @@
-// FE-028: the world scoreboard on /method. One row per published ledger (the 3 deep dives and every whole country in
-// index.json, each annual.json read at build time: DP-018), each with its own hold-out check. Pure, no imports, so `node --test` and the client table use it.
-// Country fields (`ship`, `method`, `cell_deg`) are the registry rows "Country-tier outputs" / "Globe data" (ML-023);
-// the deep dives' annual.json has none of them. A country joins index.json (site_bundle.py) as soon as ML-026 commits
-// its annual.json, so the table fills in with no change here.
-
-/** What a row's record is: one of ML-023's country labels, or one of our deep-dive boxes. */
 export type Label = "deep dive" | "model" | "caveat" | "ratio" | "sparse";
 
 export const LABELS: readonly Label[] = [
@@ -15,7 +8,6 @@ export const LABELS: readonly Label[] = [
   "sparse",
 ];
 
-/** One line per label, shown under the table. */
 export const LABEL_TEXT: Readonly<Record<Label, string>> = {
   "deep dive":
     "One of our three boxes, modelled at 0.25° cells with every extra check (weather, burned area, NOAA-20/21).",
@@ -29,7 +21,6 @@ export const LABEL_TEXT: Readonly<Record<Label, string>> = {
     "Too little fire to check (a hold-out or training year with no VIIRS detections, or under 1,000 VIIRS detections 2012 to 2019).",
 };
 
-/** The annual.json fields read here. Scores may be null for a sparse country (ML-014: never inf or NaN). */
 export type ScoreSource = {
   ship?: string | null;
   method?: string | null;
@@ -40,7 +31,6 @@ export type ScoreSource = {
     coverage?: number | null;
     n_hold?: number | null;
   } | null;
-  /** ML-023: the model's own score when it ran on a country and lost to one ratio (that country ships the ratio). */
   model_score?: { mape_model?: number | null; mape_ratio?: number | null } | null;
 };
 
@@ -48,15 +38,11 @@ export type ScoreRow = {
   id: string;
   name: string;
   label: Label;
-  /** Model's mean annual hold-out error, %; null when the model did not run (ratio only, or sparse) or there is no score; for a country where it ran and lost, from `model_score`. */
   model: number | null;
-  /** One fixed ratio's mean annual hold-out error, %. */
   ratio: number | null;
-  /** True when the model ran and beat the ratio; null when there is nothing to compare. */
   modelWins: boolean | null;
   coverage: number | null;
   nHold: number | null;
-  /** Cell size in degrees; null for a country whose file does not say. */
   cellDeg: number | null;
 };
 
@@ -68,7 +54,6 @@ function labelOf(a: ScoreSource, country: boolean): Label {
   const s = a.ship;
   if (s === "model" || s === "caveat" || s === "ratio" || s === "sparse")
     return s;
-  // The registry says every country carries `ship`; without one, never claim the model: show the humblest label.
   return "ratio";
 }
 
@@ -78,9 +63,6 @@ export function scoreRow(
   country: boolean,
   a: ScoreSource,
 ): ScoreRow {
-  // A ratio-method file's `score.mape_model` is the ratio estimate's error, not the model's. FE-029: when the model ran
-  // and lost, its error is in `model_score`, compared with the same one-ratio error, so the "beats one ratio in X of N"
-  // claim counts the losses too (without this, 11 of 27 model runs on the world data were shown as "not run")
   const lost = a.method === "ratio" ? a.model_score ?? null : null;
   const model = a.method === "ratio" ? num(lost?.mape_model) : num(a.score?.mape_model);
   const ratio = num(lost ? lost.mape_ratio : a.score?.mape_ratio);
@@ -109,14 +91,12 @@ export type Summary = {
   deepDives: number;
   countries: number;
   counts: Record<Label, number>;
-  /** Rows where the model ran and both errors exist (the "beats one ratio in X of N" claim). */
   compared: number;
   modelWins: number;
   medianModel: number | null;
   medianRatio: number | null;
 };
 
-/** Medians are over the same compared rows, so the two numbers are like for like. */
 export function summarize(rows: ScoreRow[]): Summary {
   const counts = Object.fromEntries(LABELS.map((l) => [l, 0])) as Record<
     Label,
@@ -150,7 +130,6 @@ const SORT_VALUE: Record<SortKey, (r: ScoreRow) => string | number | null> = {
   cellDeg: (r) => r.cellDeg,
 };
 
-/** Sorted copy; missing values always go last, ties fall back to the name. */
 export function sortRows(
   rows: ScoreRow[],
   key: SortKey,
@@ -173,7 +152,6 @@ export function sortRows(
   });
 }
 
-/** Case- and accent-insensitive match on the name; a query that is exactly a label ("ratio") finds that label's rows. */
 export function filterRows(rows: ScoreRow[], query: string): ScoreRow[] {
   const fold = (s: string) =>
     s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -186,7 +164,6 @@ const pct = (v: number) => `${v.toFixed(1)}%`;
 const count = (v: number, one: string, many: string) =>
   `${v.toLocaleString("en-US")} ${v === 1 ? one : many}`;
 
-/** The one summary sentence above the table (FE-028): places scored, country labels, model vs one ratio. */
 export function boardSentence(B: Summary): string {
   const dives = count(B.deepDives, "deep dive", "deep dives");
   let text =

@@ -1,11 +1,5 @@
-// Picture downloads (FE-015): pure SVG builders for the "Download picture" buttons, no DOM, so `node --test` can check
-// them. `composePicture` frames any chart body with a title, subtitle, legend and the FIRMS acknowledgment footer;
-// `calendarBody` draws the burn calendar table as SVG. Colours arrive already resolved (hex or rgb), so the file opens
-// the same in a browser, an image viewer or a vector editor. The browser half (serialising the live chart, PNG) is in
-// lib/picture-dom.ts.
 import { compact, MONTHS, weekMonthGroups, type CalendarGrid, type CalendarStats } from "./series.ts";
 
-/** Plain-text FIRMS acknowledgment (same words as components/FirmsAcknowledgment.tsx). */
 export const FIRMS_CREDIT =
   "We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) " +
   "(https://earthdata.nasa.gov/firms), part of NASA's Land, Atmosphere Near real-time Capability for Earth observations " +
@@ -14,23 +8,20 @@ export const FIRMS_CREDIT =
 export const SANS = "system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 export const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
-/** Resolved page colours for one colour scheme. */
 export type PictureTheme = {
   bg: string;
   fg: string;
-  muted: string; // hatch for "no data" cells
+  muted: string;
   mutedFg: string;
   border: string;
 };
 
 export type LegendItem = { color: string; label: string; kind?: "line" | "dash" | "ring" | "swatch" | "up" | "down" };
 
-/** Escapes text and attribute values for SVG/XML. */
 export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-/** Greedy word wrap on an estimated text width (average glyph ≈ 0.53 em for a system sans). */
 export function wrap(text: string, maxWidth: number, fontSize: number): string[] {
   const perLine = Math.max(10, Math.floor(maxWidth / (fontSize * 0.53)));
   const lines: string[] = [];
@@ -67,20 +58,14 @@ export type PictureSpec = {
   title: string;
   subtitle: string;
   legend: LegendItem[];
-  /** Inner SVG markup drawn in a box of bodyWidth × bodyHeight user units. */
   body: string;
   bodyWidth: number;
   bodyHeight: number;
-  /** Optional sentence under the body (e.g. the chart's note). */
   note?: string;
   theme: PictureTheme;
-  width?: number; // total width, default 960
+  width?: number;
 };
 
-/**
- * A standalone SVG document: title, subtitle, legend, the body scaled to fit, an optional note and a footer with the
- * FIRMS acknowledgment and the site name. Returns the markup and its size (the PNG is drawn at 2× that).
- */
 export function composePicture(spec: PictureSpec): { svg: string; width: number; height: number } {
   const W = spec.width ?? 960, pad = 32, inner = W - 2 * pad;
   const t = spec.theme;
@@ -90,7 +75,6 @@ export function composePicture(spec: PictureSpec): { svg: string; width: number;
   y += 24;
   parts.push(`<text x="${pad}" y="${y}" font-family="${esc(SANS)}" font-size="14" fill="${esc(t.mutedFg)}">${esc(spec.subtitle)}</text>`);
 
-  // legend: items flow left to right and wrap
   y += 26;
   let lx = pad;
   for (const item of spec.legend) {
@@ -104,7 +88,6 @@ export function composePicture(spec: PictureSpec): { svg: string; width: number;
     lx += w;
   }
 
-  // body, scaled to the inner width
   y += 16;
   const scale = inner / spec.bodyWidth, bodyH = spec.bodyHeight * scale;
   parts.push(
@@ -120,7 +103,6 @@ export function composePicture(spec: PictureSpec): { svg: string; width: number;
     }
   }
 
-  // footer: rule, credit, site
   y += 22;
   parts.push(`<line x1="${pad}" x2="${W - pad}" y1="${y}" y2="${y}" stroke="${esc(t.border)}"/>`);
   y += 4;
@@ -142,20 +124,12 @@ export function composePicture(spec: PictureSpec): { svg: string; width: number;
 }
 
 export type CalendarColors = {
-  /** Cell fill and label ink for a value (the page's log ramp, already resolved). */
   cell: (value: number) => { bg: string; ink: string };
   theme: PictureTheme;
 };
 
 const YEAR_W = 78, HEAD_H = 22;
 
-/**
- * The burn calendar as SVG: one row per year, 12 month cells with the compact value, ▲/▼ for flagged months, a hatch
- * for months with no data, dimmed months outside the selected dates, and the median / middle-half rows when the
- * calendar statistics exist. Week view (FE-016): 52 narrow cells without labels, month names over the weeks that start
- * in them, a dashed outline on the partial last week, no statistics rows. A bar along the bottom of forward-link
- * periods (FE-009). Returns the body for composePicture.
- */
 export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefined, colors: CalendarColors) {
   const t = colors.theme;
   const week = grid.view === "week";
@@ -197,7 +171,6 @@ export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefine
       out.push(`<rect x="${x}" y="${y}" width="${CELL_W}" height="${CELL_H}" rx="2" fill="${esc(bg)}"/>`);
       if (cell.partial)
         out.push(`<rect x="${x + 0.75}" y="${y + 0.75}" width="${CELL_W - 1.5}" height="${CELL_H - 1.5}" rx="2" fill="none" stroke="${esc(t.fg)}" stroke-width="1.5" stroke-dasharray="2 1.5"/>`);
-      // FE-009: forward-link period (S-NPP ended; NOAA-20/21 after): a bar along the cell's bottom edge, as on the page
       if (cell.source === "forward")
         out.push(`<rect x="${x + 3}" y="${y + CELL_H - 4}" width="${CELL_W - 6}" height="2" rx="1" fill="${esc(ink)}"/>`);
       if (!week) out.push(cellText(x, y, compact(cell.value), ink));
@@ -228,7 +201,6 @@ export function calendarBody(grid: CalendarGrid, stats: CalendarStats | undefine
   return { body: out.join(""), width, height: y };
 }
 
-/** Filesystem-safe download name: lower case, [a-z0-9_-] only. */
 export function pictureName(...parts: (string | number)[]): string {
   return parts
     .map((p) => String(p).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, ""))

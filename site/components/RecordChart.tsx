@@ -1,14 +1,5 @@
 "use client";
 
-// Annual ledger chart with the Raw / Harmonized toggle. Port of the proof-of-concept web/index.html
-// (same series, band and sentences; top margin and two extra labels added), plus a per-year readout on hover / arrow keys.
-// FE-004: draws only the years in `years` (the selected dates); the sentences under it still describe the whole ledger.
-// FE-006: a partial year (the year still running, `partial` = 1) is a hollow dot with a "2026 to 28 Oct" label, not
-// joined to the lines, not part of the hold-out and not in the era means.
-// ML-009: the Harmonized view draws `harmonized` from 2012 (2012 = observed VIIRS from 20 Jan + model for 1-19 Jan).
-// FE-015: "Download picture" saves the chart as drawn (view, years, legend, note) as PNG or SVG.
-// FE-009: in the Harmonized view a forward year (ML-017: S-NPP ended, NOAA-20/21 link after) puts its partial-year ring at
-// `harmonized` (to forward_through) and marks the forward segment with a dashed stem down to the S-NPP-only value.
 import { useRef, useState, type KeyboardEvent } from "react";
 import { DownloadPicture } from "@/components/DownloadPicture";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -35,17 +26,14 @@ import { compact } from "@/lib/series";
 
 type Mode = "raw" | "harm";
 
-// FE-025: 330 high (was 380): with the controls beside it, the whole chart fits on a 1366 × 768 laptop screen
 const W = 800, H = 330, L = 55, R = 15, T = 18, B = 30;
 const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
-/** Gridline step: the 1, 2 or 5 times a power of ten nearest to max / 5 (Portugal keeps its 5k lines). */
 function tickStep(max: number): number {
   const raw = max / 5, p = 10 ** Math.floor(Math.log10(raw));
   return [1, 2, 5, 10].map((m) => m * p).reduce((best, s) => (Math.abs(s - raw) < Math.abs(best - raw) ? s : best));
 }
 
-/** Marker label beside a vertical line; flips to the left of the line near the right edge so it isn't clipped. */
 function MarkerLabel({ at, children }: { at: number; children: string }) {
   const flip = at > W - R - 90;
   return (
@@ -62,8 +50,8 @@ export function RecordChart({
   years,
 }: {
   data: Annual;
-  region: string; // display name, used in the picture title
-  regionId: string; // stable id, used in the picture file name (same as the calendar's)
+  region: string;
+  regionId: string;
   years: [number, number];
 }) {
   const [mode, setMode] = useState<Mode>("raw");
@@ -71,7 +59,6 @@ export function RecordChart({
   const svgRef = useRef<SVGSVGElement>(null);
 
   const D = data;
-  // visible years: full-record indexes a..b (inclusive); every index below is a full-record index
   const a = Math.max(0, D.years.indexOf(Math.max(years[0], D.years[0])));
   const b = Math.max(a, D.years.indexOf(Math.min(years[1], D.years.at(-1)!)));
   const n = b - a + 1;
@@ -84,14 +71,12 @@ export function RecordChart({
   const x = (i: number) => (n === 1 ? (L + W - R) / 2 : L + (i - a) * step);
   const y = (v: number) => H - B - (v * (H - T - B)) / max;
   const i2003 = D.years.indexOf(2003), i2012 = D.years.indexOf(VIIRS_FROM), i2020 = D.years.indexOf(HOLD_FROM);
-  // lines stop at the last complete year; the hold-out band and prediction cover only the years the score covers
   const end = completeEnd(D);
   const [h0, h1] = holdoutYears(D);
   const holdEnd = D.years.indexOf(h1) + 1;
   const inHold = (i: number) => i >= i2020 && i < holdEnd;
   const tail = D.years.flatMap((_, i) => (i >= end && visible(i) ? [i] : []));
 
-  // full-record index range [from, to) cut down to the visible years; null when nothing is left
   const clip = (from: number, to: number): [number, number] | null => {
     const lo = Math.max(from, a), hi = Math.min(to, b + 1);
     return lo < hi ? [lo, hi] : null;
@@ -106,23 +91,17 @@ export function RecordChart({
     const c = clip(from, to);
     return c ? "M" + [...pts(D.hi, ...c), ...pts(D.lo, ...c).reverse()].join("L") + "Z" : "";
   };
-  // back-cast line runs into the first VIIRS year so the two segments join; from 2012 the Harmonized view draws
-  // `harmonized` (ML-009: 2012 = observed VIIRS from 20 Jan + model for 1-19 Jan), Raw draws the raw `viirs`
   const backcast = D.pred.map((p, i) => (i < i2012 ? p : i === i2012 ? D.harmonized[i] : null));
 
   const ticks: number[] = [];
   for (let v = 0, s = Math.max(1, tickStep(max / 1.05)); v <= max; v += s) ticks.push(v);
   const labelEvery = n <= 8 ? 1 : n <= 16 ? 2 : 3;
 
-  // Sentences under the chart: same formulas as the proof of concept, complete years only. The VIIRS-era mean is from
-  // `harmonized` (eraMeans, as JumpStat), so a 2012 that starts 20 Jan doesn't pull it down.
   const era = eraMeans(D);
   const s = D.score;
-  // FE-029: most whole countries publish a constant-ratio estimate (ML-023 method "ratio"), so the text names what
-  // filled 1-19 January 2012 and the back-cast; a sparse country has too few detections to score or read a jump from
   const by = estimateOf(D) === "ratio" ? "the ratio" : "the model";
-  const sparse = isSparse(D); // scores are noise (HoldoutStats and the proof strip use the same flag)
-  const noJump = sparse || !Number.isFinite(era.jump); // as JumpStat
+  const sparse = isSparse(D);
+  const noJump = sparse || !Number.isFinite(era.jump);
   const note =
     mode === "raw"
       ? `Naively stitched ledger. Mean detections per year go from ${fmt(era.modis)} (MODIS era) to ${fmt(era.viirs)} (VIIRS era, complete years, with 1-19 January ${VIIRS_FROM} filled by ${by})` +
@@ -132,8 +111,7 @@ export function RecordChart({
       : sparse
         ? `Too little fire here to score the hold-out years ${h0}-${h1}: the back-cast is MODIS times one ratio and is not validated.`
         : by === "the ratio"
-          ? // FE-032: since ML-027 a ratio country's score is the single ratio's own (mape_model = mape_ratio), so compare
-            // with the losing model's error when it ran
+          ?
             `Constant-ratio estimate. Hold-out ${h0}-${h1}: mean annual error ${s.mape_ratio.toFixed(1)}%` +
             (D.model_score?.mape_model != null && Number.isFinite(D.model_score.mape_model)
               ? ` vs ${D.model_score.mape_model.toFixed(1)}% for our model, which lost here`
@@ -264,7 +242,6 @@ export function RecordChart({
 
             {mode === "raw" ? (
               <g key="raw">
-                {/* Aqua MODIS data starts in July 2002: before that, counts are Terra alone. */}
                 {visible(i2003 - 1) && a < i2003 - 1 && (
                   <>
                     <rect x={x(a)} y={T} width={x(i2003 - 1) - x(a)} height={H - T - B} className="fill-muted chart-fade" />
@@ -302,13 +279,10 @@ export function RecordChart({
               </g>
             )}
 
-            {/* partial year: observed so far, drawn apart so the line doesn't seem to fall off a cliff */}
             {tail.map((i) => {
               const raw = i < i2012 ? D.modis[i] : (D.viirs[i] ?? D.pred[i]);
-              // forward year, Harmonized view: ring at the harmonized total, dashed stem down to the S-NPP-only value
               const fwd = mode === "harm" && isForward(D, i);
               const cy = y(fwd ? D.harmonized[i] : raw);
-              // a forward year keeps its label above the ring: the stem and the S-NPP-only dot sit below it
               const below = !fwd && cy + 20 < H - B - 4;
               return (
                 <g key={`partial-${i}`} className="chart-fade">
@@ -436,7 +410,6 @@ export function RecordChart({
   );
 }
 
-/** Marker for a one-year view, where a line has nothing to join. */
 function Dot({ cx, cy, color }: { cx: number; cy: number; color: string }) {
   return <circle cx={cx} cy={cy} r={5} fill={color} className="chart-fade" />;
 }

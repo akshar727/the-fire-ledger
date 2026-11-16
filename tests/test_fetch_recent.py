@@ -1,5 +1,3 @@
-"""fetch_recent.py and build.load_recent without network or a real key (stdlib unittest).
-Run: python -m unittest discover -s tests"""
 import io, json, os, shutil, sys, tempfile, unittest, urllib.error
 from datetime import date, timedelta
 
@@ -50,7 +48,7 @@ class KeyHandling(unittest.TestCase):
             F.http_get(url, KEY, opener=opener)
         e = c.exception
         self.assertNotIn(KEY, str(e))
-        self.assertIsNone(e.__context__)          # raised outside the except: no HTTPError (which holds the URL) attached
+        self.assertIsNone(e.__context__)
         self.assertIsNone(e.__cause__)
 
     def test_http_error_body_shown_scrubbed(self):
@@ -81,8 +79,8 @@ class KeyHandling(unittest.TestCase):
         return str(c.exception)
 
     def test_http_error_key_cut_at_read_limit_not_shown(self):
-        for pad in range(4000 - len(KEY) + 1, 4000):   # the key straddles the 4000-byte read limit
-            head = b"<i>" * ((pad - 8) // 3) + b" " * ((pad - 8) % 3) + b"bad key "   # tags vanish, so the cut lands in [:160]
+        for pad in range(4000 - len(KEY) + 1, 4000):
+            head = b"<i>" * ((pad - 8) // 3) + b" " * ((pad - 8) % 3) + b"bad key "
             msg = self._http_error_msg(head + KEY.encode())
             for n in range(6, len(KEY) + 1):
                 self.assertNotIn(KEY[:n], msg)
@@ -126,9 +124,8 @@ class KeyHandling(unittest.TestCase):
         self.assertNotIn(KEY, str(c.exception))
 
     def test_header_only_and_blank_lines(self):
-        self.assertEqual(F.check_body(HDR, KEY), 0)                     # quiet days, no final newline
+        self.assertEqual(F.check_body(HDR, KEY), 0)
         self.assertEqual(F.check_body(body(["1,2,3,4,5,2026-01-01,0100,N,VIIRS,n,2,6,7,D"], type_col=False) + "\n\n", KEY), 1)
-        # the real API: no newline after the last row
         self.assertEqual(F.check_body(body(["1,2,3,4,5,2026-01-01,0100,N,VIIRS,n,2,6,7,D"], type_col=False).rstrip("\n"), KEY), 1)
 
     def test_cut_after_last_comma_is_truncation(self):
@@ -160,15 +157,15 @@ class Planning(unittest.TestCase):
                  "VIIRS_SNPP_SP": (date(2012, 1, 20), date(2026, 3, 31)), "VIIRS_SNPP_NRT": (date(2026, 3, 1), date(2026, 11, 2)),
                  **NOAA}
         chunks, spans = F.plan(avail, today=TODAY)
-        self.assertEqual(spans["MODIS"], (date(2026, 1, 1), date(2026, 11, 2)))     # common end with S-NPP
+        self.assertEqual(spans["MODIS"], (date(2026, 1, 1), date(2026, 11, 2)))
         self.assertEqual(spans["VIIRS_SNPP"], (date(2026, 1, 1), date(2026, 11, 2)))
-        self.assertEqual(spans["VIIRS_NOAA20"], (date(2026, 1, 1), date(2026, 11, 14)))   # own end: yesterday UTC
-        self.assertEqual(spans["VIIRS_NOAA21"], (date(2024, 1, 17), date(2026, 11, 14)))  # from its first available day
+        self.assertEqual(spans["VIIRS_NOAA20"], (date(2026, 1, 1), date(2026, 11, 14)))
+        self.assertEqual(spans["VIIRS_NOAA21"], (date(2024, 1, 17), date(2026, 11, 14)))
         for name, (sp, nrt) in F.SENSORS.items():
             mine = [c for c in chunks if c[0] in (sp, nrt)]
             d, through = spans[name]
             for src, first, last in mine:
-                self.assertEqual(first, d)                         # contiguous
+                self.assertEqual(first, d)
                 self.assertLessEqual((last - first).days + 1, F.DAYS)
                 self.assertTrue(last <= avail[sp][1] if src == sp else first > avail[sp][1])
                 d = last + timedelta(days=1)
@@ -253,11 +250,11 @@ class FetchRegion(unittest.TestCase):
         row = "5.1,0.2,300,1,1,2025-08-10,0100,Terra,MODIS,80,6.1,290,3.0,D,0"
         hdr = "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_t31,frp,daynight,type"
         seen = []
-        ok = lambda u, k: seen.append(u) or "\n".join([hdr] + [row] * 6)        # API sees more (whole bbox): fine
+        ok = lambda u, k: seen.append(u) or "\n".join([hdr] + [row] * 6)
         F.probe(self.region, KEY, get=ok, points=pts, log=lambda *a: None)
         self.assertIn("/MODIS_SP/-1.0,4.5,1.5,6.0/5/2025-08-10", seen[0])
         with self.assertRaises(F.FetchError):
-            F.probe(self.region, KEY, get=lambda u, k: hdr, points=pts, log=lambda *a: None)   # 0 vs 5: stop
+            F.probe(self.region, KEY, get=lambda u, k: hdr, points=pts, log=lambda *a: None)
 
     def test_bad_region_rejected_before_any_request(self):
         for bad in ({"id": "..", "bbox": [0, 0, 1, 1]}, {"id": "ok", "bbox": ["0", 0, 1, 1]}, {"id": "ok", "bbox": [1, 0, 0, 1]}):
@@ -279,20 +276,19 @@ class FetchRegion(unittest.TestCase):
         self.assertEqual(list(cov["sensors"]), list(F.SENSORS))
         self.assertEqual([F.sensor_of(c["source"]) for c in cov["chunks"]],
                          sorted((F.sensor_of(c["source"]) for c in cov["chunks"]), key=list(F.SENSORS).index))
-        for name in os.listdir(folder):                        # nothing written to disk holds the key
+        for name in os.listdir(folder):
             self.assertNotIn(KEY, read(os.path.join(folder, name)))
-        put(os.path.join(folder, "MODIS_NRT_2025-12-01_2025-12-05.csv"), body([]))   # stale chunk
+        put(os.path.join(folder, "MODIS_NRT_2025-12-01_2025-12-05.csv"), body([]))
         self.fetch()
-        self.assertEqual(len(self.urls), n)                    # resumed: no new requests
+        self.assertEqual(len(self.urls), n)
         self.assertFalse(os.path.exists(os.path.join(folder, "MODIS_NRT_2025-12-01_2025-12-05.csv")))
 
     def test_sensors_option_keeps_other_chunks_untouched(self):
         self.avail = {k: v for k, v in self.avail.items() if not k.startswith("VIIRS_NOAA")}
-        self.fetch(sensors=F.LINKED)                            # as after DP-005: MODIS + S-NPP only
+        self.fetch(sensors=F.LINKED)
         folder = os.path.join(self.tmp, "testland")
         legacy = {n: read(os.path.join(folder, n)) for n in os.listdir(folder) if F.CHUNK_RE.fullmatch(n)}
         old = json.loads(read(os.path.join(folder, "coverage.json")))
-        # later the S-NPP SP archive moves on: a full re-plan would replace NRT chunks, --sensors must not
         self.avail.update({"VIIRS_SNPP_SP": (date(2012, 1, 1), date(2026, 1, 8)),
                            "VIIRS_NOAA20_NRT": (date(2026, 1, 1), date(2026, 1, 20))})
         n = len(self.urls)
@@ -316,13 +312,12 @@ class FetchRegion(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(folder, "MODIS_SP_2026-01-01_2026-01-05.csv")))
 
     def test_sensors_never_delete_other_sensors_files_without_coverage(self):
-        # a first full fetch interrupted before coverage.json: --sensors must leave the MODIS/S-NPP files alone
         folder = os.path.join(self.tmp, "testland")
         os.makedirs(folder)
         legacy = ["MODIS_SP_2026-01-01_2026-01-05.csv", "VIIRS_SNPP_NRT_2026-01-01_2026-01-05.csv"]
         for n in legacy:
             put(os.path.join(folder, n), body([]))
-        put(os.path.join(folder, "VIIRS_NOAA20_NRT_2025-12-01_2025-12-05.csv"), body([]))   # stale chunk of the selected sensor
+        put(os.path.join(folder, "VIIRS_NOAA20_NRT_2025-12-01_2025-12-05.csv"), body([]))
         self.fetch(sensors=["VIIRS_NOAA20"])
         for n in legacy:
             self.assertTrue(os.path.exists(os.path.join(folder, n)), n)
@@ -356,12 +351,12 @@ class LoadRecent(unittest.TestCase):
         os.makedirs(f)
         mh = "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_t31,frp,daynight"
         sp = [mh + ",type",
-              "0.10,0.10,300,1,1,2026-01-02,0105,Aqua,MODIS,80,6.1,290,4.0,D,0",     # kept
-              "0.11,0.12,300,1,1,2026-01-02,0105,Aqua,MODIS,80,6.1,290,4.0,D,2",     # type 2: dropped
-              "0.90,0.90,300,1,1,2026-01-03,0105,Terra,MODIS,80,6.1,290,4.0,N,0",    # cell not in archive: dropped
-              "1.50,0.10,300,1,1,2026-01-03,0105,Terra,MODIS,80,6.1,290,4.0,N,0"]    # outside bbox: dropped
-        nrt = [mh, "0.12,0.14,300,1,1,2026-01-06,905,Terra,MODIS,70,6.1NRT,290,2.0,D",   # NRT, no type: kept
-               "0.12,0.14,300,1,1,2026-01-08,905,Terra,MODIS,70,6.1NRT,290,2.0,D"]       # after `through`: dropped
+              "0.10,0.10,300,1,1,2026-01-02,0105,Aqua,MODIS,80,6.1,290,4.0,D,0",
+              "0.11,0.12,300,1,1,2026-01-02,0105,Aqua,MODIS,80,6.1,290,4.0,D,2",
+              "0.90,0.90,300,1,1,2026-01-03,0105,Terra,MODIS,80,6.1,290,4.0,N,0",
+              "1.50,0.10,300,1,1,2026-01-03,0105,Terra,MODIS,80,6.1,290,4.0,N,0"]
+        nrt = [mh, "0.12,0.14,300,1,1,2026-01-06,905,Terra,MODIS,70,6.1NRT,290,2.0,D",
+               "0.12,0.14,300,1,1,2026-01-08,905,Terra,MODIS,70,6.1NRT,290,2.0,D"]
         put(os.path.join(f, "a.csv"), "\n".join(sp) + "\n")
         put(os.path.join(f, "b.csv"), "\n".join(nrt) + "\n")
         self.cov = {"start": "2026-01-01", "through": "2026-01-07",
@@ -380,13 +375,13 @@ class LoadRecent(unittest.TestCase):
         self.assertEqual(through, "2026-01-07")
         self.assertEqual(sorted(df.acq_date), ["2026-01-02", "2026-01-06"])
         self.assertEqual(set(df.columns), set(self.archive.columns))
-        g = self.build.grid(self.pd.concat([self.archive, df], ignore_index=True))   # same schema as the archive
+        g = self.build.grid(self.pd.concat([self.archive, df], ignore_index=True))
         self.assertEqual(int(g.aqua_n.sum() + g.terra_n.sum()), 3)
 
     def test_empty_chunk_keeps_number_types_and_one_letter_sats(self):
         f = os.path.join(self.tmp, "testland")
         mh = "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_t31,frp,daynight"
-        put(os.path.join(f, "c.csv"), mh + "\n")                                         # quiet 5 days
+        put(os.path.join(f, "c.csv"), mh + "\n")
         put(os.path.join(f, "b.csv"), mh + "\n0.12,0.14,300,1,1,2026-01-06,905,T,MODIS,70,6.1NRT,290,2.0,D\n")
         self.cov["chunks"] = [self.cov["chunks"][0],
                               {"source": "MODIS_NRT", "first": "2026-01-06", "last": "2026-01-06", "rows": 1, "file": "b.csv"},
@@ -399,7 +394,6 @@ class LoadRecent(unittest.TestCase):
         self.assertIn("Terra", set(df.satellite))
 
     def test_border_mask_is_fine_grained(self):
-        # same 0.25° cell as the archive point (0.1, 0.1) but a different 0.05° sub-cell: dropped
         f = os.path.join(self.tmp, "testland")
         mh = "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_t31,frp,daynight,type"
         put(os.path.join(f, "a.csv"), mh + "\n0.10,0.10,300,1,1,2026-01-02,0105,Aqua,MODIS,80,6.1,290,4.0,D,0\n"
@@ -413,12 +407,12 @@ class LoadRecent(unittest.TestCase):
         f = os.path.join(self.tmp, "testland")
         vh = HDR
         put(os.path.join(f, "n20.csv"), "\n".join([vh,
-            "0.10,0.10,300,1,1,2026-01-07,0105,N20,VIIRS,n,2.0NRT,290,4.0,D",      # kept (NRT, no type)
-            "0.11,0.10,300,1,1,2026-01-12,0105,N20,VIIRS,n,2.0NRT,290,4.0,D",      # after S-NPP's end, inside its own: kept
-            "0.30,0.30,300,1,1,2026-01-12,0105,N20,VIIRS,n,2.0NRT,290,4.0,D",      # sub-cell only NOAA-20 archive saw: dropped
-            "0.10,0.10,300,1,1,2026-01-16,0105,N20,VIIRS,n,2.0NRT,290,4.0,D"]) + "\n")   # after its own end: dropped
+            "0.10,0.10,300,1,1,2026-01-07,0105,N20,VIIRS,n,2.0NRT,290,4.0,D",
+            "0.11,0.10,300,1,1,2026-01-12,0105,N20,VIIRS,n,2.0NRT,290,4.0,D",
+            "0.30,0.30,300,1,1,2026-01-12,0105,N20,VIIRS,n,2.0NRT,290,4.0,D",
+            "0.10,0.10,300,1,1,2026-01-16,0105,N20,VIIRS,n,2.0NRT,290,4.0,D"]) + "\n")
         put(os.path.join(f, "n21.csv"), "\n".join([vh,
-            "0.10,0.10,300,1,1,2025-06-01,0105,N21,VIIRS,n,2.0NRT,290,4.0,N"]) + "\n")   # NOAA-21: no archive, from 2024
+            "0.10,0.10,300,1,1,2025-06-01,0105,N21,VIIRS,n,2.0NRT,290,4.0,N"]) + "\n")
         self.cov = {"start": "2026-01-01", "through": "2026-01-07",
                     "sensors": {"MODIS": {"start": "2026-01-01", "through": "2026-01-07"},
                                 "VIIRS_NOAA20": {"start": "2026-01-01", "through": "2026-01-15"},
@@ -427,7 +421,6 @@ class LoadRecent(unittest.TestCase):
                         {"source": "VIIRS_NOAA20_NRT", "first": "2026-01-06", "last": "2026-01-16", "rows": 4, "file": "n20.csv"},
                         {"source": "VIIRS_NOAA21_NRT", "first": "2025-06-01", "last": "2025-06-01", "rows": 1, "file": "n21.csv"}]}
         self.write_cov()
-        # the NOAA-20 archive saw (0.3, 0.3), MODIS / S-NPP never did: the border mask must not grow with it
         self.archive = self.pd.concat([self.archive, self.archive.assign(latitude=[0.3], longitude=[0.3], satellite=["N20"],
                                                                          acq_date=["2025-12-31"])], ignore_index=True)
 

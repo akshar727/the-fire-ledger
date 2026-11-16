@@ -1,8 +1,3 @@
-// Landing story (FE-018): six chapters that end in the data. Every number and figure comes from the published files
-// (lib/story-data.ts, read while the page is prerendered), so `/` is static HTML that reads in full without
-// JavaScript. StoryMotion only adds reveal and count-up effects. The tool itself lives at /ledger.
-// FE-019: on wide screens with motion allowed, StorySceneGate puts a scroll-scrubbed canvas behind the chapters
-// (pre-rendered frames in public/scene/). It is decoration: the chapters below stay the whole, accessible story.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowDownIcon, ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
@@ -13,6 +8,7 @@ import { StoryMotion } from "@/components/story/StoryMotion";
 import { StorySceneGate } from "@/components/story/StorySceneGate";
 import { dayLabel, HOLD_FROM, VIIRS_FROM } from "@/lib/annual";
 import { REGION_LIST } from "@/lib/data";
+import { FEATURE_TILES } from "@/lib/features";
 import { recordSpan } from "@/lib/data-server";
 import { FIRE_SEASON } from "@/lib/regions";
 import { rampColor } from "@/lib/series";
@@ -43,11 +39,9 @@ const longDay = (iso: string) => {
 const monthYear = (iso: string) =>
   `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
-// Thermal console buttons (globals.css `btn-console`, `btn-quiet`)
 const primaryLink = "btn-console";
 const quietLink = "btn-quiet";
 
-/** Fewer-to-more key under the story calendar: the same ramp, light and dark colours picked by CSS. */
 function CalendarKey() {
   const steps = [0, 0.25, 0.5, 0.75, 1];
   return (
@@ -122,7 +116,6 @@ function Chapter({
 export default function StoryPage() {
   const s = loadStory();
   const span = recordSpan();
-  // FE-029: whole countries (ML-026) are on the site too; the opening line names them once they are published
   const countries = REGION_LIST.filter((r) => r.tier === "country").length;
   const { modis, viirs, gapMinutes, ratio, frame } = s.fire;
   const area = (PIXEL_M.modis / PIXEL_M.viirs) ** 2;
@@ -142,7 +135,6 @@ export default function StoryPage() {
       >
         <StoryMotion />
 
-        {/* 1 · title */}
         <section
           data-chapter
           aria-labelledby="story-title"
@@ -174,7 +166,32 @@ export default function StoryPage() {
                 <ArrowDownIcon className="size-4" aria-hidden />
               </a>
             </div>
-            {/* shown only while the scroll scene is on (globals.css); it keeps its line either way, so nothing moves */}
+            <nav aria-label="What you can do here">
+              <ul className="grid gap-px overflow-hidden border bg-border sm:grid-cols-2 lg:grid-cols-3">
+                {FEATURE_TILES.map((t) => (
+                  <li key={t.tag} className="flex">
+                    <Link
+                      href={t.href}
+                      className="group flex w-full flex-col gap-1.5 bg-background px-4 py-4 transition-colors hover:bg-card focus-visible:bg-card focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+                    >
+                      <span className="font-mono text-[11px] tracking-[0.14em] text-primary uppercase">
+                        {t.tag}
+                      </span>
+                      <span className="flex items-start justify-between gap-3 text-base leading-snug font-medium text-foreground">
+                        {t.title}
+                        <ArrowRightIcon
+                          className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                          aria-hidden
+                        />
+                      </span>
+                      <span className="text-sm leading-relaxed text-muted-foreground">
+                        {t.text}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
             <p className="story-scene-note max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
               Behind this page: the hills of central Portugal from NASA SRTM
               elevation, and the {s.scene.detections.toLocaleString("en-US")}{" "}
@@ -185,7 +202,6 @@ export default function StoryPage() {
           </div>
         </section>
 
-        {/* 2 · counts */}
         <Chapter
           id="counts"
           n={2}
@@ -231,7 +247,6 @@ export default function StoryPage() {
           </p>
         </Chapter>
 
-        {/* 3 · same fire, two answers */}
         <Chapter
           id="two-answers"
           n={3}
@@ -259,7 +274,6 @@ export default function StoryPage() {
           </p>
         </Chapter>
 
-        {/* 4 · raw line */}
         <Chapter
           id="the-leap"
           n={4}
@@ -286,7 +300,6 @@ export default function StoryPage() {
           </p>
         </Chapter>
 
-        {/* 5 · harmonized */}
         <Chapter
           id="one-ledger"
           n={5}
@@ -318,7 +331,6 @@ export default function StoryPage() {
           </p>
         </Chapter>
 
-        {/* 6 · calendar, hand-off */}
         <Chapter
           id="calendar"
           n={6}

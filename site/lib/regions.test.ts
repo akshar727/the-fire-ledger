@@ -1,5 +1,3 @@
-// Run with `npm test`. DP-009 / DP-018: the region list is read from index.json alone; these tests check the site against
-// that file, that its record fields match each region's annual.json, and the country notes on a fixture.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -93,7 +91,7 @@ test("buildRegions: countries get their tier, ship label and note; unmodelled re
   assert.match(b.caveat.brazil!, /^Cloudy in the wet season\. Whole-country record/);
   assert.match(b.caveat.chad!, /^Whole-country record/);
   assert.match(b.caveat.nauru!, /^Too little fire to check: /);
-  assert.doesNotMatch(b.caveat.nauru!, /Too little fire to check\. /);   // the fixed line, not the pipeline's twice
+  assert.doesNotMatch(b.caveat.nauru!, /Too little fire to check\. /);
   assert.match(b.caveat.laos!, /^FIRMS has no file for 2 sensor-year\(s\)\. Whole-country record/);
   assert.match(b.caveat.india!, /^Constant-ratio estimate: .* not the model\. One constant ratio was closer than the model\. Whole-country record/);
   assert.equal(b.season.brazil, "");

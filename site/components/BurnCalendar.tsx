@@ -1,13 +1,5 @@
 "use client";
 
-// Burn calendar: year x month heatmap of harmonized monthly detections from series.json (Series bundle contract),
-// with per-month median / spread and anomaly marks when the ML-005 `calendar` section is present.
-// FE-015: "Download picture" saves the visible rows as PNG or SVG (lib/picture.ts calendarBody).
-// FE-016: Month / Week toggle; the week view draws 52 columns from `weekly` (no medians or flags: those are per month).
-// FE-013: PlayCalendar ("Hear the 2012 satellite jump") sets `data-playing` on the sounding cell; this file only styles it.
-// FE-009: third source state, `forward` (S-NPP ended; S-NPP-equivalent counts from NOAA-20/21 after): a bar along the
-// cell's bottom edge, named in the legend, readout and picture; the latest-month card compares a partial month with
-// the same days of past years (monthToDate) instead of whole months.
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { ArrowRightIcon, CalendarBlankIcon, CaretDownIcon, CaretUpIcon, GlobeHemisphereWestIcon, WarningCircleIcon } from "@phosphor-icons/react";
@@ -46,16 +38,12 @@ import {
 } from "@/lib/series";
 
 const WEEK_GROUPS = weekMonthGroups();
-// forward-link period (FE-009): a bar along the bottom edge in the cell's ink colour, so it contrasts on every shade
 const FORWARD_BAR =
   "after:pointer-events-none after:absolute after:inset-x-1 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-current";
-// sounding cell (FE-013): a thick ring that wins over the focus ring, a small pop only when motion is welcome, and room
-// for the sticky readout when it is scrolled into view
 const PLAYING =
   "data-playing:relative data-playing:z-10 data-playing:ring-[3px]! data-playing:ring-foreground! data-playing:ring-offset-2! data-playing:ring-offset-card! data-playing:motion-safe:scale-110 scroll-mt-32";
 
 type Mode = "light" | "dark";
-/** The site is dark only (red Thermal console theme), so the calendar always uses the dark ramp. */
 function useColorMode(): Mode {
   return "dark";
 }
@@ -75,8 +63,6 @@ export function BurnCalendar({
   view?: View;
   onView?: (view: View) => void;
 }) {
-  // results are tagged with the request they answer, so switching region or retrying shows the skeleton, never the
-  // previous region's grid
   const [loaded, setLoaded] = useState<{ key: string; result: SeriesResult } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const key = `${region}:${attempt}`;
@@ -87,7 +73,6 @@ export function BurnCalendar({
     return () => ac.abort();
   }, [region, key]);
 
-  // FE-012: fire weather is an optional extra, loaded on its own; the calendar never waits for it
   const [wx, setWx] = useState<{ region: RegionId; weather: Weather | null } | null>(null);
   useEffect(() => {
     const ac = new AbortController();
@@ -104,10 +89,7 @@ export function BurnCalendar({
   if (result.status === "error") return <LoadError message={result.message} onRetry={retry} />;
   const bundle = result.bundle;
   const monthGrid = buildGrid(bundle);
-  // a bundle without `weekly` (older exports, the sample fixture) stays on the month view and hides the toggle
   const week = view === "week" && !!bundle.weekly;
-  // keyed by the selection so focus and readout reset when the visible rows change; a view switch keeps the component
-  // (and keyboard focus on the toggle) and moves the roving focus to the matching column
   return (
     <CalendarView
       key={`${region}:${from}:${to}`}
@@ -118,7 +100,6 @@ export function BurnCalendar({
       raw={rawValues(bundle, week ? "week" : "month")}
       stats={bundle.calendar}
       weather={weather}
-      // whole ledger, not the selected dates: the summary counts every complete month
       summary={weather && bundle.calendar ? weatherSummary(weather, bundle.calendar, bundle.monthly.start_year, !!monthGrid.latest?.partial) : null}
       label={{ region, from, to }}
       onView={bundle.weekly ? onView : undefined}
@@ -143,7 +124,7 @@ function CalendarView({
   grid: CalendarGrid;
   latestMonth: CalendarCell | null;
   mtd: MonthToDate | null;
-  snppEnd: string; // last Suomi NPP day (index.json data_through); forward-link days follow it
+  snppEnd: string;
   raw: (number | null)[];
   stats?: CalendarStats;
   weather: Weather | null;
@@ -153,19 +134,14 @@ function CalendarView({
 }) {
   const mode = useColorMode();
   const week = grid.view === "week";
-  // DP-009: a whole country has no peaks.json, so it gets no "see it from space" (the view would show nothing). Week cells
-  // are not months, so in the week view a click on a cell does not change the month shown (the view itself stays).
   const hasSpace = !isCountry(label.region);
   const back = backcastText(label.region);
   const noSpace = week || !hasSpace;
-  const stats = week ? undefined : monthStats; // medians and flags are per month
+  const stats = week ? undefined : monthStats;
   const unit = week ? "week" : "month";
   const [active, setActive] = useState<CalendarCell | null>(null);
   const [focus, setFocus] = useState<[number, number]>([grid.rows.length - 1, 0]);
-  const [announce, setAnnounce] = useState(""); // screen readers hear keyboard moves only, not every mouse hover
-  // "see it from space" (FE-024): always shown under the calendar, starting on the latest month without scrolling to it
-  // (opened 0); a click or Enter on a month cell, or the latest-month card's button, picks the month and scrolls to the
-  // view (no view for a month without data). `opened` bumps on every pick so picking the same month scrolls again.
+  const [announce, setAnnounce] = useState("");
   const [picked, setPicked] = useState<{ year: number; month: number; opened: number } | null>(null);
   const space =
     picked ?? (latestMonth && latestMonth.value != null ? { year: latestMonth.year, month: latestMonth.month, opened: 0 } : null);
@@ -176,8 +152,6 @@ function CalendarView({
   const table = useRef<HTMLTableElement>(null);
   const [shownView, setShownView] = useState(grid.view);
   if (shownView !== grid.view) {
-    // adjust state while rendering (React's "storing information from previous renders" pattern): the readout's cell
-    // belongs to the other grid, and the focused column maps month <-> first week of that month
     setShownView(grid.view);
     setActive(null);
     setAnnounce(`Showing the ${week ? "weekly" : "monthly"} view.`);
@@ -186,7 +160,6 @@ function CalendarView({
   }
   const color = (v: number) => rampColor(rampPosition(v, grid.max), mode);
   const partialCell = grid.rows.flat().find((c) => c.partial && c.inRange) ?? null;
-  // legend, caption and picture name the forward link only when a forward period is in the selected dates
   const shownForward = grid.rows.flat().find((c) => c.source === "forward" && c.inRange && c.value != null) ?? null;
 
   const makePicture = () => {
@@ -255,8 +228,6 @@ function CalendarView({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* FE-025: on a wide screen the card and legend are a column beside the calendar, so the headline number and the
-          calendar's first rows share the first screen; narrower, they stack above it as before */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[17rem_minmax(0,1fr)] xl:items-start">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:items-end xl:flex xl:flex-col xl:items-stretch">
         {latestMonth &&
@@ -334,7 +305,6 @@ function CalendarView({
               {!noSpace && " Press Enter on a month to see it from space."}
             </caption>
             {week && (
-              // fixed layout + one <col> per week keeps all 52 columns the same width (the month headers span several)
               <colgroup>
                 <col className="w-24" />
                 {Array.from({ length: grid.cols }, (_, i) => (
@@ -414,7 +384,6 @@ function CalendarView({
                         style={{ backgroundColor: bg, color: ink }}
                         className={`relative ${week ? "h-5" : "h-8"} ${noSpace ? "" : "cursor-pointer"} rounded-sm text-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${cell.partial ? "outline-2 -outline-offset-2 outline-foreground outline-dashed" : "outline-none"} ${cell.source === "forward" ? FORWARD_BAR : ""} ${cell.inRange ? "" : "opacity-35 focus-visible:opacity-100"} ${PLAYING}`}
                       >
-                        {/* weekly cells are too narrow for a label: the value is in the readout and for screen readers */}
                         {week ? <span className="sr-only">{`${periodLabel(cell)}: ${compact(cell.value)}`}</span> : compact(cell.value)}
                         {cell.partial && <span className="sr-only">, partial</span>}
                         {cell.source === "forward" && <span className="sr-only">, includes NOAA-20/21 forward link</span>}
@@ -483,17 +452,11 @@ function CalendarView({
   );
 }
 
-/** FE-012: one line of weather words under a card, or nothing when there is no weather for that month. */
 function WeatherLine({ weather, year, month, flag }: { weather: Weather | null; year: number; month: number; flag: -1 | 0 | 1 }) {
   const s = weather ? weatherSentence(weather, year, month, flag) : null;
   return s ? <p className="border-t pt-3 text-sm leading-relaxed">{s}</p> : null;
 }
 
-/**
- * FE-012: "Was it the weather?" Every complete month counted by fire (unusually high / normal / unusually low) and
- * weather (fire-prone = top quarter for that calendar month, NASA POWER), with the headline sentence and, where the
- * season itself is not weather-driven, a note on what drives it.
- */
 function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; region: RegionId }) {
   const rows = [
     { name: "Unusually high fire", c: s.high },
@@ -547,7 +510,6 @@ function WeatherSummaryBlock({ summary: s, region }: { summary: WeatherSummary; 
       <p className="text-xs leading-relaxed text-muted-foreground">
         Chance alone would put about {Math.round(100 * s.baseShare)}% of months in the fire-prone (top-quarter weather) column.
       </p>
-      {/* FE-025: the method note, on request */}
       <Disclosure summary="How fire-prone weather is measured">
         <p className="max-w-[75ch] text-xs leading-relaxed text-muted-foreground">
           Fire-prone weather = in the top quarter for that calendar month since {s.years[0]}, on a fire-weather index from
@@ -568,25 +530,19 @@ function FlagMark({ flag }: { flag: -1 | 1 }) {
   );
 }
 
-/** Short form for legends and notes: "the week of 22 Jan 2012", "February 2012". */
 const periodName = (cell: CalendarCell) => (cell.week == null ? monthName(cell) : `the week of ${dayMonth(cell.start)} ${cell.year}`);
 
 const describePartial = (cell: CalendarCell) =>
   `${cell.week == null ? "partial month" : "partial week"}, data for ${cell.days} of its ${cell.length} days`;
 
-/** "Suomi NPP data end 2 Nov 2026; after that, S-NPP-equivalent counts from NOAA-20 and NOAA-21 (forward link)." */
 const forwardSentence = (snppEnd: string) =>
   `Suomi NPP data end ${dayMonth(snppEnd)} ${snppEnd.slice(0, 4)}; after that, S-NPP-equivalent counts from NOAA-20 and NOAA-21 (forward link).`;
 
-/** FE-029: what fills the years before 2012. A country with a ship label (ratio / sparse) publishes MODIS times a
- * constant ratio, not the model (ML-023 method "ratio"). */
 const backcastText = (region: RegionId) => (SHIP_LABEL[region] ? "constant-ratio back-cast" : "model back-cast");
 
-/** Where a cell's value comes from, for the readout. */
 function sourceText(cell: CalendarCell, snppEnd: string, back: string): string {
   if (cell.source === "observed") return "VIIRS observed";
   if (cell.source === "backcast") return back;
-  // forward: S-NPP for the days up to snppEnd, the NOAA-20/21 link after
   return cell.start > snppEnd
     ? "S-NPP equivalent from NOAA-20/21"
     : `VIIRS observed to ${dayMonth(snppEnd)}, S-NPP equivalent from NOAA-20/21 after`;
@@ -608,7 +564,6 @@ function describe(
     s += ` ${times(cell.anomaly)} the ${MONTHS_LONG[cell.month - 1]} median of ${fmt(stats.month_median[cell.month - 1])}`;
     s += cell.flag === 1 ? ", marked unusually high." : cell.flag === -1 ? ", marked unusually low." : ".";
   }
-  // FE-012: weather is per month, so the week view leaves it out
   const w = weather && cell.week == null ? weatherSentence(weather, cell.year, cell.month, cell.flag) : null;
   if (w) s += ` ${w}`;
   return s;
@@ -629,10 +584,6 @@ function LatestCard({
 }) {
   const name = MONTHS_LONG[cell.month - 1];
   const median = stats?.month_median[cell.month - 1];
-  // Monthly arrays end at the last fully covered month, so the newest the ledger can be is last month. Once present-day
-  // data (DP-005) reaches that, the card is "last month vs median"; until then it says it shows an older month.
-  // read the clock once per mount (a state initializer keeps render pure for the React Compiler); no hydration risk,
-  // since this card only renders after the client-side fetch
   const [today] = useState(() => new Date());
   const lastComplete = today.getUTCFullYear() * 12 + today.getUTCMonth() - 1;
   const isRecent = cell.year * 12 + cell.month - 1 >= lastComplete;
@@ -662,7 +613,6 @@ function LatestCard({
       )}
       <WeatherLine weather={weather} year={cell.year} month={cell.month} flag={cell.flag} />
       {onSpace && (
-        // wraps inside the narrow card column instead of running past the button's edge
         <Button variant="outline" size="sm" className="h-auto min-h-7 max-w-full self-start py-1.5 text-left leading-snug whitespace-normal" onClick={onSpace}>
           <GlobeHemisphereWestIcon aria-hidden /> See this month from space
         </Button>
@@ -677,10 +627,6 @@ function LatestCard({
   );
 }
 
-/**
- * Latest-month card for a month still running (FE-009): detections on days 1..N against the same days of past years
- * (median, middle half, the last three years). Never against a whole month, and never marked unusual.
- */
 function MonthToDateCard({
   cell,
   mtd,
@@ -696,7 +642,6 @@ function MonthToDateCard({
 }) {
   const name = MONTHS_LONG[mtd.month - 1];
   const days = mtd.days === 1 ? `1 ${name}` : `1-${mtd.days} ${name}`;
-  // read the clock once per mount, as LatestCard does (render stays pure; the card renders after the client fetch)
   const [today] = useState(() => new Date());
   const isNow = today.getUTCFullYear() === mtd.year && today.getUTCMonth() + 1 === mtd.month;
   return (
@@ -724,7 +669,6 @@ function MonthToDateCard({
       </div>
       <WeatherLine weather={weather} year={mtd.year} month={mtd.month} flag={0} />
       {onSpace && (
-        // wraps inside the narrow card column instead of running past the button's edge
         <Button variant="outline" size="sm" className="h-auto min-h-7 max-w-full self-start py-1.5 text-left leading-snug whitespace-normal" onClick={onSpace}>
           <GlobeHemisphereWestIcon aria-hidden /> See this month from space
         </Button>
@@ -759,7 +703,6 @@ function Legend({
   back: string;
 }) {
   const steps = Array.from({ length: 24 }, (_, i) => rampColor(i / 23, mode).bg);
-  // keep clear of the max label; with max 0 every tick would sit at 0, so show none
   const ticks = max > 0 ? [0, 10, 100, 1000, 10000].filter((v) => rampPosition(v, max) < 0.9) : [];
   return (
     <div className="flex flex-col gap-3">

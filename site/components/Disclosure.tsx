@@ -1,9 +1,5 @@
 "use client";
 
-// FE-025: "details on request". A native <details>/<summary>, so it opens with Enter or Space, works without JavaScript,
-// and screen readers announce it as expandable; the content stays in the page (find in page opens it in Chromium).
-// `defaultOpen` is read once, on the first render: a later change (e.g. the area box cleared from inside the panel)
-// never closes it under the user; after that only the user opens and closes it.
 import { useState, type ReactNode } from "react";
 import { CaretRightIcon } from "@phosphor-icons/react";
 

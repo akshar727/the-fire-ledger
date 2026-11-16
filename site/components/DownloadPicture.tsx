@@ -1,7 +1,5 @@
 "use client";
 
-// "Download picture" buttons (FE-015): PNG (2x) and SVG of a chart or the calendar, with title, legend and the FIRMS
-// acknowledgment in the image. `make` builds the picture on click, from what is on screen at that moment.
 import { useState } from "react";
 import { ImageIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";

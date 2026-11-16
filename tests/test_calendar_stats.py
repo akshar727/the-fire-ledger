@@ -1,4 +1,3 @@
-"""Unit tests for calendar_stats.calendar_block (stdlib unittest + numpy)."""
 import json
 import sys
 import unittest
@@ -55,7 +54,7 @@ class CalendarTests(unittest.TestCase):
         self.assertEqual(c["flag"][36], 1)
 
     def test_partial_trailing_year(self):
-        h = const(10) * 2 + [10, 10, 100, 1]  # 2003 stops after April
+        h = const(10) * 2 + [10, 10, 100, 1]
         c = calendar_block(h, 2001, (2001, 2025))
         self.assertEqual(c["month_median"], [10.0] * 12)
         self.assertEqual(len(c["anomaly"]), 28)
@@ -99,7 +98,6 @@ class CalendarTests(unittest.TestCase):
             calendar_block(const(1), 2001, (2005, 2010))
 
     def _flag(self, base, v):
-        """Baseline years (all months equal to values in base), then one month v."""
         h = []
         for b in base:
             h += const(b)
@@ -107,26 +105,20 @@ class CalendarTests(unittest.TestCase):
         return calendar_block(h, 2001, (2001, 2000 + len(base)))["flag"][-1]
 
     def test_high_flag_boundaries(self):
-        # median 100, p75 120 (base 80,100,120,140,100 -> sorted 80,100,100,120,140)
         base = [80, 100, 120, 140, 100]
-        self.assertEqual(self._flag(base, 200), 1)      # exactly 2x, > p75, >= med+20
+        self.assertEqual(self._flag(base, 200), 1)
         self.assertEqual(self._flag(base, 199.9), 0)
-        # absolute rule: median 10, p75 10: 2x = 20, +20 = 30
         self.assertEqual(self._flag([10] * 3, 30), 1)
         self.assertEqual(self._flag([10] * 3, 29.9), 0)
-        # must exceed p75 strictly: median = p75 = 0, value 20 ok, 19.9 not
         self.assertEqual(self._flag([0] * 3, 20), 1)
         self.assertEqual(self._flag([0] * 3, 19.9), 0)
 
     def test_low_flag_boundaries(self):
-        base = [60, 100, 100, 100, 140]  # median 100 p25 100
-        # 0.5x -> 50, -20 -> 80: both satisfied at 50, value < p25
+        base = [60, 100, 100, 100, 140]
         self.assertEqual(self._flag(base, 50), -1)
         self.assertEqual(self._flag(base, 50.1), 0)
-        # absolute rule binding: median 30 -> 0.5x = 15, med-20 = 10
         self.assertEqual(self._flag([30] * 3, 10), -1)
         self.assertEqual(self._flag([30] * 3, 10.1), 0)
-        # 2x rule binding: median 100 -> 0.5x = 50 (abs 80)
         self.assertEqual(self._flag([100] * 3, 50.1), 0)
 
     def test_plain_json_types(self):
@@ -150,9 +142,7 @@ class CalendarTests(unittest.TestCase):
     def test_rounding(self):
         c = calendar_block([1 / 3] * 12 + [1] * 12, 2001, (2001, 2001))
         self.assertEqual(c["month_median"][0], 0.333)
-        # anomaly is computed from the rounded median: 1 / 0.333
         self.assertEqual(c["anomaly"][12], 3.003)
-        # ratio 1/3 rounds to 4 dp
         c = calendar_block([3.0] * 12 + [1.0] * 12, 2001, (2001, 2001))
         self.assertEqual(c["anomaly"][12], 0.3333)
 
@@ -172,12 +162,12 @@ class CalendarTests(unittest.TestCase):
         self.assertEqual(c["month_p75"][0], 4.75)
 
     def test_p75_alone_decides_high(self):
-        base = [0, 0, 100, 100]  # median 50, p75 100; 2x and +20 rules pass at 100
+        base = [0, 0, 100, 100]
         self.assertEqual(self._flag(base, 100), 0)
         self.assertEqual(self._flag(base, 100.1), 1)
 
     def test_p25_alone_decides_low(self):
-        base = [40, 40, 100, 100, 100]  # median 100, p25 40; 0.5x/-20 pass at 40
+        base = [40, 40, 100, 100, 100]
         self.assertEqual(self._flag(base, 40), 0)
         self.assertEqual(self._flag(base, 39.9), -1)
 

@@ -1,8 +1,3 @@
-// Build-time data for the landing story (FE-018, route `/`). Server components only: reads two published files with a
-// synchronous fs read while `/` is prerendered, so the page ships as static HTML and the browser downloads neither the
-// 1 MB points file nor series.json. `/` MUST stay static: on a dynamic or ISR route these reads would run in a
-// serverless function, where public/ is not traced (unlike lib/data.ts, which imports JSON). A missing file fails the
-// build on purpose, since the story has no fallback. Everything is computed by the pure helpers in lib/story.ts and lib/series.ts.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import regionIndex from "@/public/data/index.json";
@@ -12,13 +7,11 @@ import { readAnnual as loadAnnual } from "@/lib/data-server";
 import { buildGrid, parseSeries } from "@/lib/series";
 import { closestPair, extent, inBox, parsePoints, SCENE_BBOX, STORY_FIRE, storyLines } from "@/lib/story";
 
-/** The region chapters 4-6 follow: Ghana has the clearest 2012 jump (the demo path's step 2 uses it too). */
 export const STORY_REGION: RegionId = "ghana";
 
 const file = (...p: string[]) => path.join(process.cwd(), "public", "data", ...p);
 
 export function loadStory() {
-  // DP-009: detection counts come from the point files, which whole countries do not have
   const counts = REGION_LIST.filter((r) => r.tier === "region").map((r) => {
     const sensors = regionIndex.regions.find((x) => x.id === r.id)!.sensors;
     return { id: r.id, name: REGIONS[r.id], rows: r.point_rows, since: sensors.terra.first_date, through: r.data_through };
@@ -41,7 +34,6 @@ export function loadStory() {
     score: annual.score,
     holdout: holdoutYears(annual),
     grid,
-    // FE-019: what the scroll scene behind the page is made of (scripts/landing_scene draws the same points)
     scene: { year: Number(STORY_FIRE.date.slice(0, 4)), detections: points.filter((d) => inBox(d, SCENE_BBOX)).length },
   };
 }

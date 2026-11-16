@@ -1,7 +1,5 @@
 "use client";
 
-// FE-028: sortable, searchable table of every record's own hold-out check (rows from lib/scoreboard.ts, built on the
-// server from each region's annual.json at build time, DP-018). The table scrolls inside its box, so the page never scrolls sideways at phone width.
 import Link from "next/link";
 import { useId, useMemo, useState } from "react";
 import {
@@ -104,7 +102,6 @@ export function WorldScoreboard({ rows }: { rows: ScoreRow[] }) {
           </thead>
           <tbody className="divide-y text-muted-foreground tabular-nums">
             {shown.map((r) => {
-              // bold + a hidden "(lower)" on the smaller error; nothing for sparse rows, where the comparison means little
               const lower = (wins: boolean) => r.label !== "sparse" && wins;
               return (
                 <tr key={r.id}>

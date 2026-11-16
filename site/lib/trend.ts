@@ -1,15 +1,7 @@
-// Trend of the yearly ledger over the selected years (FE-014, F-7): "is the trend real?". A port of trend_stats.py
-// `trend` (ML-020) so the site can test any range of complete years, not only the 2001-2025 block in annual.json.
-// Same method: Theil-Sen slope (scipy.stats.theilslopes, 90% interval, Sen 1968 eq. 2.6) as % of the median per
-// year, and the Mann-Kendall two-sided p (scipy.stats.kendalltau, exact when there are no ties and n <= 33, normal
-// approximation with tie correction otherwise). Tests check the port against every value model.py published.
-// Pure and import-free apart from types, so client components and `node --test` can both use it.
 import { VIIRS_FROM, type Annual } from "./annual.ts";
 
-/** One ledger's trend: the shape of `trend.stitched` / `trend.harmonized` in annual.json. Nulls = no trend defined. */
 export type TrendStat = { slope_pct: number | null; lo_pct: number | null; hi_pct: number | null; p: number | null };
 
-/** The `trend` block model.py writes into annual.json (registry §3 "Annual series as JSON", ML-020). */
 export type TrendBlock = {
   method: string;
   years: [number, number] | null;
@@ -20,12 +12,11 @@ export type TrendBlock = {
   monthly?: { stitched: Record<keyof TrendStat, (number | null)[]>; harmonized: Record<keyof TrendStat, (number | null)[]> };
 };
 
-/** Weekly raw counts, the part of series.json `weekly` needed to rebuild the stitched 2012 total. */
 export type WeeklyRaw = { start_year: number; weeks_per_year: number; modis: number[]; viirs: (number | null)[] };
 
-export const ALPHA = 0.9; // interval level, as trend_stats.ALPHA
-export const SIGNIFICANT_P = 0.05; // "significant" = Mann-Kendall p < 0.05 (registry, FE-014 wording)
-const Z = -1.6448536269514722; // scipy.stats.norm.ppf((1 - ALPHA) / 2)
+export const ALPHA = 0.9;
+export const SIGNIFICANT_P = 0.05;
+const Z = -1.6448536269514722;
 const NULL: TrendStat = { slope_pct: null, lo_pct: null, hi_pct: null, p: null };
 
 export function median(v: number[]): number {
@@ -35,7 +26,6 @@ export function median(v: number[]): number {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-/** numpy.round: halves go to the even neighbour. */
 const roundEven = (v: number) => {
   const f = Math.floor(v);
   const d = v - f;
@@ -44,14 +34,12 @@ const roundEven = (v: number) => {
 
 const round = (v: number, nd: number) => (Number.isFinite(v) ? Number(v.toFixed(nd)) : null);
 
-/** Sizes of groups of equal values with more than one member (scipy `_find_repeats` counts). */
 function repeats(v: number[]): number[] {
   const n = new Map<number, number>();
   for (const x of v) n.set(x, (n.get(x) ?? 0) + 1);
   return [...n.values()].filter((k) => k > 1);
 }
 
-/** Theil-Sen slope with its ALPHA interval, as scipy.stats.theilslopes(y, x, alpha=ALPHA). */
 export function theilSen(x: number[], y: number[]): { slope: number; lo: number; hi: number } {
   const slopes: number[] = [];
   for (let i = 0; i < x.length; i++)
@@ -67,7 +55,6 @@ export function theilSen(x: number[], y: number[]): { slope: number; lo: number;
   return { slope: median(slopes), lo: slopes[rl] ?? NaN, hi: slopes[ru] ?? NaN };
 }
 
-/** Exact two-sided Kendall p for n values without ties and c concordant pairs (scipy `_kendall_p_exact`). */
 export function kendallExactP(n: number, c: number): number {
   const tot = (n * (n - 1)) / 2;
   c = Math.min(c, tot - c);
@@ -96,14 +83,9 @@ function factorial(n: number): number {
   return f;
 }
 
-/**
- * Complementary error function: Maclaurin series of erf below 2.5, Lentz continued fraction above (both summed to
- * machine precision; relative error < 1e-9 on the range a p-value needs, checked against scipy in the tests).
- */
 export function erfc(x: number): number {
   if (x < 0) return 2 - erfc(-x);
   if (x < 2.5) {
-    // erf(x) = 2/sqrt(pi) * sum (-1)^n x^(2n+1) / (n! (2n+1))
     let term = x;
     let sum = x;
     for (let n = 1; n < 200 && Math.abs(term) > 1e-17 * Math.abs(sum); n++) {
@@ -112,7 +94,6 @@ export function erfc(x: number): number {
     }
     return 1 - (2 / Math.sqrt(Math.PI)) * sum;
   }
-  // erfc(x) = exp(-x^2)/sqrt(pi) * 1/(x + (1/2)/(x + 1/(x + (3/2)/(x + ...)))), modified Lentz
   const tiny = 1e-300;
   let f = x;
   let c = x;
@@ -130,7 +111,6 @@ export function erfc(x: number): number {
   return Math.exp(-x * x) / Math.sqrt(Math.PI) / f;
 }
 
-/** Two-sided Mann-Kendall p = scipy.stats.kendalltau(x, y).pvalue (method "auto"); NaN if either is constant. */
 export function kendallP(x: number[], y: number[]): number {
   const n = x.length;
   let con = 0;
@@ -149,7 +129,6 @@ export function kendallP(x: number[], y: number[]): number {
   if (xtie === tot || ytie === tot) return NaN;
   if (xtie === 0 && ytie === 0 && (n <= 33 || Math.min(dis, tot - dis) <= 1)) return kendallExactP(n, tot - dis);
   const g = (v: number[], f: (k: number) => number) => repeats(v).reduce((s, k) => s + f(k), 0);
-  // con - dis equals scipy's con_minus_dis (tot - xtie - ytie + ntie - 2 dis)
   const m = n * (n - 1);
   const v =
     (m * (2 * n + 5) - g(x, (k) => k * (k - 1) * (2 * k + 5)) - g(y, (k) => k * (k - 1) * (2 * k + 5))) / 18 +
@@ -158,7 +137,6 @@ export function kendallP(x: number[], y: number[]): number {
   return Math.min(1, erfc(Math.abs(con - dis) / Math.sqrt(v) / Math.SQRT2));
 }
 
-/** trend_stats.trend: slope, interval and p for values y at years x (complete years only). */
 export function trend(x: number[], y: number[]): TrendStat {
   const med = median(y);
   if (y.length < 3 || !(med > 0)) return { ...NULL };
@@ -167,17 +145,13 @@ export function trend(x: number[], y: number[]): TrendStat {
   return { slope_pct: round((100 * slope) / med, 2), lo_pct: round((100 * lo) / med, 2), hi_pct: round((100 * hi) / med, 2), p: round(kendallP(x, y), 4) };
 }
 
-/**
- * The naive stitched ledger per year, as model.py builds it: raw MODIS before VIIRS starts (2012-01-20), raw VIIRS
- * after. 2012 needs the weekly file (observed VIIRS from 20 Jan + MODIS for weeks 0-2), so it is null without it.
- */
 export function stitchedTotals(D: Annual, weekly?: WeeklyRaw | null): (number | null)[] {
   return D.years.map((yr, i) => {
     if (yr < VIIRS_FROM) return D.modis[i];
     if (yr > VIIRS_FROM) return D.viirs[i] ?? D.modis[i];
     if (!weekly) return null;
     const k = (yr - weekly.start_year) * weekly.weeks_per_year;
-    if (k < 0 || k + weekly.weeks_per_year > weekly.modis.length) return null; // weekly file does not cover 2012
+    if (k < 0 || k + weekly.weeks_per_year > weekly.modis.length) return null;
     let sum = 0;
     for (let w = k; w < k + weekly.weeks_per_year; w++) sum += weekly.viirs[w] ?? weekly.modis[w];
     return sum;
@@ -185,17 +159,12 @@ export function stitchedTotals(D: Annual, weekly?: WeeklyRaw | null): (number | 
 }
 
 export type RangeTrend = {
-  years: number[]; // complete years tested
-  stitched: TrendStat | null; // null = 2012 is in range and the weekly file is not loaded
+  years: number[];
+  stitched: TrendStat | null;
   harmonized: TrendStat;
-  boot: [number, number] | null; // back-cast range of the harmonized slope; only when the range is the published block's
+  boot: [number, number] | null;
 };
 
-/**
- * Which years a range tests: the complete years in [from, to] (partial years left out, as model.py does), whether
- * that is exactly the published block (so its stored answers can be used), and whether the weekly file is needed
- * (2012 in range, at least 3 years, and not the published block).
- */
 export function rangeYears(D: Annual & { trend?: TrendBlock }, [from, to]: [number, number]) {
   const idx = D.years.flatMap((yr, i) => (yr >= from && yr <= to && D.partial[i] !== 1 ? [i] : []));
   const years = idx.map((i) => D.years[i]);
@@ -205,28 +174,24 @@ export function rangeYears(D: Annual & { trend?: TrendBlock }, [from, to]: [numb
   return { idx, years, published, needsWeekly };
 }
 
-/** Trends of both records over the complete years in [from, to]. */
 export function rangeTrend(D: Annual & { trend?: TrendBlock }, range: [number, number], weekly?: WeeklyRaw | null): RangeTrend {
   const { idx, years, published } = rangeYears(D, range);
   const b = D.trend;
   const st = stitchedTotals(D, weekly);
   const sv = idx.map((i) => st[i]);
   const boot = published && b && b.harmonized.boot_lo_pct !== null && b.harmonized.boot_hi_pct !== null ? ([b.harmonized.boot_lo_pct, b.harmonized.boot_hi_pct] as [number, number]) : null;
-  // the published block already holds the stitched answer for its own years, so the default view needs no weekly file
   const stitched = published && b ? b.stitched : sv.every((v) => v !== null) ? trend(years, sv as number[]) : null;
   return { years, stitched, harmonized: trend(years, idx.map((i) => D.harmonized[i])), boot };
 }
 
 export const isSignificant = (t: TrendStat) => t.p !== null && t.p < SIGNIFICANT_P;
 
-/** "+3.4% a year" / "−2.1% a year" / "no change"; one decimal, a real minus sign. */
 export function slopeLabel(pct: number): string {
   const r = Math.round(pct * 10) / 10;
   if (r === 0) return "no change";
   return `${r > 0 ? "+" : "−"}${Math.abs(r).toFixed(1)}% a year`;
 }
 
-/** One clause for a record: "+3.4% a year, not significant". */
 export function trendClause(t: TrendStat | null, unavailable = false): string {
   if (t === null) return unavailable ? "unavailable (the weekly file did not load)" : "loading";
   if (t.slope_pct === null || t.p === null) return "no trend can be measured (too little fire)";
@@ -234,10 +199,6 @@ export function trendClause(t: TrendStat | null, unavailable = false): string {
   return label === "no change" ? label : `${label}, ${isSignificant(t) ? "significant" : "not significant"}`;
 }
 
-/**
- * The sentence under the ledger chart, e.g. "Stitched ledger: +3.4% a year, not significant. Harmonized: −2.1% a
- * year, not significant." plus one plain-language reading when the two disagree. Null-safe throughout.
- */
 export function trendSentence(r: RangeTrend, stitchedUnavailable = false): string {
   const n = r.years.length;
   if (n < 3) return `A trend needs at least 3 complete years; this range has ${n}.`;

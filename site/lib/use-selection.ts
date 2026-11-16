@@ -1,7 +1,5 @@
 "use client";
 
-// The selection hook every data view uses. Reads ?region=&from=&to= and writes changes back with router.replace, so
-// the browser history doesn't fill up with every date edit. Callers sit inside a Suspense boundary (useSearchParams).
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { regionBounds } from "@/lib/data";
 import type { RegionId } from "@/lib/regions";
@@ -18,7 +16,6 @@ import {
   type Selection,
 } from "@/lib/selection";
 
-/** The burn calendar's Month / Week view from ?view= (FE-016), written back the same way as the selection. */
 export function useCalendarView(): [CalendarView, (view: CalendarView) => void] {
   const params = useSearchParams();
   const router = useRouter();
@@ -30,7 +27,6 @@ export function useCalendarView(): [CalendarView, (view: CalendarView) => void] 
   return [parseView(new URLSearchParams(params)), set];
 }
 
-/** The optional ?bbox= box for the hotspot CSV (FE-020); `null` clears it. Written back the same way as the selection. */
 export function useBox(): [Box | null, (box: Box | null) => void] {
   const params = useSearchParams();
   const router = useRouter();

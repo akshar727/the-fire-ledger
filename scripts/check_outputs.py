@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""Check that running the pipeline left the committed outputs unchanged.
-
-Run from the repo root.
-
-  python scripts/check_outputs.py --snapshot   # BEFORE the pipeline (optional)
-  python scripts/check_outputs.py              # AFTER build.py and model.py
-
-The snapshot records every dirty path (modified, deleted, untracked) with its
-bytes in <git-dir>/check_outputs_snapshot.json, so it is never tracked. The
-baseline for a path is the snapshot if it has the path, else HEAD. Without a
-snapshot everything is compared to HEAD. Changed .json files (and .js files holding a single `const NAME = <json>;`)
-are compared numerically (relative tolerance 1e-6); any other modified file,
-or any untracked, not-ignored file, is a failure. Standard library only.
-"""
 import base64
 import json
 import os
@@ -42,7 +28,6 @@ def snapshot_path():
 
 
 def dirty_paths():
-    """Paths dirty now (modified, deleted, untracked), from NUL-separated porcelain."""
     out = git("status", "--porcelain", "-z", "--untracked-files=all").decode("utf-8", "replace")
     parts = out.split("\0")
     paths = []
@@ -54,7 +39,7 @@ def dirty_paths():
             continue
         code, path = entry[:2], entry[3:]
         if "R" in code or "C" in code:
-            i += 1  # skip the original-path field
+            i += 1
         paths.append(path.replace("\\", "/"))
     return paths
 
@@ -115,7 +100,6 @@ def compare(a, b, where, diffs):
 
 
 def check_path(path, cur, base):
-    """Problems for a path whose current bytes differ from the baseline bytes."""
     if cur is None:
         return ["deleted"]
     if base is None:
@@ -149,7 +133,7 @@ def main():
     if args not in ([], ["--snapshot"]):
         print("usage: python scripts/check_outputs.py [--snapshot]", file=sys.stderr)
         return 2
-    try:  # porcelain paths are relative to the repo root
+    try:
         os.chdir(git("rev-parse", "--show-toplevel").decode("utf-8", "replace").strip())
     except (OSError, subprocess.CalledProcessError) as e:
         print(f"check_outputs: not inside a git repository: {e}", file=sys.stderr)
@@ -174,7 +158,7 @@ def main():
             cur = read_current(path)
             head = read_head(path)
             base = snap[path] if path in snap else head
-            if cur == base or cur == head:  # unchanged, or restored to the committed version
+            if cur == base or cur == head:
                 continue
             diffs = check_path(path, cur, base)
             if diffs:

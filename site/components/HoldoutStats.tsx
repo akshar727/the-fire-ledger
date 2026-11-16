@@ -16,9 +16,6 @@ function Help({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** Hold-out scores for the complete hold-out years (`years`, first and last), which the model never saw. FE-029: for a
- * whole country published as a constant-ratio estimate the first number is that estimate's error, labelled so; for a
- * country with too little fire the scores are noise, so a sentence replaces them. */
 export function HoldoutStats({
   score,
   years,

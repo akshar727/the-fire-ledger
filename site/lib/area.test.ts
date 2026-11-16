@@ -11,16 +11,16 @@ const years = (...rows: number[][]) => rows.flat();
 const constant = (v: number) => Array<number>(12).fill(v);
 
 test("pyRound matches Python round(): ties to even on the exact binary value", () => {
-  assert.equal(pyRound(0.125, 2), 0.12); // exact tie -> even (toFixed gives 0.13)
+  assert.equal(pyRound(0.125, 2), 0.12);
   assert.equal(pyRound(0.375, 2), 0.38);
   assert.equal(pyRound(2.5, 0), 2);
   assert.equal(pyRound(3.5, 0), 4);
-  assert.equal(pyRound(2.675, 2), 2.67); // 2.675 is 2.67499999... in binary
-  assert.equal(pyRound(1.005, 2), 1); // 1.00499999...
+  assert.equal(pyRound(2.675, 2), 2.67);
+  assert.equal(pyRound(1.005, 2), 1);
   assert.equal(pyRound(1 / 3, 3), 0.333);
   assert.equal(pyRound(1 / 0.333, 4), 3.003);
   assert.equal(pyRound(0.0004, 3), 0);
-  assert.equal(pyRound(0.0005, 3), 0.001); // 0.000500000000000000010... above the tie
+  assert.equal(pyRound(0.0005, 3), 0.001);
   assert.equal(pyRound(-0.125, 2), -0.12);
   assert.equal(pyRound(123456.789, 1), 123456.8);
   assert.equal(pyRound(0, 3), 0);
@@ -35,7 +35,6 @@ test("percentileLinear matches numpy.percentile (linear)", () => {
   assert.throws(() => percentileLinear([], 0.5), RangeError);
 });
 
-// The same cases as tests/test_calendar_stats.py, so the port and calendar_stats.py agree by construction.
 test("calendarBlock: hand-computed stats", () => {
   const k = Array.from({ length: 12 }, (_, m) => m + 1);
   const c = calendarBlock(years(k.map((x) => 10 * x), k.map((x) => 20 * x), k.map((x) => 30 * x)), 2001, [2001, 2003]);
@@ -112,32 +111,32 @@ const flagOf = (base: number[], v: number) =>
   calendarBlock([...base.flatMap(constant), v], 2001, [2001, 2000 + base.length]).flag.at(-1);
 
 test("calendarBlock: high-flag boundaries", () => {
-  const base = [80, 100, 120, 140, 100]; // median 100, p75 120
+  const base = [80, 100, 120, 140, 100];
   assert.equal(flagOf(base, 200), 1);
   assert.equal(flagOf(base, 199.9), 0);
   assert.equal(flagOf([10, 10, 10], 30), 1);
   assert.equal(flagOf([10, 10, 10], 29.9), 0);
   assert.equal(flagOf([0, 0, 0], 20), 1);
   assert.equal(flagOf([0, 0, 0], 19.9), 0);
-  assert.equal(flagOf([0, 0, 100, 100], 100), 0); // p75 alone decides
+  assert.equal(flagOf([0, 0, 100, 100], 100), 0);
   assert.equal(flagOf([0, 0, 100, 100], 100.1), 1);
 });
 
 test("calendarBlock: low-flag boundaries", () => {
-  const base = [60, 100, 100, 100, 140]; // median 100, p25 100
+  const base = [60, 100, 100, 100, 140];
   assert.equal(flagOf(base, 50), -1);
   assert.equal(flagOf(base, 50.1), 0);
   assert.equal(flagOf([30, 30, 30], 10), -1);
   assert.equal(flagOf([30, 30, 30], 10.1), 0);
   assert.equal(flagOf([100, 100, 100], 50.1), 0);
-  assert.equal(flagOf([40, 40, 100, 100, 100], 40), 0); // p25 alone decides
+  assert.equal(flagOf([40, 40, 100, 100, 100], 40), 0);
   assert.equal(flagOf([40, 40, 100, 100, 100], 39.9), -1);
 });
 
 test("calendarBlock: rounding as calendar_stats.py", () => {
   let c = calendarBlock([...constant(1 / 3), ...constant(1)], 2001, [2001, 2001]);
   assert.equal(c.month_median[0], 0.333);
-  assert.equal(c.anomaly[12], 3.003); // from the rounded median
+  assert.equal(c.anomaly[12], 3.003);
   c = calendarBlock([...constant(3), ...constant(1)], 2001, [2001, 2001]);
   assert.equal(c.anomaly[12], 0.3333);
   c = calendarBlock([...constant(0.0004), ...constant(5)], 2001, [2001, 2001]);
@@ -151,7 +150,7 @@ for (const region of REGIONS)
     const m = s.monthly, n = m.pred.length;
     const h: (number | null)[] = m.viirs.map((v, i) => v ?? m.pred[i]);
     const last = new Date(Date.UTC(m.start_year + Math.floor((n - 1) / 12), ((n - 1) % 12) + 1, 0)).getUTCDate();
-    if (m.last_month_days != null && m.last_month_days < last) h[n - 1] = null; // model.py leaves out a partial month
+    if (m.last_month_days != null && m.last_month_days < last) h[n - 1] = null;
     assert.deepEqual(calendarBlock(h, m.start_year), s.calendar);
   });
 
@@ -161,10 +160,10 @@ test("approxBand: lognormal with the stated mean and variance", () => {
   const M = 147.5, V = mus.reduce((a, mu) => a + mu + 0.2 * mu * mu, 0) + (0.1 * M) ** 2;
   const b = approxBand(mus, p);
   assert.equal(b.mean, M);
-  const s = Math.log(b.hi / b.lo) / (2 * Z95); // log-sd from the band
+  const s = Math.log(b.hi / b.lo) / (2 * Z95);
   const m = (Math.log(b.hi) + Math.log(b.lo)) / 2;
-  assert.ok(Math.abs(Math.exp(m + s * s / 2) - M) < 1e-9); // lognormal mean
-  assert.ok(Math.abs((Math.exp(s * s) - 1) * M * M - V) < 1e-6); // lognormal variance
+  assert.ok(Math.abs(Math.exp(m + s * s / 2) - M) < 1e-9);
+  assert.ok(Math.abs((Math.exp(s * s) - 1) * M * M - V) < 1e-6);
   assert.ok(b.lo < M && M < b.hi);
   assert.deepEqual(approxBand([0, 0], p), { mean: 0, lo: 0, hi: 0 });
   assert.deepEqual(approxBand([], p), { mean: 0, lo: 0, hi: 0 });
@@ -177,18 +176,9 @@ test("approxBand: splitting an area into more cells narrows only the alpha part"
   assert.ok(four.hi - four.lo < one.hi - one.lo);
   assert.ok(many.hi - many.lo < four.hi - four.lo);
   const wy = yearOnly.hi - yearOnly.lo;
-  assert.ok(Math.abs(many.hi - many.lo - wy) / wy < 0.01); // alpha term ~ 0 for tiny cells
+  assert.ok(Math.abs(many.hi - many.lo - wy) / wy < 0.01);
 });
 
-// Whole-region check on real data. The per-cell monthly means (cells.json, ML-018) don't exist yet, so this brackets
-// the region's real bootstrap band between the two extremes the cell split allows: many tiny cells (alpha term -> 0)
-// and the whole region as one cell (largest alpha term). Months with forward days or under 50 fires are left out
-// (forward bands come from a different model; tiny months are mostly rounding). Measured: 890 of 904 months inside
-// (ghana 301/310, portugal 308/310, punjab 281/284), the rest just below the lower bound. Tolerance: >= 95% inside.
-// Location too: the tiny-cells band's geometric centre sqrt(lo hi) lies within +-25% of the real one in >= 95% of
-// those months, so a wrong centre fails even if widths pass. Measured 5th-95th percentile of that ratio: ghana
-// 0.99-1.03, portugal 0.96-1.23, punjab 0.99-1.09. (lo alone is not a good check: its ratio reaches 1.6 in Portugal's
-// small months, where the bootstrap's skew is larger than a lognormal's.)
 for (const region of REGIONS)
   test(`approxBand brackets ${region}'s real monthly band width and sits where the real band does`, () => {
     const m = parseSeries(load(region, "series")).monthly;
@@ -223,13 +213,13 @@ test("sumCells: a region split into cells gives back its calendar, and buildGrid
     last_month_days: m.last_month_days,
     source: m.source,
   });
-  assert.equal(buildGrid(parseSeries(b)).firstForward?.index, buildGrid(s).firstForward?.index); // forward months kept
+  assert.equal(buildGrid(parseSeries(b)).firstForward?.index, buildGrid(s).firstForward?.index);
   m.pred.forEach((x, i) => assert.ok(Math.abs(b.monthly.pred[i] - x) <= 0.051, `pred[${i}]`));
   m.viirs.forEach((x, i) => assert.equal(b.monthly.viirs[i] == null, x == null, `viirs[${i}]`));
   assert.deepEqual(b.calendar!.month_median, s.calendar!.month_median);
   const flags = (x: typeof s) => x.calendar!.flag.join("");
   assert.equal(flags(b), flags(s));
-  assert.equal(b.calendar!.anomaly.at(-1), null); // partial last month left out, as model.py
+  assert.equal(b.calendar!.anomaly.at(-1), null);
   const g = buildGrid(parseSeries(b));
   assert.equal(g.years[0], 2001);
   assert.equal(g.latest!.index, m.pred.length - 1);

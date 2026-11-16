@@ -1,9 +1,5 @@
 "use client";
 
-// FE-026: everything on /globe below the heading. Rendered on the server for the last year (so the legend, year
-// control and the full table are in the HTML with no JavaScript), then: reads ?year=&view= from the URL, and after
-// first paint loads the WebGL globe (GlobeCanvas, its own chunk) into a box whose size is fixed by CSS (no layout
-// shift). No WebGL, data-saver or a failed load → the table and legend alone, with one sentence saying why.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
@@ -46,7 +42,7 @@ import { cn } from "@/lib/utils";
 
 type Status = "waiting" | "loading" | "ready" | "no-webgl" | "save-data" | "failed";
 
-const BOX_ALT = 0.085; // deep-dive boxes float above the tallest country
+const BOX_ALT = 0.085;
 const ACTIVE_LIFT = 0.02;
 
 const esc = (s: string) =>
@@ -56,7 +52,6 @@ function hasWebGL(): boolean {
   try {
     const c = document.createElement("canvas");
     const gl = c.getContext("webgl2") || c.getContext("webgl");
-    // give the probe's context back at once: browsers allow only ~16 live WebGL contexts
     gl?.getExtension("WEBGL_lose_context")?.loseContext();
     return !!gl;
   } catch {
@@ -67,7 +62,6 @@ function hasWebGL(): boolean {
 const saveData = () =>
   typeof navigator !== "undefined" && !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
 
-/** After the browser has painted and gone idle, so the globe never delays the page. */
 function afterPaint(fn: () => void): () => void {
   const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
   let idle = 0;
@@ -106,9 +100,7 @@ function useReducedMotion(): boolean {
 export interface GlobeExplorerProps {
   years: number[];
   places: PlaceRow[];
-  /** Log-spaced per-1,000 km² bin edges over every year (fixed while the slider moves). */
   edges: number[];
-  /** Countries in the data with no outline at 1:110m (names). */
   unmatched: string[];
 }
 
@@ -116,8 +108,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
   const router = useRouter();
   const reduced = useReducedMotion();
   const last = years[years.length - 1];
-  // the URL is the store for year and view: ?year=&view= (replaceState, no history entry per slider step); the server
-  // snapshot is "" so the HTML is the last year on the Year view
   const search = useSyncExternalStore(subscribeUrl, () => window.location.search, () => "");
   const state = useMemo(() => parseGlobeState(new URLSearchParams(search), years), [search, years]);
   const setState = useCallback(
@@ -142,7 +132,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
   const colors = useMemo(() => ramp(edges.length - 1), [edges]);
   const byId = useMemo(() => new Map(places.map((p) => [p.id, p])), [places]);
 
-  // the globe: after first paint, only with WebGL and without data-saver
   const load = useCallback(() => {
     setStatus("loading");
     Promise.all([
@@ -203,9 +192,7 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
       const light = p.tier === "country" && isLight(p.ship);
       if (s.kind === "box") alt = BOX_ALT;
       return {
-        // lighter, not dimmer: 0.42 made the top bin read as a middle one over the dark globe (R10)
         cap: light ? withAlpha(col, 0.72) : col,
-        // boxes float as lit tiles over their country: no walls, just the cap and a bright outline
         side: s.kind === "box" ? "rgba(0, 0, 0, 0)" : withAlpha(col, light ? 0.12 : 0.4),
         stroke,
         altitude: alt + (on ? ACTIVE_LIFT : 0),
@@ -225,7 +212,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
     [byId, yi, state.year],
   );
 
-  // play: one year a step, stops at the last year; never under reduced motion
   useEffect(() => {
     if (!playing || reduced) return;
     const t = window.setTimeout(() => {
@@ -372,9 +358,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
 
           <Legend view={state.view} edges={edges} colors={colors} />
 
-          {/* no aria-live: it would talk over every table row a screen reader tabs through; the rows say it all.
-              Fixed height (long names and caveats are clamped): if it grew on hover, the table under it would move
-              away from the pointer. The full caveat is on each record page. */}
           <div className="panel flex h-[19rem] flex-col gap-1.5 overflow-hidden p-4">
             <span className="kicker">Readout</span>
             {active ? (
@@ -411,7 +394,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
             (Theil-Sen, significant when Mann-Kendall p &lt; 0.05). Each name opens its record.
           </p>
         </div>
-        {/* relative: the sr-only spans in the cells are absolutely positioned and must stay inside the scroll box */}
         <div className="relative max-h-[32rem] overflow-auto border">
           <table className="w-full min-w-[40rem] border-collapse text-sm">
             <caption className="sr-only">
@@ -503,7 +485,6 @@ export function GlobeExplorer({ years, places, edges, unmatched }: GlobeExplorer
   );
 }
 
-/** What the readout and the tooltip say about one place. */
 function readoutLines(p: PlaceRow, yi: number, year: number): string[] {
   const total = p.harmonized[yi] ?? null;
   const lo = p.lo[yi] ?? null;
@@ -541,7 +522,6 @@ function Legend({ view, edges, colors }: { view: View; edges: number[]; colors: 
   return (
     <figure className="flex flex-col gap-2">
       <figcaption className="kicker">Detections per 1,000 km²</figcaption>
-      {/* inset by half a label so the end labels can sit centred on their edges */}
       <div className="flex flex-col px-4" aria-hidden>
         <div className="flex h-3">
           {colors.map((c) => (
@@ -573,11 +553,6 @@ function Legend({ view, edges, colors }: { view: View; edges: number[]; colors: 
   );
 }
 
-/**
- * Which bin edges get a number under the colour bar: one per power of ten (the edges run 1, 3, 10, 30, ...), so the
- * labels never overlap in the 19rem side column; every other edge when the edges are not on powers of ten. The rest
- * get a short tick, and the screen-reader text lists every bin.
- */
 function legendLabels(edges: number[]): boolean[] {
   const pow10 = edges.map((e) => e > 0 && Math.abs(Math.log10(e) - Math.round(Math.log10(e))) < 1e-9);
   if (pow10.filter(Boolean).length >= 2) return pow10;

@@ -1,11 +1,3 @@
-"""Regression test for model.run() on a small synthetic grid (no network, about 10 s).
-
-Two cells, 2001-2025, day and night rows, MODIS counts drawn at random and VIIRS about 2.5 x MODIS from
-VIIRS_START on. Checks the shape and consistency of annual.json and series.json, not the fitted numbers.
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import contextlib
 import io
 import json
@@ -31,20 +23,19 @@ AQUA_START = pd.Timestamp("2002-07-04")
 
 
 def synthetic_grid():
-    """One row per cell x day/night x week (mid-week date), in the grid CSV schema build.py writes."""
     rng = np.random.default_rng(42)
     rows = []
-    for lat, lon, scale in ((38.25, -8.5, 3.0), (39.75, -7.25, 1.5)):   # two cells in different 1-degree bands
+    for lat, lon, scale in ((38.25, -8.5, 3.0), (39.75, -7.25, 1.5)):
         for yr, wk in model.kept_weeks(THROUGH):
             date = model.week_start(yr, wk) + pd.Timedelta(days=3)
-            season = 1 + np.sin(2 * np.pi * (wk - 13) / 52)               # summer peak, zero in early spring
+            season = 1 + np.sin(2 * np.pi * (wk - 13) / 52)
             for dn, f in (("D", 1.0), ("N", 0.4)):
                 lam = scale * f * (0.2 + season)
                 terra = int(rng.poisson(lam))
                 aqua = int(rng.poisson(lam)) if date >= AQUA_START else 0
                 viirs = int(rng.poisson(2.5 * (terra + aqua) + 0.1)) if date >= model.VIIRS_START else 0
                 if terra + aqua + viirs == 0:
-                    continue   # the grid is sparse: no row means no detections
+                    continue
                 rows.append((date.strftime("%Y-%m-%d"), lat, lon, dn, terra, aqua, viirs,
                              round(rng.uniform(5, 40), 1) if terra else None,
                              round(rng.uniform(5, 40), 1) if aqua else None,
@@ -54,8 +45,6 @@ def synthetic_grid():
 
 
 def synthetic_points(points_dir):
-    """Day passes in points/<year>.csv (ML-016): Terra at 10:30 local solar time, 9:30 in 2024 (drifted); Aqua at
-    13:30; one night row that must be ignored. lon 15 E = UTC + 1 h, so 0930 UTC -> 10:30."""
     os.makedirs(points_dir)
     for yr in range(2013, 2026):
         terra = "0830" if yr == 2024 else "0930"
@@ -75,7 +64,6 @@ def load_strict(path):
 
 
 def git_status():
-    """Porcelain status of the primary repo, or None if git isn't available."""
     try:
         out = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "-z", "--untracked-files=all"],
                              capture_output=True, check=True, timeout=60)
@@ -91,7 +79,7 @@ class ModelRunTests(unittest.TestCase):
         cls.grid_dir = os.path.join(cls.tmp, "grid")
         cls.out_dir = os.path.join(cls.tmp, "out")
         cls.points_dir = os.path.join(cls.tmp, "points")
-        cls.cwd_dir = os.path.join(cls.tmp, "cwd")   # run from an empty folder: catches writes to relative paths
+        cls.cwd_dir = os.path.join(cls.tmp, "cwd")
         for d in (cls.grid_dir, cls.cwd_dir):
             os.makedirs(d)
         synthetic_points(cls.points_dir)
@@ -148,7 +136,7 @@ class ModelRunTests(unittest.TestCase):
         self.assertEqual(list(a["score"]), ["mape_model", "mape_ratio", "coverage", "n_hold", "ratio", "alpha",
                                             "weekly_r", "sigma_year", "forward"])
         self.assertEqual(a["score"]["n_hold"], 6)
-        self.assertIsNone(a["score"]["forward"])   # no NOAA columns in this grid: no forward link
+        self.assertIsNone(a["score"]["forward"])
         self.assertTrue(all(np.isfinite(v) for k, v in a["score"].items() if k != "forward"))
         self.assertEqual(a["partial"], [0] * 25)
         self.assertEqual(a["data_through"], THROUGH)
@@ -156,7 +144,6 @@ class ModelRunTests(unittest.TestCase):
         self.assertEqual(a["source"], ["backcast"] * 11 + ["observed"] * 14)
 
     def test_trend(self):
-        # ML-020: the synthetic record has no trend, but VIIRS is ~2.5x MODIS, so the stitched ledger jumps in 2012
         t = self.annual["trend"]
         self.assertEqual((t["years"], t["n_years"]), ([2001, 2025], 25))
         self.assertGreater(t["stitched"]["slope_pct"], 3)
@@ -173,12 +160,10 @@ class ModelRunTests(unittest.TestCase):
         a = self.annual
         self.assertEqual([y for y, v in zip(a["years"], a["viirs"]) if v is None], list(range(2001, 2012)))
         m, w = self.series["monthly"], self.series["weekly"]
-        self.assertEqual([i for i, v in enumerate(m["viirs"]) if v is None], list(range(133)))   # to Jan 2012
+        self.assertEqual([i for i, v in enumerate(m["viirs"]) if v is None], list(range(133)))
         self.assertEqual([i for i, v in enumerate(w["viirs"]) if v is None], list(range(11 * 52 + 3)))
 
     def test_harmonized_blends_2012(self):
-        # ML-009: harmonized = pred before 2012, observed VIIRS weeks from 20 Jan 2012 + model weeks 0-2 in 2012,
-        # observed VIIRS after; only 2012 is flagged as blended
         a, w = self.annual, self.series["weekly"]
         i12 = YEARS.index(2012)
         self.assertEqual(a["viirs_partial"], [int(y == 2012) for y in YEARS])
@@ -186,16 +171,13 @@ class ModelRunTests(unittest.TestCase):
             want = a["pred"][i] if yr < 2012 else a["viirs"][i]
             if yr != 2012:
                 self.assertAlmostEqual(a["harmonized"][i], want, delta=0.05 if yr < 2012 else 1e-9, msg=str(yr))
-        # weeks 0-2 start before 20 Jan: model for the whole week (week 2's 20-21 Jan observations are dropped on
-        # purpose, as in training and series.json); weekly viirs is null there, observed from week 3
         wk = slice(i12 * 52, (i12 + 1) * 52)
         self.assertEqual([i for i, v in enumerate(w["viirs"][wk]) if v is None], [0, 1, 2])
         blended = sum(w["pred"][wk][:3]) + sum(w["viirs"][wk][3:])
         self.assertAlmostEqual(a["harmonized"][i12], blended, delta=0.5)
-        self.assertNotAlmostEqual(a["harmonized"][i12], a["viirs"][i12], delta=1)   # 2012 is not the raw total
+        self.assertNotAlmostEqual(a["harmonized"][i12], a["viirs"][i12], delta=1)
 
     def test_overpass_and_drift(self):
-        # ML-016: points only for 2013-2025 -> null before; Terra 10:30 (9:30 in 2024), Aqua 13:30, no SNPP rows
         ov, a = self.annual["overpass"], self.annual
         for i, yr in enumerate(YEARS):
             has = yr >= 2013
@@ -205,7 +187,6 @@ class ModelRunTests(unittest.TestCase):
         self.assertEqual(a["drifted"], [int(y == 2024) for y in YEARS])
 
     def test_obs_over_pred(self):
-        # ML-016: VIIRS / pred over VIIRS-covered weeks; null before 2012; 2012 uses weeks 3-51 only (weekly sums)
         a, w = self.annual, self.series["weekly"]
         for i, yr in enumerate(YEARS):
             r = a["obs_over_pred"][i]
@@ -215,7 +196,7 @@ class ModelRunTests(unittest.TestCase):
             wk = slice(i * 52, (i + 1) * 52)
             vs = [(v, p) for v, p in zip(w["viirs"][wk], w["pred"][wk]) if v is not None]
             want = sum(v for v, _ in vs) / sum(p for _, p in vs)
-            self.assertAlmostEqual(r, want, delta=2e-3, msg=str(yr))   # weekly pred is rounded to 1 dp
+            self.assertAlmostEqual(r, want, delta=2e-3, msg=str(yr))
             if yr > 2012:
                 self.assertAlmostEqual(r, a["viirs"][i] / a["pred"][i], delta=2e-3, msg=str(yr))
 
@@ -234,12 +215,11 @@ class ModelRunTests(unittest.TestCase):
                                               "source", "last_month_days"])
         self.assertEqual(list(s["weekly"]), ["start_year", "weeks_per_year", "modis", "viirs", "pred", "lo", "hi",
                                              "source", "last_week_days"])
-        self.assertEqual(s["weekly"]["last_week_days"], 8)   # whole year: week 51 of 2025 is 24-31 Dec
+        self.assertEqual(s["weekly"]["last_week_days"], 8)
         self.assertEqual(s["monthly"]["last_month_days"], 31)
         for k in ("modis", "viirs", "pred", "lo", "hi", "source"):
             self.assertEqual(len(s["monthly"][k]), 300, k)
             self.assertEqual(len(s["weekly"][k]), 1300, k)
-        # ML-017 source: back-cast to January 2012 (viirs null), observed after; no forward without NOAA columns
         for name, d in (("monthly", s["monthly"]), ("weekly", s["weekly"])):
             self.assertEqual(d["source"], ["backcast" if v is None else "observed" for v in d["viirs"]], name)
         c = s["calendar"]
@@ -255,9 +235,7 @@ class ModelRunTests(unittest.TestCase):
                 for name, vals, n in (("monthly", m[k], 12), ("weekly", w[k], 52)):
                     chunk = vals[i * n:(i + 1) * n]
                     if None in chunk:
-                        continue   # 2012: series viirs is null before 20 January, annual viirs is the raw total
-                    # raw counts are whole numbers, so 0.5 is plenty; pred is rounded to 1 dp in every value, so n
-                    # rounded parts can drift from the rounded total by up to (n + 1) x 0.05 (0.4 seen here)
+                        continue
                     tol = 0.5 if k != "pred" else (n + 1) * 0.05
                     self.assertAlmostEqual(sum(chunk), a[k][i], delta=tol, msg=f"{name} {k} {yr}")
 
@@ -270,8 +248,6 @@ class ModelRunTests(unittest.TestCase):
 
 
 class PartialYearRunTests(unittest.TestCase):
-    """ML-010: archive ends mid-week (Sun 2 Nov 2025, inside week 43 = 29 Oct-4 Nov). The partial week is kept,
-    monthly reaches October, data_through is the archive end, and the partial year is not scored."""
     THROUGH = "2025-11-02"
 
     @classmethod
@@ -296,21 +272,19 @@ class PartialYearRunTests(unittest.TestCase):
         a = self.annual
         self.assertEqual(a["data_through"], self.THROUGH)
         self.assertEqual(a["partial"], [0] * 24 + [1])
-        self.assertEqual(a["score"]["n_hold"], 5)   # 2020-2024; partial 2025 is not scored
-        self.assertEqual((a["trend"]["years"], a["trend"]["n_years"]), ([2001, 2024], 24))   # ML-020: nor trended
+        self.assertEqual(a["score"]["n_hold"], 5)
+        self.assertEqual((a["trend"]["years"], a["trend"]["n_years"]), ([2001, 2024], 24))
 
     def test_series_reaches_last_whole_month(self):
         m, w = self.series["monthly"], self.series["weekly"]
-        self.assertEqual(len(m["modis"]), 24 * 12 + 10)   # through October 2025
-        self.assertEqual(len(w["modis"]), 24 * 52 + 44)   # weeks 0-43 of 2025, the last one partial
+        self.assertEqual(len(m["modis"]), 24 * 12 + 10)
+        self.assertEqual(len(w["modis"]), 24 * 52 + 44)
         self.assertEqual(w["last_week_days"], 5)
         self.assertEqual(len(self.series["calendar"]["flag"]), 24 * 12 + 10)
         self.assertEqual(self.series["calendar"]["baseline_years"], [2001, 2025])
 
 
 def with_noaa(g, through, fwd_through, rng):
-    """Add synthetic NOAA-20 (from 2018-04-01, S-NPP ~ 0.95 x NOAA-20) and NOAA-21 (from 2024, ~1.1 x fewer than
-    NOAA-20) columns to the grid, plus NOAA-only rows after the S-NPP end (same cells, mid-week and on 4 Nov)."""
     g = g[g.date <= through].copy()
     dt = pd.to_datetime(g.date)
     rate = 2.5 * (g.terra_n + g.aqua_n) + 0.1
@@ -319,7 +293,7 @@ def with_noaa(g, through, fwd_through, rng):
     g["n20_frp_mean"] = g["n21_frp_mean"] = None
     extra = []
     for day in pd.date_range(pd.Timestamp(through) + pd.Timedelta(days=1), fwd_through):
-        if day.dayofweek not in (1, 5):   # a few NOAA days only, incl. 4 Nov (in the S-NPP end week)
+        if day.dayofweek not in (1, 5):
             continue
         for lat, lon in ((38.25, -8.5), (39.75, -7.25)):
             for dn in ("D", "N"):
@@ -329,10 +303,8 @@ def with_noaa(g, through, fwd_through, rng):
 
 
 class ForwardRunTests(unittest.TestCase):
-    """ML-017: S-NPP ends Sun 2 Nov 2025 (inside week 43), NOAA-20/21 continue to Thu 20 Nov 2025. The back-cast part
-    must be byte-identical to the run without NOAA (PartialYearRunTests' grid); forward days extend the ledger."""
     THROUGH, FWD = "2025-11-02", "2025-11-20"
-    NW, NM = 24 * 52 + 43, 24 * 12 + 10   # weeks / months that end on or before the S-NPP end, untouched
+    NW, NM = 24 * 52 + 43, 24 * 12 + 10
 
     @classmethod
     def setUpClass(cls):
@@ -362,7 +334,7 @@ class ForwardRunTests(unittest.TestCase):
         for k in ("modis", "viirs", "pred", "lo", "hi", "harmonized", "obs_over_pred", "viirs_partial", "drifted"):
             self.assertEqual(self.a[k][:24], self.a0[k][:24], k)
         for k in ("modis", "viirs"):
-            self.assertEqual(self.a[k], self.a0[k], k)   # raw counts: NOAA rows add nothing
+            self.assertEqual(self.a[k], self.a0[k], k)
         self.assertEqual(self.a["obs_over_pred"], self.a0["obs_over_pred"])
         self.assertEqual(self.a["trend"], self.a0["trend"])
         self.assertEqual({k: v for k, v in self.a["score"].items() if k != "forward"},
@@ -370,7 +342,7 @@ class ForwardRunTests(unittest.TestCase):
         for k in ("modis", "viirs", "pred", "lo", "hi"):
             self.assertEqual(self.s["monthly"][k][:self.NM], self.s0["monthly"][k][:self.NM], k)
             self.assertEqual(self.s["weekly"][k][:self.NW], self.s0["weekly"][k][:self.NW], k)
-        for k in ("modis",):   # MODIS: the S-NPP-end week and month only hold the days up to 2 Nov
+        for k in ("modis",):
             self.assertEqual(self.s["weekly"][k][self.NW], self.s0["weekly"][k][self.NW])
         c, c0 = self.s["calendar"], self.s0["calendar"]
         self.assertEqual(c["month_median"], c0["month_median"])
@@ -379,12 +351,12 @@ class ForwardRunTests(unittest.TestCase):
     def test_record_runs_to_the_noaa_end(self):
         a, m, w = self.a, self.s["monthly"], self.s["weekly"]
         self.assertEqual((a["data_through"], a["forward_through"]), (self.THROUGH, self.FWD))
-        self.assertEqual(len(m["pred"]), self.NM + 1)            # + November 2025 to date
+        self.assertEqual(len(m["pred"]), self.NM + 1)
         self.assertEqual(m["last_month_days"], 20)
-        self.assertEqual(len(w["pred"]), self.NW + 4)            # + weeks 43 (mixed) .. 46 (19-20 Nov)
+        self.assertEqual(len(w["pred"]), self.NW + 4)
         self.assertEqual(w["last_week_days"], 2)
         self.assertEqual(len(self.s["calendar"]["anomaly"]), self.NM + 1)
-        self.assertIsNone(self.s["calendar"]["anomaly"][-1])     # partial month is never compared
+        self.assertIsNone(self.s["calendar"]["anomaly"][-1])
         self.assertEqual(self.s["calendar"]["flag"][-1], 0)
 
     def test_source(self):
@@ -395,42 +367,34 @@ class ForwardRunTests(unittest.TestCase):
         for d in (m, w):
             self.assertEqual([v for v, s in zip(d["viirs"], d["source"]) if s == "forward"], [None] * (
                 d["source"].count("forward")))
-            self.assertEqual(d["source"][:133], ["backcast"] * 133)   # to January 2012
+            self.assertEqual(d["source"][:133], ["backcast"] * 133)
 
     def test_forward_adds_to_pred(self):
         a, m, w = self.a, self.s["monthly"], self.s["weekly"]
-        self.assertGreater(w["pred"][self.NW], self.s0["weekly"]["viirs"][self.NW])  # observed 29 Oct-2 Nov + link 3-4 Nov
+        self.assertGreater(w["pred"][self.NW], self.s0["weekly"]["viirs"][self.NW])
         self.assertTrue(all(p > 0 for p in w["pred"][self.NW:self.NW + 3]))
-        self.assertEqual(w["pred"][-1], 0)   # 19-20 Nov: no NOAA detections -> no S-NPP equivalent
+        self.assertEqual(w["pred"][-1], 0)
         self.assertTrue(all(lo <= p <= hi or hi - lo < 1 for lo, p, hi in
                             zip(w["lo"][self.NW:], w["pred"][self.NW:], w["hi"][self.NW:])))
-        # annual 2025 pred = the model line (back-cast + link); the published weekly values differ from it only in
-        # the S-NPP-end week, which takes observed S-NPP for 29 Oct-2 Nov (ML-022); harmonized = observed + link
         wk = w["pred"][24 * 52:]
         w0 = self.s0["weekly"]
         self.assertAlmostEqual(a["pred"][-1], sum(wk) + w0["pred"][self.NW] - w0["viirs"][self.NW], delta=53 * 0.05)
         har = sum(v if s == "observed" else p for v, p, s in
                   zip(w["viirs"][24 * 52:], wk, w["source"][24 * 52:]))
         self.assertAlmostEqual(a["harmonized"][-1], har, delta=53 * 0.05)
-        # months: same model line, except November holds observed S-NPP for 1-2 Nov (2/5 of the S-NPP-end week)
         self.assertAlmostEqual(sum(m["pred"][24 * 12:]), a["pred"][-1] - (w0["pred"][self.NW] - w0["viirs"][self.NW]) * 2 / 5,
                                delta=12 * 0.05 + 0.5)
 
     def test_transition_periods_use_observed_snpp(self):
-        # ML-022: the week and month that straddle the S-NPP end take observed S-NPP for their days up to 2 Nov, not
-        # the back-cast. Week 43 (29 Oct-4 Nov) = observed 29 Oct-2 Nov (the no-NOAA run's partial week) + link 3-4 Nov;
-        # November = 2/5 of that observed week (1-2 Nov, day share) + link 3-20 Nov. So the forward weeks minus
-        # November = 3/5 of the observed week 43 (29-31 Oct), whatever the link adds.
         w, m, w0 = self.s["weekly"], self.s["monthly"], self.s0["weekly"]
         obs, bc = w0["viirs"][self.NW], w0["pred"][self.NW]
-        self.assertGreater(abs(obs - bc), 1)        # the synthetic back-cast differs, so the test can tell them apart
+        self.assertGreater(abs(obs - bc), 1)
         self.assertAlmostEqual(sum(w["pred"][self.NW:]) - m["pred"][-1], obs * 3 / 5, delta=0.5)
         self.assertGreaterEqual(w["pred"][self.NW], obs)
-        self.assertGreaterEqual(w["lo"][self.NW], obs - 0.05)   # the observed part has no spread
-        self.assertLessEqual(w["lo"][self.NW], w["pred"][self.NW])  # band = observed + forward draws: brackets the mean
+        self.assertGreaterEqual(w["lo"][self.NW], obs - 0.05)
+        self.assertLessEqual(w["lo"][self.NW], w["pred"][self.NW])
         self.assertGreaterEqual(w["hi"][self.NW], w["pred"][self.NW])
-        self.assertGreater(w["hi"][self.NW], w["lo"][self.NW])      # ...and carries the link's spread
-        # annual: harmonized 2025 = observed weeks + forward link; the observed S-NPP total is the raw viirs
+        self.assertGreater(w["hi"][self.NW], w["lo"][self.NW])
         self.assertAlmostEqual(self.a["harmonized"][-1] - self.a["viirs"][-1],
                                sum(w["pred"][self.NW:]) - obs, delta=53 * 0.05)
 
@@ -438,9 +402,9 @@ class ForwardRunTests(unittest.TestCase):
         f = self.a["score"]["forward"]
         self.assertEqual(f["sensors"], ["noaa20", "noaa21"])
         self.assertEqual((f["hold"], f["forward"]), (["2024-01-01", self.THROUGH], ["2025-11-03", self.FWD]))
-        self.assertAlmostEqual(f["ratio_day"], 0.95, delta=0.05)     # S-NPP ~ 0.95 x NOAA-20 by construction
+        self.assertAlmostEqual(f["ratio_day"], 0.95, delta=0.05)
         self.assertAlmostEqual(f["n21_scale_day"], 1.1, delta=0.08)
-        self.assertEqual(f["n_year"], 1)                              # 2024; 2025 is cut at 2 Nov
+        self.assertEqual(f["n_year"], 1)
         self.assertLess(f["mape_year"], 10)
         for k in ("mape_month", "mape_ratio_month", "alpha", "sigma_month"):
             self.assertTrue(f[k] is None or np.isfinite(f[k]), k)

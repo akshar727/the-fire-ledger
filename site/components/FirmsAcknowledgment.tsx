@@ -1,5 +1,3 @@
-// FIRMS acknowledgment: exact text from https://www.earthdata.nasa.gov/data/tools/firms (checked 2026-11-14). Shown in
-// the footer of every page and next to the download buttons.
 export function FirmsAcknowledgment({ className }: { className?: string }) {
   return (
     <p className={className}>

@@ -1,13 +1,5 @@
 "use client";
 
-// Decides whether the scroll scene (FE-019) runs at all, and loads it late. It runs only on wide screens with motion
-// allowed, without the browser's data-saver, and only once the page has loaded and gone idle, so the story's text and
-// figures paint first and the frames never compete with them. Everywhere else (phones, reduced motion, no JavaScript)
-// this renders nothing and the story stays the six static panels of FE-018.
-//
-// When the first frame is on the canvas the gate sets `data-scene` on the [data-story-shell] wrapper; the CSS in
-// globals.css ("Scroll scene") shows the canvas and puts the story in its dark colours over it. Until then, and
-// whenever the gate turns off again, the attribute is absent and nothing about the page changes.
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SCENE_MEDIA } from "@/lib/scene";
@@ -44,7 +36,6 @@ export function StorySceneGate() {
     };
   }, []);
 
-  // the scene is gone (window narrowed, reduced motion switched on, page left): back to the static story
   useEffect(() => {
     if (!on) return;
     const shell = holder.current?.closest<HTMLElement>("[data-story-shell]");

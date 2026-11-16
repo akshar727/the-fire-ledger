@@ -1,12 +1,3 @@
-"""Tests for cells.py / model.run(write_cells=True) (ML-018): per-cell monthly totals in cells.json.
-
-1. Synthetic grid (from test_model): every cell's months sum back to series.json monthly modis / viirs / pred.
-2. month_shares matches model.series_bundle's week -> month split, also for a `through` in mid-month.
-3. The committed site/public/data/<region>/cells.json (if present) sums back to that region's series.json.
-
-Run from the repo root:
-    python -m unittest tests.test_cells -v
-"""
 import contextlib
 import io
 import json
@@ -30,13 +21,11 @@ DATA = ROOT / "site" / "public" / "data"
 
 
 def cell_sums(c):
-    """{key: per-month totals over all cells} from a cells.json dict."""
     nm = c["n_months"]
     return {k: np.asarray(c[k], float).reshape(-1, nm).sum(axis=0) / c["scale"] for k in ("modis", "viirs", "pred")}
 
 
 def check_against_series(test, c, s):
-    """Cell sums match series.json monthly (1 dp) within series rounding + n_cells x half a stored unit."""
     nm, nc = c["n_months"], len(c["lat"])
     test.assertEqual(len(c["lon"]), nc)
     for k in ("modis", "viirs", "pred"):
@@ -55,7 +44,7 @@ def check_against_series(test, c, s):
                 test.assertEqual(sums[k][i], 0)
                 continue
             if src[i] == "forward":
-                continue   # forward months add the region-level NOAA link, which has no per-cell values
+                continue
             test.assertLessEqual(abs(sums[k][i] - want), tol, f"{k}[{i}]: cells {sums[k][i]}, series {want}")
 
 
@@ -83,9 +72,9 @@ class SyntheticCellsTests(unittest.TestCase):
         self.assertEqual(c["schema"], 2)
         self.assertEqual((c["region"], c["cell_deg"], c["scale"], c["start_year"]), (RID, 0.25, 100, 2001))
         self.assertEqual(c["n_months"], 25 * 12)
-        self.assertEqual(c["viirs_from"], 11 * 12 + 1)                 # Feb 2012: Jan 2012 starts before VIIRS_START
+        self.assertEqual(c["viirs_from"], 11 * 12 + 1)
         self.assertEqual(c["data_through"], THROUGH)
-        self.assertEqual((c["lat"], c["lon"]), ([38.25, 39.75], [-8.5, -7.25]))   # sorted by lat, then lon
+        self.assertEqual((c["lat"], c["lon"]), ([38.25, 39.75], [-8.5, -7.25]))
         self.assertEqual(c["alpha"], self.annual["score"]["alpha"])
         self.assertEqual(c["sigma_year"], self.annual["score"]["sigma_year"])
 
@@ -114,8 +103,6 @@ class SyntheticCellsTests(unittest.TestCase):
 
 
 class ForwardCellsTests(unittest.TestCase):
-    """S-NPP ends mid-month (2 Nov 2025) and NOAA continues (ML-017): cells stop at the last whole back-cast month
-    (Oct 2025), series.json runs on to the forward month, and the shared months still sum back."""
     THROUGH, FWD = "2025-11-02", "2025-11-20"
 
     def test_forward_run(self):
@@ -134,8 +121,8 @@ class ForwardCellsTests(unittest.TestCase):
                           write_cells=True)
             load = lambda n: json.loads(Path(out_dir, RID, n).read_text(encoding="utf-8"))
             c, s = load("cells.json"), load("series.json")
-            self.assertEqual(c["n_months"], 24 * 12 + 10)                  # Jan 2001 .. Oct 2025
-            self.assertEqual(len(s["monthly"]["pred"]), c["n_months"] + 1)  # + forward Nov 2025
+            self.assertEqual(c["n_months"], 24 * 12 + 10)
+            self.assertEqual(len(s["monthly"]["pred"]), c["n_months"] + 1)
             self.assertEqual(s["monthly"]["source"][c["n_months"]], "forward")
             self.assertEqual(c["data_through"], self.THROUGH)
             check_against_series(self, c, s)

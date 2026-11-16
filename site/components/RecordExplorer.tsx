@@ -1,11 +1,5 @@
 "use client";
 
-// Fire Ledger view for the selected region and dates (?region=&from=&to=): hero stat, the ledger chart and its trend (FE-014), hold-out
-// scores and downloads. DP-018: the region's annual.json is fetched when it is picked (`use(fetchAnnual(...))`, so the
-// page's Suspense fallback shows while it loads; a region switch is a router transition, so the old view stays until
-// the new one is ready); nothing per region is in the page bundle.
-// FE-025: on a laptop the controls are a column beside the chart and the proof strip sits under the chart, so the whole
-// chart is on the first screen at 1366 × 768.
 import { use } from "react";
 import { DateRange } from "@/components/DateRange";
 import { DownloadCsv } from "@/components/DownloadCsv";
@@ -23,11 +17,9 @@ import { useSelection } from "@/lib/use-selection";
 export function JumpStat() {
   const { sel } = useSelection();
   const data = use(fetchAnnual(sel.region));
-  if (!data) return <div className="md:col-span-4" />; // RecordExplorer says the ledger is missing
+  if (!data) return <div className="md:col-span-4" />;
   const label = SHIP_LABEL[sel.region];
   const era = eraMeans(data);
-  // FE-029: with a handful of detections a year (sparse countries) the ratio of the two means is noise, e.g. 0 to 0
-  // read as "×0.5"; say so instead of printing it
   const noJump = isSparse(data) || !Number.isFinite(era.jump);
   return (
     <div className="flex flex-col gap-0.5 border-l-2 border-primary pl-5 md:col-span-4 md:justify-self-end">
@@ -58,11 +50,10 @@ export function RecordExplorer() {
     );
   const years: [number, number] = [Number(sel.from.slice(0, 4)), Number(sel.to.slice(0, 4))];
   const [h0, h1] = holdoutYears(data);
-  const estimate = estimateOf(data); // FE-029: most whole countries publish a constant-ratio estimate, not the model
+  const estimate = estimateOf(data);
 
   return (
     <>
-      {/* FE-025: on a laptop the controls are a column beside the chart, so the whole chart fits on the first screen */}
       <section
         aria-labelledby="record-heading"
         className="grid gap-5 panel p-4 sm:p-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-8"
@@ -87,10 +78,8 @@ export function RecordExplorer() {
         </div>
       </section>
 
-      {/* FE-020 proof strip, moved under the chart by FE-025 (human, Aarush: chart first on a laptop screen) */}
       <ValidationStrip data={data} />
 
-      {/* FE-022: this season against every past season, with the forecast range (lib/outlook.ts) */}
       <SeasonOutlook data={data} regionId={sel.region} region={REGIONS[sel.region]} />
 
       <section aria-labelledby="holdout-heading" className="flex flex-col gap-6">

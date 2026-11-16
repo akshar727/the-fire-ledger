@@ -1,13 +1,5 @@
 "use client";
 
-// Downloads for the current selection (BE-001): "Download CSV" links to /api/hotspots while the range fits in one
-// request (MAX_SPAN_DAYS); the static per-year point files are always listed as the fallback and for longer ranges,
-// plus any file from before the selectable record (2000), which no date range can reach;
-// "Download analytics" links to /api/series. The FIRMS acknowledgment sits next to the buttons (nothing is added
-// inside the CSV). FE-020: an optional latitude/longitude box (?bbox=, BoxFilter) narrows the "Download CSV" link; the
-// whole-year files and the analytics stay whole-region. A box in the URL that misses the region is ignored, and said so.
-// DP-009: a whole country has no point files, so "Download CSV" becomes a link to the FIRMS country archive and the box
-// filter is not offered; analytics work as for any region.
 import { ArrowSquareOutIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { BoxFilter } from "@/components/BoxFilter";
 import { Disclosure } from "@/components/Disclosure";
@@ -120,7 +112,6 @@ export function DownloadCsv() {
           </p>
         )}
 
-        {/* FE-025: everything past the two buttons on request; open when a box came in the link */}
         <Disclosure summary="Whole-year files and more download options" defaultOpen={!!urlBox}>
           <div className="flex flex-col gap-5">
             {!country && (

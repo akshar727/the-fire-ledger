@@ -39,13 +39,13 @@ test("stepRange", () => {
 test("nearLevel needs both: within ±25% and closer than stitched", () => {
   assert.equal(nearLevel(region(2.196, 0.84)), true);
   assert.equal(nearLevel(region(4.556, 1.036)), true);
-  assert.equal(nearLevel(region(4.0, 0.7)), false); // closer than stitched, but 30% off
-  assert.equal(nearLevel(region(1.1, 1.2)), false); // within 25%, but stitched is closer
+  assert.equal(nearLevel(region(4.0, 0.7)), false);
+  assert.equal(nearLevel(region(1.1, 1.2)), false);
 });
 
 test("harmonizedCloser compares distance from 1 on a log scale", () => {
   assert.equal(harmonizedCloser(region(4.556, 1.036)), true);
   assert.equal(harmonizedCloser(region(2.196, 0.84)), true);
-  assert.equal(harmonizedCloser(region(1.1, 0.5)), false); // ×0.5 is further from level than ×1.1
+  assert.equal(harmonizedCloser(region(1.1, 0.5)), false);
   assert.equal(harmonizedCloser(region(null, 1)), false);
 });

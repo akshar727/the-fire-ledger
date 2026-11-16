@@ -1,4 +1,3 @@
-// Picture downloads (FE-015): SVG builders. Run with `npm test` (or `node --test lib/picture.test.ts` on Windows).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -8,7 +7,6 @@ import { buildGrid, parseSeries, sliceGrid } from "./series.ts";
 const theme: PictureTheme = { bg: "#ffffff", fg: "#111111", muted: "#eeeeee", mutedFg: "#666666", border: "#dddddd" };
 const fixture = parseSeries(JSON.parse(readFileSync(new URL("../fixtures/series.portugal.sample.json", import.meta.url), "utf8")));
 
-/** Text content of every <text>/<tspan>, tags stripped, entities decoded. */
 const texts = (svg: string) =>
   [...svg.matchAll(/<text[^>]*>(.*?)<\/text>/g)].map((m) =>
     m[1].replace(/<[^>]+>/g, "").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"),
@@ -82,9 +80,7 @@ test("calendarBody: one row per visible year, values, flags, no-data hatch, dimm
   assert.ok(all.includes("2024") && all.includes("2025"));
   for (const m of ["Jan", "Jun", "Dec"]) assert.ok(all.includes(m));
   const values = grid.rows.flat().filter((c) => c.value != null);
-  // one colour lookup per valued cell, plus 12 median cells when the statistics exist
   assert.equal(cells.length, values.length + (fixture.calendar ? 12 : 0));
-  // months Jan-Feb 2024 are outside the selection: drawn faded
   assert.equal((body.body.match(/opacity="0\.35"/g) ?? []).length, grid.rows.flat().filter((c) => !c.inRange).length);
   assert.equal(body.width, 78 + 12 * 55);
   assert.ok(body.height > 2 * 27);
@@ -140,7 +136,6 @@ test("calendar picture: a bar along the bottom of forward-link periods only (FE-
   const n = b.monthly.modis.length;
   b.monthly.source = Array.from({ length: n }, (_, i) => (i >= n - 2 ? "forward" : b.monthly.viirs[i] == null ? "backcast" : "observed"));
   const body = calendarBody(buildGrid(b), undefined, { theme, cell: () => ({ bg: "#ff8800", ink: "#123456" }) });
-  // the bar is the only element drawn in the ink colour as a 2-px-high rect
   assert.equal((body.body.match(/height="2" rx="1" fill="#123456"/g) ?? []).length, 2);
   const none = calendarBody(buildGrid(fixture), undefined, { theme, cell: () => ({ bg: "#ff8800", ink: "#123456" }) });
   assert.equal((none.body.match(/height="2" rx="1"/g) ?? []).length, 0);

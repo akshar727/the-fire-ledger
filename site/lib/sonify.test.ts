@@ -1,4 +1,3 @@
-// Run with `npm test` (Node's built-in test runner; Node >= 23.6 strips the TypeScript types).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildGrid, parseSeries, sliceGrid, type SeriesBundle } from "./series.ts";
@@ -17,8 +16,6 @@ import {
   YEAR_SECONDS,
 } from "./sonify.ts";
 
-// 2006-2016: MODIS sees 100 a month, VIIRS (from 2012) 400; the model back-casts 400 before 2012, so the harmonized
-// record is level and the raw stitched one jumps x4 at 2012.
 const START = 2006, YEARS = 11;
 function bundle(): SeriesBundle {
   const n = 12 * YEARS;
@@ -41,7 +38,7 @@ const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} 
 
 test("frequency: log scale over OCTAVES octaves from LOW_HZ; zero and missing are silent", () => {
   close(frequency(1000, 1000)!, LOW_HZ * 2 ** OCTAVES);
-  close(frequency(5000, 1000)!, LOW_HZ * 2 ** OCTAVES); // clipped at the top
+  close(frequency(5000, 1000)!, LOW_HZ * 2 ** OCTAVES);
   assert.equal(frequency(0, 1000), null);
   assert.equal(frequency(null, 1000), null);
   assert.equal(frequency(10, 0), null);
@@ -73,7 +70,7 @@ test("raw jumps up at 2012; harmonized stays level; the VIIRS years sound the sa
   const b = bundle();
   const t = jumpTour(buildGrid(b), rawValues(b, "month"))!;
   const raw = t.notes.filter((n) => n.part === 0), harm = t.notes.filter((n) => n.part === 1);
-  const dec2011 = 35, jan2012 = 36; // 2009 = 0..11
+  const dec2011 = 35, jan2012 = 36;
   assert.ok(raw[dec2011].freq! < raw[jan2012].freq!);
   assert.equal(raw[dec2011].value, 100);
   close(harm[dec2011].freq!, harm[jan2012].freq!);
@@ -84,12 +81,10 @@ test("no tour when the selected dates leave no year before the switch, or miss t
   const b = bundle(), raw = rawValues(b, "month");
   assert.equal(jumpTour(sliceGrid(buildGrid(b), "2013-01-01", "2016-12-31"), raw), null);
   assert.equal(jumpTour(sliceGrid(buildGrid(b), "2006-01-01", "2011-12-31"), raw), null);
-  // a selection that cuts the window plays only the months inside the dates
   const t = jumpTour(sliceGrid(buildGrid(b), "2011-06-01", "2016-12-31"), raw)!;
   assert.deepEqual(t.years, [2011, 2014]);
   assert.equal(t.notes.length, 2 * (7 + 3 * 12));
   assert.deepEqual([t.notes[0].cell.month, t.notes[0].row], [6, 0]);
-  // no VIIRS at all: no switch to hear
   const nb = bundle();
   nb.monthly.viirs = nb.monthly.viirs.map(() => null);
   assert.equal(jumpCells(buildGrid(nb)), null);
@@ -113,7 +108,6 @@ test("week view: 52 steps a year, still 1.44 s, notes long enough to hear", () =
   close(t.partStart, 6 * YEAR_SECONDS + GAP);
   assert.ok(t.notes.every((x) => x.dur >= MIN_NOTE));
   assert.equal(t.notes[0].value, 25);
-  // sliced week grid: rows and columns still point at the visible cells
   const s = jumpTour(sliceGrid(buildGrid(b, "week"), "2010-01-01", "2013-12-31"), rawValues(b, "week"))!;
   assert.deepEqual(s.years, [2010, 2013]);
   assert.deepEqual([s.notes[0].row, s.notes[0].col, s.notes[0].cell.week], [0, 0, 0]);
@@ -136,7 +130,7 @@ test("noteAt: silent before the start, in the gap and after the end; the right n
 
 test("a raw array shorter than the grid gives silent raw notes, not an error", () => {
   const b = bundle();
-  const t = jumpTour(buildGrid(b), rawValues(b, "month").slice(0, 12 * 4))!; // raw ends after 2009
+  const t = jumpTour(buildGrid(b), rawValues(b, "month").slice(0, 12 * 4))!;
   const raw = t.notes.filter((n) => n.part === 0);
   assert.ok(raw[0].freq != null);
   assert.ok(raw.slice(12).every((n) => n.freq == null && n.value == null));

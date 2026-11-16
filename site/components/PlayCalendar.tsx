@@ -1,19 +1,13 @@
 "use client";
 
-// FE-013: "Hear the 2012 satellite jump". One button plays the years around the 2012 sensor switch twice with Web
-// Audio (no library): raw ledger first (notes jump up at 2012), then harmonized (no jump). lib/sonify.ts builds the
-// notes; this component schedules them a little ahead (a few dozen live nodes, not one per cell) and marks the sounding
-// cell with a `data-playing` attribute on the calendar's table, so the calendar does not re-render on every note.
-// No AudioContext exists until the click. Unmounting, Next hiding the page on navigation, or a Month / Week switch
-// closes it; region and date changes remount the calendar.
 import { useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 import { SpeakerHighIcon, StopIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { periodLabel, type CalendarGrid } from "@/lib/series";
 import { jumpTour, noteAt, tourSummary, type Note } from "@/lib/sonify";
 
-const LOOKAHEAD = 2; // seconds of notes scheduled ahead; > 1 s because background tabs run timers once a second
-const TAIL = 0.3; // seconds to let the last note ring before closing
+const LOOKAHEAD = 2;
+const TAIL = 0.3;
 const CLIP = ["Clip 1 of 2, raw ledger", "Clip 2 of 2, harmonized ledger"];
 const GAP_LINE = "Pause. Next: clip 2 of 2, harmonized ledger";
 
@@ -22,7 +16,7 @@ const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 type Props = {
   grid: CalendarGrid;
   raw: (number | null)[];
-  table: RefObject<HTMLTableElement | null>; // cells carry data-cell="row-col"; the sounding one gets data-playing
+  table: RefObject<HTMLTableElement | null>;
   onAnnounce: (text: string) => void;
 };
 
@@ -43,7 +37,6 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
     const el = t.querySelector<HTMLElement>(`[data-cell="${n.row}-${n.col}"]`);
     if (!el) return;
     el.setAttribute("data-playing", "");
-    // follow the sound only while the calendar is on screen, so scrolling away mid-playback is not undone
     const box = t.getBoundingClientRect();
     if (box.bottom > 0 && box.top < window.innerHeight) {
       const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -51,7 +44,6 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
     }
   };
 
-  // closes the audio and clears the highlight; touches no React state, so it is safe in cleanups
   const silence = () => {
     const r = run.current;
     run.current = null;
@@ -70,7 +62,6 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
     onAnnounce(said);
   };
 
-  // unmount, Next hiding the page, or a Month / Week switch: stop and reset
   const silenceRef = useRef(silence);
   useEffect(() => {
     silenceRef.current = silence;
@@ -94,7 +85,6 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
       return;
     }
     const ac = new AC();
-    // master chain: tone filter -> volume -> limiter -> speakers
     const tone = ac.createBiquadFilter();
     tone.type = "lowpass";
     tone.frequency.value = 2400;
@@ -104,7 +94,7 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
     const t0 = ac.currentTime + 0.1;
 
     const voice = (n: Note) => {
-      if (n.freq == null) return; // silent step
+      if (n.freq == null) return;
       const start = t0 + n.at;
       const osc = ac.createOscillator();
       osc.type = "triangle";
@@ -118,7 +108,7 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
       osc.stop(start + n.dur + 0.02);
     };
 
-    let next = 0; // first note not yet scheduled
+    let next = 0;
     const pump = () => {
       if (run.current?.ac !== ac) return;
       const elapsed = ac.currentTime - t0;
@@ -126,7 +116,6 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
       if (elapsed > seconds + TAIL) stop("Finished.");
     };
 
-    // the note heard now: audio clock minus the output delay (large on Bluetooth)
     let shown: Note | null | undefined;
     const tick = () => {
       const r = run.current;
@@ -157,9 +146,6 @@ export function PlayCalendar({ grid, raw, table, onAnnounce }: Props) {
   const year = tour?.switchYear ?? grid.firstObserved?.year ?? 2012;
 
   return (
-    // FE-025: button and its one-sentence caption on one line where they fit, no box, so the calendar starts higher.
-    // The now-playing line has its own row of fixed height (one line, cut short if too long), so the text changing on
-    // every note never moves the caption or the calendar below it.
     <div className="flex flex-col gap-y-1.5">
       <div className="flex flex-col gap-x-4 gap-y-1.5 sm:flex-row sm:items-center">
         <Button

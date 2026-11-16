@@ -1,4 +1,3 @@
-// Run with `npm test` (Node's built-in test runner; Node >= 23.6 strips the TypeScript types).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -115,8 +114,6 @@ test("ratio labels", () => {
   assert.equal(times(12.6), "13×");
 });
 
-// The model's real exports (site/public/data/<region>/series.json, written by model.py). Skipped for a region whose
-// file isn't there, so a fresh checkout without outputs still passes.
 for (const region of ["portugal", "ghana", "punjab"]) {
   const url = new URL(`../public/data/${region}/series.json`, import.meta.url);
   test(`published ${region} series.json passes the parser and has calendar statistics`, { skip: !existsSync(url) }, () => {
@@ -127,7 +124,6 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(g.years[0], b.monthly.start_year);
     assert.ok(g.max > 0);
     assert.ok(g.latest && g.firstObserved);
-    // VIIRS S-NPP's first day is 2012-01-20, so January 2012 is still back-cast and February 2012 is observed
     assert.equal(g.firstObserved.year, 2012);
     assert.equal(g.firstObserved.month, 2);
   });
@@ -139,13 +135,11 @@ test("sliceGrid keeps the touched years and marks months outside the dates", () 
   assert.deepEqual(s.years, [2017, 2018]);
   assert.deepEqual(s.rows[0].map((c) => c.inRange), [false, false, false, false, false, true, true, true, true, true, true, true]);
   assert.deepEqual(s.rows[1].map((c) => c.inRange), [true, true, false, false, false, false, false, false, false, false, false, false]);
-  // colours and the latest-month card still describe the whole ledger
   assert.equal(s.max, g.max);
   assert.equal(s.latest, g.latest);
   assert.ok(g.rows.flat().every((c) => c.inRange));
 });
 
-// FE-016: week view. A synthetic weekly series: 2001-2002 complete, 2003 stops in week 9 after 3 days.
 const withWeekly = (n = 52 * 2 + 10, lastDays = 3) => {
   const b = structuredClone(fixture);
   const val = (i: number) => 10 + i;
@@ -166,7 +160,6 @@ test("weekSpan / monthSpan follow the Series bundle definition", () => {
   assert.deepEqual(weekSpan(2001, 0), { start: "2001-01-01", end: "2001-01-07", length: 7 });
   assert.deepEqual(weekSpan(2001, 51), { start: "2001-12-24", end: "2001-12-31", length: 8 });
   assert.deepEqual(weekSpan(2004, 51), { start: "2004-12-23", end: "2004-12-31", length: 9 });
-  // day-of-year 274: 1 Oct in a common year, 30 Sep in a leap year
   assert.equal(weekSpan(2001, 39).start, "2001-10-01");
   assert.equal(weekSpan(2004, 39).start, "2004-09-30");
   assert.deepEqual(monthSpan(2004, 2), { start: "2004-02-01", end: "2004-02-29", length: 29 });
@@ -196,7 +189,7 @@ test("week grid: years x 52, harmonized = viirs ?? pred, partial last week, late
   assert.equal(w60.value, b.weekly!.viirs[60]);
   assert.equal(g.firstObserved?.index, 60);
   assert.equal(w60.week, 8);
-  assert.equal(w60.month, 2); // 2002 week 8 starts 26 Feb
+  assert.equal(w60.month, 2);
   const last = g.rows[2][9];
   assert.equal(last.partial, true);
   assert.equal(last.days, 3);
@@ -214,7 +207,7 @@ test("week grid: years x 52, harmonized = viirs ?? pred, partial last week, late
 test("week grid: a complete last week is not partial; a year that ends exactly on week 51 is not partial", () => {
   const g = buildGrid(parseSeries(withWeekly(52 * 2, 8)), "week");
   assert.deepEqual(g.years, [2001, 2002]);
-  assert.equal(g.latest?.partial, false); // 2002 week 51 has 8 days
+  assert.equal(g.latest?.partial, false);
   assert.deepEqual(g.partialYears, []);
 });
 
@@ -242,7 +235,7 @@ test("month grid: monthly.last_month_days marks the last month partial (ML-017, 
   assert.equal(last.partial, true);
   assert.deepEqual(g.partialYears, [2025]);
   assert.ok(g.rows.flat().filter((c) => c !== last).every((c) => !c.partial));
-  b.monthly.last_month_days = 31; // a whole last month is not partial
+  b.monthly.last_month_days = 31;
   assert.equal(buildGrid(parseSeries(b)).latest?.partial, false);
 });
 
@@ -262,11 +255,9 @@ test("parser checks monthly.source, weekly.source and monthly.last_month_days wh
   assert.throws(bad((b) => (b.monthly.last_month_days = 32)), SeriesFormatError);
 });
 
-// FE-009: a bundle that ends with November 2004 to day 14. Weekly: 7 detections every week (1 a day, weeks 0-50), so
-// days 1-14 of any November hold 14; the 2004 month to date holds 28 (twice the usual).
 const forwardBundle = (opts: { lastDays?: number; weekly?: boolean; calendar?: boolean } = {}) => {
   const { lastDays = 14, weekly = true, calendar = false } = opts;
-  const nm = 12 * 3 + 11, nw = 52 * 3 + 46; // to November 2004; weeks to 12-18 Nov 2004 (week 45)
+  const nm = 12 * 3 + 11, nw = 52 * 3 + 46;
   const src = (n: number, fwd: number) => Array.from({ length: n }, (_, i) => (i < 5 ? "backcast" : i >= n - fwd ? "forward" : "observed"));
   const b: Record<string, unknown> = {
     schema: 1,
@@ -314,7 +305,6 @@ test("cells carry their source; firstForward is the first forward period (FE-009
   assert.equal(g.firstForward?.month, 11);
   const wk = buildGrid(forwardBundle(), "week");
   assert.equal(wk.firstForward?.week, 44);
-  // without `source` (bundles before ML-017) the source follows `observed` and nothing is forward
   const old = buildGrid(parseSeries(fixture));
   assert.equal(old.firstForward, null);
   assert.ok(old.rows.flat().every((c) => c.value == null || c.source === (c.observed ? "observed" : "backcast")));
@@ -324,13 +314,12 @@ test("weeklyWindow sums the weeks by the share of their days in the window", () 
   const w = forwardBundle().weekly!;
   assert.equal(weeklyWindow(w, 2002, 11, 1, 14), 14);
   assert.equal(weeklyWindow(w, 2002, 11, 1, 30), 30);
-  assert.equal(weeklyWindow(w, 2002, 12, 1, 31), 31); // week 51 holds 8 days of 1 a day
-  assert.equal(weeklyWindow(w, 2004, 11, 1, 30), null); // the weekly series stops in week 45 of 2004
-  // a week straddling the window edge counts by its days inside: week 43 of 2002 (29 Oct-4 Nov) = 70 -> 4/7 in November
+  assert.equal(weeklyWindow(w, 2002, 12, 1, 31), 31);
+  assert.equal(weeklyWindow(w, 2004, 11, 1, 30), null);
   const s = structuredClone(forwardBundle());
   s.weekly!.pred[52 + 43] = 70;
   assert.equal(weeklyWindow(s.weekly!, 2002, 11, 1, 14), 40 + 7 + 3);
-  assert.equal(weeklyWindow(s.weekly!, 2002, 10, 1, 31), 28 + 30); // Oct: weeks 39-42 fully (4 x 7), 3/7 of week 43
+  assert.equal(weeklyWindow(s.weekly!, 2002, 10, 1, 31), 28 + 30);
 });
 
 test("monthToDate: this month so far against the same days in past years (FE-009)", () => {
@@ -341,8 +330,8 @@ test("monthToDate: this month so far against the same days in past years (FE-009
   );
   assert.deepEqual([r.p25, r.p75], [14, 14]);
   assert.deepEqual(r.recent, [2001, 2002, 2003].map((year) => ({ year, value: 14 })));
-  assert.deepEqual(monthToDate(forwardBundle({ calendar: true }))!.years, [2002, 2003]); // the calendar baseline
-  assert.equal(monthToDate(forwardBundle({ lastDays: 30 })), null); // a whole last month: the calendar compares it
+  assert.deepEqual(monthToDate(forwardBundle({ calendar: true }))!.years, [2002, 2003]);
+  assert.equal(monthToDate(forwardBundle({ lastDays: 30 })), null);
   assert.equal(monthToDate(forwardBundle({ weekly: false })), null);
   assert.equal(monthToDate(parseSeries(fixture)), null);
 });
@@ -372,7 +361,6 @@ test("sliceGrid on weeks: a week is inside if any of its days is", () => {
   assert.deepEqual(s.years, [2001]);
   assert.deepEqual(s.rows[0].slice(0, 4).map((c) => c.inRange), [false, true, true, false]);
   assert.ok(s.rows[0].slice(3).every((c) => !c.inRange));
-  // the last week of a year (8 days) is inside when only its last day is selected
   const end = sliceGrid(g, "2001-12-31", "2001-12-31");
   assert.deepEqual(end.rows[0].map((c, i) => (c.inRange ? i : -1)).filter((i) => i >= 0), [51]);
   assert.equal(s.max, g.max);
@@ -395,20 +383,18 @@ for (const region of ["portugal", "ghana", "punjab"]) {
     assert.equal(g.years[0], b.weekly.start_year);
     assert.equal(g.years.length, Math.ceil(b.weekly.modis.length / 52));
     assert.ok(g.max > 0);
-    // VIIRS S-NPP starts 2012-01-20: week 2 (15-21 Jan) is back-cast, week 3 (from 22 Jan) observed
     assert.equal(g.firstObserved?.year, 2012);
     assert.equal(g.firstObserved?.week, 3);
     const latest = g.latest!;
     assert.equal(latest.index, b.weekly.modis.length - 1);
     assert.equal(latest.days, Math.min(b.weekly.last_week_days, latest.length));
     assert.equal(latest.partial, b.weekly.last_week_days < latest.length);
-    // every period before the last has full days
     assert.ok(g.rows.flat().filter((c) => c.value != null && c !== latest).every((c) => !c.partial));
   });
   test(`published ${region} month grid: source per month, last month to date (ML-017)`, { skip: !existsSync(url) }, () => {
     const b = parseSeries(JSON.parse(readFileSync(url, "utf8")));
     const m = b.monthly, n = m.modis.length;
-    if (!m.source) return; // bundle from before ML-017
+    if (!m.source) return;
     assert.equal(m.source.length, n);
     m.source.forEach((s, i) => assert.equal(s === "observed", m.viirs[i] != null, `month ${i}`));
     const latest = buildGrid(b).latest!;
@@ -419,7 +405,6 @@ for (const region of ["portugal", "ghana", "punjab"]) {
   test(`published ${region}: weekly day shares give the monthly values back; month to date (FE-009)`, { skip: !existsSync(url) }, () => {
     const b = parseSeries(JSON.parse(readFileSync(url, "utf8")));
     const m = b.monthly, w = b.weekly!;
-    // whole months before ML-017's forward month: same day-share rule as model.py (weekly values are rounded to 0.1)
     for (const i of [24, 100, 150, 200, 250, 300]) {
       const y = m.start_year + Math.floor(i / 12), mo = (i % 12) + 1;
       const v = weeklyWindow(w, y, mo, 1, monthSpan(y, mo).length)!;
@@ -440,15 +425,13 @@ test("remapColumn maps months and weeks both ways", () => {
   assert.equal(remapColumn(0, "week"), 0);
   assert.equal(remapColumn(0, "month"), 0);
   assert.equal(remapColumn(51, "month"), 11);
-  assert.equal(remapColumn(39, "month"), 9); // week 39 starts 1 Oct in a common year
+  assert.equal(remapColumn(39, "month"), 9);
   assert.equal(remapColumn(9, "week"), 39);
   for (let m = 0; m < 12; m++) assert.equal(remapColumn(remapColumn(m, "week"), "month"), m);
   for (let w = 0; w < 52; w++) assert.equal(remapColumn(w, "month"), Number(weekSpan(2001, w).start.slice(5, 7)) - 1);
 });
 
-// FE-017: season timing (10% / 50% / 90% dates) on synthetic seasons.
 const cumOf = (weekly: number[]) => weekly.reduce<number[]>((a, v) => [...a, (a.at(-1) ?? 0) + v], []);
-/** A season starting at week `startWeek` of `year` with all its fire spread evenly over weeks `from`..`to`. */
 const season = (year: number, startWeek: number, from: number, to: number): SeasonCum => ({
   year,
   label: String(year),
@@ -457,20 +440,17 @@ const season = (year: number, startWeek: number, from: number, to: number): Seas
 });
 
 test("dayAtShare interpolates inside the crossing week", () => {
-  const cum = cumOf(Array(52).fill(7)); // 7 a week, 364 in all
-  assert.ok(Math.abs(dayAtShare(cum, 2001, 0, 0.1)! - 36.4) < 1e-9); // 35 after 5 weeks, 1.4 of the 6th week's 7
+  const cum = cumOf(Array(52).fill(7));
+  assert.ok(Math.abs(dayAtShare(cum, 2001, 0, 0.1)! - 36.4) < 1e-9);
   assert.ok(Math.abs(dayAtShare(cum, 2001, 0, 0.5)! - 182) < 1e-9);
-  // all the fire in season week 10: every share lands inside days 70-77
   const one = cumOf(Array.from({ length: 52 }, (_, k) => (k === 10 ? 50 : 0)));
   for (const q of [0.1, 0.5, 0.9]) assert.ok(dayAtShare(one, 2001, 0, q)! > 70 && dayAtShare(one, 2001, 0, q)! <= 77);
   assert.equal(dayAtShare(Array(52).fill(0), 2001, 0, 0.5), null);
-  // 0.1 * 30 = 3.0000000000000004: a running total of exactly 3 must still count as reaching 10%
   const edge = { year: 2001, label: "2001", start: "2001-01-01", cum: cumOf([...Array(30).fill(1), ...Array(22).fill(0)]) };
-  assert.equal(seasonTiming([edge], 0)[0].days[0], 20); // reached at the end of week 3 (day index 20), not in week 4
+  assert.equal(seasonTiming([edge], 0)[0].days[0], 20);
 });
 
 test("dayAtShare counts week 51's 8 or 9 days when the season crosses New Year", () => {
-  // season from week 50 of 2004 (leap year: week 51 is 9 days); all fire in season week 2 = week 0 of 2005
   const cum = cumOf(Array.from({ length: 52 }, (_, k) => (k === 2 ? 70 : 0)));
   assert.ok(Math.abs(dayAtShare(cum, 2004, 50, 0.5)! - (7 + 9 + 3.5)) < 1e-9);
 });
@@ -480,20 +460,18 @@ test("seasonTiming gives the three dates and skips partial or fire-free seasons"
     [season(2001, 40, 10, 19), { ...season(2002, 40, 10, 19), cum: season(2002, 40, 10, 19).cum.slice(0, 30) }, season(2003, 40, 60, 60)],
     40,
   );
-  assert.equal(rows.length, 1); // 2002 has 30 weeks, 2003 has no fire
+  assert.equal(rows.length, 1);
   const r = rows[0];
-  assert.equal(r.start, "2001-10-08"); // week 40 starts on day 281
+  assert.equal(r.start, "2001-10-08");
   assert.equal(r.total, 100);
-  // 10 weeks of 10: 10% at the end of season week 10 (day 77), 50% after season week 14, 90% after season week 18;
-  // season week 11 is calendar week 51 (8 days in 2001), so the last two land one day later than 7 days a week gives
   assert.deepEqual(r.days, [76, 105, 133]);
-  assert.deepEqual(r.dates, ["2001-12-23", "2002-01-21", "2002-02-18"]); // crosses New Year
+  assert.deepEqual(r.dates, ["2001-12-23", "2002-01-21", "2002-02-18"]);
 });
 
 test("timingDrift finds a season that starts later every year, and none in a fixed one", () => {
   const later = seasonTiming(Array.from({ length: 20 }, (_, i) => season(2001 + i, 30, 5 + Math.floor(i / 2), 15 + Math.floor(i / 2))), 30);
   const d = timingDrift(later, 0)!;
-  assert.ok(Math.abs(d.perDecade - 35) < 1e-9, String(d.perDecade)); // one week every two years
+  assert.ok(Math.abs(d.perDecade - 35) < 1e-9, String(d.perDecade));
   assert.ok(d.p < 0.001 && d.lo > 0);
   assert.match(timingSentence(later, "Testland"), /^Onset is drifting in Testland: across 20 whole seasons \(2001 to 2020\) the first 10% of the season's fire arrives 35 days later per decade \(90% interval \+35 to \+35\), a consistent shift;/);
   const fixed = seasonTiming(Array.from({ length: 20 }, (_, i) => season(2001 + i, 30, 5, 15)), 30);

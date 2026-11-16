@@ -1,8 +1,5 @@
 "use client";
 
-// FE-032: "How this record was made", at the top of a country's ledger page: the published method (annual.json `ship`)
-// in plain words, why it won on the hidden years, and a link to every country's result. Wording: lib/method-card.ts.
-// Deep dives have no `ship`, so nothing renders and they keep the hold-out strip under the chart.
 import { use } from "react";
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";

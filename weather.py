@@ -22,17 +22,17 @@ import numpy as np, pandas as pd
 
 API = "https://power.larc.nasa.gov/api/temporal/daily/point"
 PARAMS = ["T2M_MAX", "RH2M", "PRECTOTCORR", "WS10M", "GWETTOP"]
-FETCH_START = date(2000, 12, 1)   # 30 days before 2001 so January 2001 has a full rain window
+FETCH_START = date(2000, 12, 1)
 START_YEAR = 2001
 RAIN_DAYS = 30
-RAIN_HALF_MM = 25.0   # 25 mm of rain in the last 30 days halves the index
-PEAK_DAYS = 7         # vpd_peak7: worst 7-day spell of the month
-COVER_SLACK_DAYS = 10   # a fetched file must reach within this many days of the requested end
+RAIN_HALF_MM = 25.0
+PEAK_DAYS = 7
+COVER_SLACK_DAYS = 10
 FILL = -999.0
 GRID = "data/grid/fire_grid_daily_{id}.csv"
 RAW = "data/raw/power/{id}"
 OUT = "site/public/data/{id}/weather.json"
-SPLIT = 3   # 3 x 3 lattice
+SPLIT = 3
 
 
 class FetchError(Exception):
@@ -40,9 +40,6 @@ class FetchError(Exception):
 
 
 def lattice(bbox, cells, split=SPLIT):
-    """Up to split*split points: for each tile of the bbox, the detection-weighted centre of the grid
-    cells in it. cells: DataFrame lat, lon (south-west corners), n (detections). Tiles without fire
-    are dropped. Returns [{lat, lon, weight}] with weights summing to 1, south-to-north, west-to-east."""
     w, s, e, n = bbox
     c = cells.assign(clat=cells.lat + 0.125, clon=cells.lon + 0.125)
     c = c[(c.n > 0) & (c.clon >= w) & (c.clon < e) & (c.clat >= s) & (c.clat < n)]
@@ -60,7 +57,6 @@ def lattice(bbox, cells, split=SPLIT):
 
 
 def fire_cells(region_id, grid=GRID):
-    """Detections per 0.25 deg cell from the committed grid (MODIS + S-NPP, all days)."""
     g = pd.read_csv(grid.format(id=region_id), usecols=["lat", "lon", "terra_n", "aqua_n", "viirs_n"])
     g["n"] = g.terra_n + g.aqua_n + g.viirs_n
     return g.groupby(["lat", "lon"], as_index=False).n.sum()
@@ -77,7 +73,7 @@ def http_get(url, attempts=4, opener=urllib.request.urlopen):
         try:
             with opener(url, timeout=180) as r:
                 body = r.read()
-                if r.length:   # urllib does not raise on a short body (data-pipeline pitfall)
+                if r.length:
                     raise FetchError("truncated response")
                 return body.decode("utf-8")
         except urllib.error.HTTPError as e:
@@ -85,7 +81,6 @@ def http_get(url, attempts=4, opener=urllib.request.urlopen):
             if 400 <= e.code < 500 and e.code not in (408, 429):
                 raise FetchError(f"POWER API answered {err}") from None
         except (urllib.error.URLError, http.client.HTTPException, TimeoutError, ConnectionError, FetchError) as e:
-            # http.client.IncompleteRead (a short body) is an HTTPException
             err = type(e).__name__
         if i < attempts - 1:
             time.sleep(3 * (i + 1))
@@ -93,7 +88,6 @@ def http_get(url, attempts=4, opener=urllib.request.urlopen):
 
 
 def parse(text):
-    """POWER daily CSV (with its -BEGIN HEADER- block) -> DataFrame indexed by date, FILL -> NaN."""
     body = text.split("-END HEADER-", 1)[-1].lstrip()
     df = pd.read_csv(io.StringIO(body))
     missing = [c for c in ["YEAR", "DOY"] + PARAMS if c not in df.columns]
@@ -113,7 +107,7 @@ def load_point(region_id, k, p, end, refresh=False, get=http_get, raw=RAW, log=p
     if refresh or not os.path.exists(path):
         end = end or yesterday_utc()
         text = get(url_for(p["lat"], p["lon"], end))
-        d = parse(text)   # validate before caching: a short answer would be cached for good
+        d = parse(text)
         if d.empty or d.index[0] != pd.Timestamp(FETCH_START) or d.index[-1] < pd.Timestamp(end) - pd.Timedelta(days=COVER_SLACK_DAYS):
             raise FetchError(f"POWER answer for point {k} does not cover {FETCH_START} .. {end}")
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -126,13 +120,11 @@ def load_point(region_id, k, p, end, refresh=False, get=http_get, raw=RAW, log=p
 
 
 def vpd_kpa(t_c, rh):
-    """Vapour-pressure deficit (kPa) from temperature (C) and relative humidity (%), Tetens formula."""
     es = 0.6108 * np.exp(17.27 * t_c / (t_c + 237.3))
     return np.clip(es * (1 - rh / 100.0), 0, None)
 
 
 def daily_index(d):
-    """d: daily frame with PARAMS -> adds vpd, rain30, index. rain30 is NaN for the first 29 days."""
     d = d.copy()
     d["vpd"] = vpd_kpa(d.T2M_MAX, d.RH2M)
     d["rain30"] = d.PRECTOTCORR.rolling(RAIN_DAYS, min_periods=RAIN_DAYS).sum()
@@ -141,27 +133,22 @@ def daily_index(d):
 
 
 def peak7(reg):
-    """Highest 7-day mean VPD ending in each month (the month's worst heat/dryness spell), kPa."""
-    v = reg.vpd.reindex(pd.date_range(reg.index[0], reg.index[-1], freq="D"))   # a gap must not stretch a window
+    v = reg.vpd.reindex(pd.date_range(reg.index[0], reg.index[-1], freq="D"))
     s = v.rolling(PEAK_DAYS, min_periods=PEAK_DAYS).mean().dropna()
     return s.groupby([s.index.year, s.index.month]).max()
 
 
 def regional(points, frames):
-    """Weighted mean over points, per day, of each daily variable. A day counts only if every point
-    has it; trailing days missing anywhere are dropped."""
     cols = PARAMS + ["vpd", "index"]
     wts = np.array([p["weight"] for p in points])
-    stack = np.stack([f[cols].to_numpy() for f in frames])          # point x day x var
-    ok = ~np.isnan(stack).any(axis=0)                                  # day x var
+    stack = np.stack([f[cols].to_numpy() for f in frames])
+    ok = ~np.isnan(stack).any(axis=0)
     mean = np.einsum("p,pdv->dv", wts, np.nan_to_num(stack))
     out = pd.DataFrame(np.where(ok, mean, np.nan), index=frames[0].index, columns=cols)
     return out[out.index >= pd.Timestamp(START_YEAR, 1, 1)]
 
 
 def percentile_within_month(values, months, complete):
-    """Percent of complete same-calendar-month values below x (ties count half), 0-100, 1 decimal.
-    values, months (1-12), complete (bool) are equal-length arrays; NaN values give None."""
     values, months, complete = np.asarray(values, float), np.asarray(months), np.asarray(complete, bool)
     out = []
     for v, m in zip(values, months):
@@ -174,7 +161,6 @@ def percentile_within_month(values, months, complete):
 
 
 def monthly(reg):
-    """Daily regional frame -> monthly arrays (through the last month with any complete day)."""
     reg = reg.dropna(subset=["index"])
     if reg.empty:
         raise SystemExit("weather.py: no complete day of POWER data")

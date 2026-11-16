@@ -1,8 +1,3 @@
-"""The landing-page scene's data side (scripts/landing_scene/srtm.py and layout.py): no Blender, no network.
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import struct
 import sys
 import tempfile
@@ -23,7 +18,6 @@ SERIES = ROOT / "site" / "public" / "data" / "portugal" / "series.json"
 
 
 def write_tiff(path, a, tile=4, compression=8, bits=16, predictor=1, sample_format=2):
-    """A little-endian, tiled, deflate GeoTIFF-like file holding the int16 array `a` (what OpenTopography serves)."""
     h, w = a.shape
     blocks = []
     for r in range(0, h, tile):
@@ -97,23 +91,22 @@ class Terrain(unittest.TestCase):
         dem = self.dem
         self.assertEqual(dem.shape, (2401, 2401))
         self.assertGreaterEqual(float(dem.min()), 0.0)
-        # Torre, Serra da Estrela: mainland Portugal's highest point, 1,993 m at 40.3217 N, 7.6130 W
         r, c = np.unravel_index(dem.argmax(), dem.shape)
         self.assertAlmostEqual(41 - r / 1200, 40.3217, delta=0.01)
         self.assertAlmostEqual(-9 + c / 1200, -7.6130, delta=0.01)
         self.assertAlmostEqual(float(dem.max()), 1993, delta=10)
-        self.assertEqual(float(dem[1200, 0]), 0.0)  # 40 N, 9 W is the Atlantic
+        self.assertEqual(float(dem[1200, 0]), 0.0)
 
     def test_height_lookup_matches_the_grid_and_is_zero_outside(self):
         x, y = L.project(40.3217, -7.6125)
         self.assertAlmostEqual(float(L.height_km(self.dem, x, y)), float(self.dem.max()) / 1000 * L.EXAG, delta=0.05)
         self.assertEqual(float(L.height_km(self.dem, 500.0, 0.0)), 0.0)
-        mid = L.height_km(self.dem, *L.project(40.0 - 0.5 / 1200, -8.0))  # half-way between two samples
+        mid = L.height_km(self.dem, *L.project(40.0 - 0.5 / 1200, -8.0))
         self.assertAlmostEqual(float(mid), (self.dem[1200, 1200] + self.dem[1201, 1200]) / 2000 * L.EXAG, places=6)
 
     def test_camera_stays_above_the_ground_and_ends_looking_straight_down(self):
         last = 0.0
-        for f in np.arange(0, L.STORY_ANCHORS[-1] + 1, 0.5):  # story time
+        for f in np.arange(0, L.STORY_ANCHORS[-1] + 1, 0.5):
             c = L.camera(self.dem, f)
             eye = c["eye"]
             self.assertTrue(all(np.isfinite(eye)) and all(np.isfinite(c["target"])), f)
@@ -127,10 +120,9 @@ class Terrain(unittest.TestCase):
 
     def test_surface_is_the_drawn_mesh(self):
         d = self.dem[::2, ::2]
-        for r, c in ((600, 700), (601, 699), (300, 950)):  # grid nodes: the vertex heights scene.py writes
+        for r, c in ((600, 700), (601, 699), (300, 950)):
             x, y = L.project(srtm.LAT1 - r * 2 / 1200, srtm.LON0 + c * 2 / 1200)
             self.assertAlmostEqual(float(L.surface_km(self.dem, x, y)), d[r, c] / 1000 * L.EXAG, places=6)
-        # inside a grid square: flat on each of its two triangles, which meet on the diagonal
         r, c = 600, 700
         z = d[r:r + 2, c:c + 2].astype(float) / 1000 * L.EXAG
         at = lambda fr, fc: float(L.surface_km(self.dem, *L.project(srtm.LAT1 - (r + fr) * 2 / 1200, srtm.LON0 + (c + fc) * 2 / 1200)))  # noqa: E731
@@ -200,7 +192,6 @@ class Detections(unittest.TestCase):
             self.assertTrue(np.all(np.diff(kf) > 0) and np.all(np.diff(km) > 0), "northbound, never backing up")
             self.assertAlmostEqual(L.scan_line(f0)[1], km[0])
             self.assertAlmostEqual(L.scan_line(f1)[1], km[-1])
-            # slowest over the fire: km per frame there is a fraction of the speed it enters and leaves at
             speed = np.diff(km) / np.diff(kf)
             fire = float(L.along_track(*L.FIRE))
             self.assertTrue(km[1] < fire < km[2])
@@ -210,12 +201,10 @@ class Detections(unittest.TestCase):
             for i in np.where(sel)[0][::17]:
                 at = L.scan_line(self.on[i])[1]
                 self.assertAlmostEqual(at, float(L.along_track(self.p["x"][i], self.p["y"][i])), places=6)
-        # one satellite at a time, in the order they flew over, both done by the chapter-3 frame
         a, b = L.PASSES
         self.assertEqual((a["satellite"], b["satellite"]), ("Aqua", "SNPP"))
         self.assertLess(a["frames"][1], b["frames"][0])
         self.assertLessEqual(b["frames"][1], L.STORY_ANCHORS[2])
-        # the 375 m re-scan crosses the fire more slowly than Aqua's 1 km scan
         crawl = lambda ps: (ps["track"][2][0] - ps["track"][1][0]) / (ps["track"][2][1] - ps["track"][1][1])  # noqa: E731
         self.assertGreater(crawl(b), crawl(a) * 1.5)
         self.assertIsNone(L.scan_line((a["frames"][1] + b["frames"][0]) / 2))
@@ -239,7 +228,7 @@ class Detections(unittest.TestCase):
         np.testing.assert_array_equal(np.floor((x - L.HIST["x0"]) / pitch_day).astype(int), p["day"])
         pitch = pitch_day * (1 - L.HIST["gap"]) / L.HIST["sub"]
         rows = np.rint((y - L.HIST["y0"]) / pitch - 0.5).astype(int)
-        for day in (167, 168, 288):  # 17 and 18 June, 16 October
+        for day in (167, 168, 288):
             k = int((p["day"] == day).sum())
             self.assertEqual(int(rows[p["day"] == day].max()), (k - 1) // L.HIST["sub"], day)
         busiest = int(np.bincount(p["day"]).argmax())
@@ -258,7 +247,7 @@ class Detections(unittest.TestCase):
     def test_calendar_cells_hold_squares_in_proportion_to_the_harmonized_months(self):
         start, v = L.monthly_harmonized(SERIES)
         self.assertEqual(start, 2001)
-        self.assertGreaterEqual(len(v), 300)  # 2001 to at least 2025
+        self.assertGreaterEqual(len(v), 300)
         self.assertLessEqual(len(v), L.GRID["years"] * L.GRID["months"], "a 27th year needs GRID['years'] raised")
         self.assertTrue(np.all(v >= 0) and v.sum() > 0)
         with self.assertRaises(ValueError):
@@ -270,7 +259,6 @@ class Detections(unittest.TestCase):
         count = np.bincount(cell, minlength=len(full))
         np.testing.assert_array_equal(count, L.shares(full, self.n))
         self.assertTrue(np.all(np.abs(count - full / full.sum() * self.n) < 1.0))
-        # every square sits inside its own cell
         year, month = cell // 12, cell % 12
         cx = (year - (L.GRID["years"] - 1) / 2) * L.GRID["pitch"]
         cy = ((L.GRID["months"] - 1) / 2 - month) * L.GRID["pitch"]

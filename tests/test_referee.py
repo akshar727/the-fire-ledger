@@ -1,8 +1,3 @@
-"""Burned-area referee (ML-019) on synthetic data: no HDF files, no pyhdf, well under a second.
-
-Run from the repo root:
-    python -m unittest discover -s tests -v
-"""
 import json
 import os
 import sys
@@ -16,22 +11,20 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import referee  # noqa: E402
 
-N_MONTHS = 25 * 12 + 10   # 2001-01 .. 2026-10, like series.json today
+N_MONTHS = 25 * 12 + 10
 
 
 def series(factor_after=4.0, backcast_bias=1.0):
-    """series.json-like dict: MODIS = 1 detection per ha burned; VIIRS from Feb 2012 = factor x MODIS;
-    model pred = factor x MODIS x backcast_bias (a perfect back-cast when backcast_bias = 1)."""
     ha = burned_ha()
     modis = [float(v) for v in ha]
-    viirs = [None if i < 133 else factor_after * v for i, v in enumerate(modis)]   # index 133 = Feb 2012
+    viirs = [None if i < 133 else factor_after * v for i, v in enumerate(modis)]
     pred = [factor_after * v * backcast_bias for v in modis]
     return {"monthly": {"start_year": 2001, "modis": modis, "viirs": viirs, "pred": pred}}
 
 
 def burned_ha():
     i = np.arange(N_MONTHS)
-    return 100 + 50 * np.sin(2 * np.pi * i / 12) + i % 7   # seasonal, never zero
+    return 100 + 50 * np.sin(2 * np.pi * i / 12) + i % 7
 
 
 def burned_frame(last_year=2022):
@@ -42,15 +35,14 @@ def burned_frame(last_year=2022):
 
 class GridTests(unittest.TestCase):
     def test_cell_index_matches_mcd64cmq_grid(self):
-        # upper-left cell (centre 89.875 N, 179.875 W) has south-west corner (89.75, -180)
         self.assertEqual(tuple(map(int, referee.cell_index(89.75, -180.0))), (0, 0))
         self.assertEqual(tuple(map(int, referee.cell_index(-90.0, 179.75))), (719, 1439))
-        r, c = referee.cell_index([10.0, 38.25], [0.25, -8.5])   # a Ghana and a Portugal grid cell
+        r, c = referee.cell_index([10.0, 38.25], [0.25, -8.5])
         self.assertEqual((r.tolist(), c.tolist()), ([319, 206], [721, 686]))
 
     def test_file_month(self):
         self.assertEqual(referee.file_month("x/MCD64CMQ.A2017213.006.2018149175211.hdf"), (2017, 8, "6"))
-        self.assertEqual(referee.file_month("MCD64CMQ.A2004061.006.2018150010746.hdf"), (2004, 3, "6"))   # leap year
+        self.assertEqual(referee.file_month("MCD64CMQ.A2004061.006.2018150010746.hdf"), (2004, 3, "6"))
         self.assertEqual(referee.file_month("MCD64CMQ.A2024336.061.2025041120000.hdf"), (2024, 12, "6.1"))
         with self.assertRaises(ValueError):
             referee.file_month("MCD64A1.A2017213.h00v08.hdf")
@@ -61,22 +53,21 @@ class CheckTests(unittest.TestCase):
         r = referee.region_check(burned_frame(), series(factor_after=4.0))
         self.assertAlmostEqual(r["stitched"]["step"], 4.0, places=3)
         self.assertAlmostEqual(r["harmonized"]["step"], 1.0, places=3)
-        self.assertAlmostEqual(r["harmonized"]["per_1000km2_before"], 400000.0, delta=0.1)   # 4 per ha = 400 per km2
+        self.assertAlmostEqual(r["harmonized"]["per_1000km2_before"], 400000.0, delta=0.1)
         self.assertAlmostEqual(r["harmonized"]["monthly_r_before"], 1.0, places=6)
 
     def test_biased_backcast_shows_in_step(self):
         r = referee.region_check(burned_frame(), series(factor_after=4.0, backcast_bias=1.25))
-        self.assertAlmostEqual(r["harmonized"]["step"], 0.8, places=3)   # back-cast 25% high -> step 1/1.25
+        self.assertAlmostEqual(r["harmonized"]["step"], 0.8, places=3)
 
     def test_only_years_with_burned_area_and_all_12_months(self):
         r = referee.region_check(burned_frame(last_year=2022), series())
-        self.assertEqual(r["yearly"]["years"], list(range(2001, 2023)))   # 2023-2026 have no burned area
+        self.assertEqual(r["yearly"]["years"], list(range(2001, 2023)))
         self.assertEqual(len(r["yearly"]["burned_km2"]), 22)
         r = referee.region_check(burned_frame(last_year=2030), series())
-        self.assertEqual(r["yearly"]["years"][-1], 2025)                  # 2026 has only 10 months
+        self.assertEqual(r["yearly"]["years"][-1], 2025)
 
     def test_after_window_is_the_shortest_region(self):
-        # one region's burned area ends in 2020, the other's in 2022: both use 2013-2020
         with tempfile.TemporaryDirectory() as d:
             for rid in ("aa", "bb"):
                 os.makedirs(os.path.join(d, rid))
@@ -91,7 +82,7 @@ class CheckTests(unittest.TestCase):
                 res = referee.run(os.path.join(d, "ba.csv"), d, os.path.join(d, "regions.json"),
                                   os.path.join(d, "referee.json"))
         self.assertEqual(res["after"], [2013, 2020])
-        self.assertEqual(res["regions"]["bb"]["yearly"]["years"][-1], 2022)   # yearly table still shows all years
+        self.assertEqual(res["regions"]["bb"]["yearly"]["years"][-1], 2022)
 
     def test_no_complete_year_is_a_clear_error(self):
         with self.assertRaises(SystemExit):
