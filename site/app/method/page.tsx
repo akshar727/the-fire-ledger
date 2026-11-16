@@ -126,6 +126,22 @@ const DATA_SOURCES = [
     name: `MODIS burned area, ${REF.product_short}, 0.25° monthly (University of Maryland), for the independent check`,
     url: "https://doi.org/10.5067/MODIS/MCD64A1.006",
   },
+  {
+    name: "NASA POWER Daily API (community AG; daily maximum temperature, humidity, rain and wind at up to 9 points per region), for the fire-weather row on the burn calendar",
+    url: "https://power.larc.nasa.gov/docs/services/api/temporal/daily/",
+  },
+  {
+    name: "MERRA-2 reanalysis (Gelaro et al., 2017), the source NASA POWER serves for those weather values",
+    url: "https://doi.org/10.1175/JCLI-D-16-0758.1",
+  },
+  {
+    name: "NASA GIBS, true-colour corrected reflectance (MODIS Terra and Aqua, VIIRS Suomi NPP, NOAA-20 and NOAA-21), for the “See it from space” picture on the burn calendar",
+    url: "https://nasa-gibs.github.io/gibs-api-docs/",
+  },
+  {
+    name: "Natural Earth 1:110m Admin 0 countries, v5.1.2 (public domain), for the country outlines and land areas on the globe",
+    url: "https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/",
+  },
 ];
 
 const SOFTWARE = [
@@ -134,10 +150,12 @@ const SOFTWARE = [
     "Gridding, model fitting and bootstrap (Python)",
   ],
   ["pyhdf", "Reading the burned-area files (Python, one-off extract)"],
-  ["Next.js, React", "This website"],
+  ["Next.js, React, TypeScript", "This website"],
+  ["globe.gl (with three.js), d3-geo", "The 3D globe, country areas and centroids"],
   ["Tailwind CSS, shadcn/ui, Radix UI", "Styling and interface components"],
   ["Phosphor Icons, Work Sans, IBM Plex Mono", "Icons and typefaces"],
   ["Blender", "Rendering the landing-page scene"],
+  ["Claude (Anthropic)", "Code, text and documentation assistance"],
 ] as const;
 
 export default function MethodPage() {
