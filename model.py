@@ -371,21 +371,16 @@ def run(region_id, nboot=NBOOT, grid_dir="data/grid", out_dir="site/public/data"
             mub *= np.exp(sigma_year * rng.standard_normal(yidx.max() + 1) - sigma_year ** 2 / 2)[yidx]
             draws[b] = np.bincount(widx, weights=rng.poisson(mub * rng.gamma(1 / a_full, a_full, len(mub))), minlength=nw)
     else:
-        # constant ratio (ML-023): MODIS x the 2012-2019 VIIRS/MODIS ratio per day/night, Terra-only ratio before
+        # constant ratio (ML-023, ML-027): MODIS x the 2012-2019 VIIRS/MODIS ratio, Terra-only ratio before
         # Aqua; year error from leaving each training year out (as sigma_year above), then Poisson count noise
         a_full = None
         dn, terra, modis = w.daynight.values, w.terra_n.values, w.modis_n.values
 
-        def ratios(rows, floor=30):
-            # day and night apart, but the pooled day+night ratio where MODIS (or Terra) saw fewer than `floor`
-            # training detections: 800 VIIRS over 1 Terra detection is not a ratio
+        def ratios(rows):
+            # one constant ratio (day and night pooled), Terra-only before Aqua: the line the label names and the
+            # score's mape_ratio measures (ML-027: a day/night pair was worse than it in 56 of 118 ratio countries)
             pool = (y[rows].sum() / max(modis[rows].sum(), 1), y[rows].sum() / max(terra[rows].sum(), 1))
-            r = {}
-            for k in ("D", "N"):
-                m = rows & (dn == k)
-                r[k] = (y[m].sum() / modis[m].sum() if modis[m].sum() >= floor else pool[0],
-                        y[m].sum() / terra[m].sum() if terra[m].sum() >= floor else pool[1])
-            return r
+            return {"D": pool, "N": pool}
 
         def ratio_pred(r):
             full = np.where(dn == "D", r["D"][0], r["N"][0])

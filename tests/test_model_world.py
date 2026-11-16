@@ -118,7 +118,7 @@ class CountryRunTests(unittest.TestCase):
         sp = g.sample(400, random_state=1).assign(viirs_n=lambda x: rng.integers(0, 2, len(x)) * (x.viirs_n > 0))
         write_grid(cls.grid, "tiny", sp)
         write_grid(cls.grid, "empty", g.assign(viirs_n=0))
-        cls.ratio = quiet(model.run, CID, 5, grid_dir=cls.grid, out_dir=cls.out, method="ratio", tier="country")
+        cls.ratio = quiet(model.run, CID, 50, grid_dir=cls.grid, out_dir=cls.out, method="ratio", tier="country")   # 5 draws: band too noisy
         cls.a_ratio = load_strict(os.path.join(cls.out, CID, "annual.json"))
         cls.s_ratio = load_strict(os.path.join(cls.out, CID, "series.json"))
         quiet(model.run, CID, 5, grid_dir=cls.grid, out_dir=os.path.join(cls.tmp, "m"), cell_deg=1.0,
