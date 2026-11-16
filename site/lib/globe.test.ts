@@ -130,7 +130,7 @@ test("colours: ramp ends on the stops, no data grey, non-significant trends neut
   assert.equal(trendColor(null), NO_DATA);
 });
 
-test("fromAnnual: the published deep dives in globe.json's shape (complete years, band before 2012 only)", () => {
+test("fromAnnual: every published record in globe.json's shape (complete years, band before 2012 only)", () => {
   const index = read("../public/data/index.json") as { regions: { id: string; name: string; tier: string; bbox: number[] }[] };
   const recs = index.regions
     .filter((r) => existsSync(new URL(`../public/data/${r.id}/annual.json`, import.meta.url)))
@@ -138,15 +138,28 @@ test("fromAnnual: the published deep dives in globe.json's shape (complete years
   const years = completeYears(recs.map((x) => x.a));
   assert.equal(years[0], 2001);
   assert.equal(years.at(-1), 2025, "2026 is still running, so it is left out");
+  let with2025 = 0;
+  let withTrend = 0;
   for (const { r, a } of recs) {
     const g = fromAnnual(r, a, years);
     assert.equal(g.harmonized.length, years.length);
+    // FE-030: a record that ends before 2025 (Andorra's FIRMS country archive stops in December 2024) has no 2025
+    // value, which the globe shows as null ("no data"), not undefined; a still-running 2025 is left out the same way
     const i2025 = a.years.indexOf(2025);
-    assert.equal(g.harmonized.at(-1), a.harmonized[i2025], `${r.id} 2025`);
+    const has2025 = i2025 >= 0 && !a.partial[i2025];
+    if (has2025) with2025++;
+    assert.equal(g.harmonized.at(-1), has2025 ? a.harmonized[i2025] : null, `${r.id} 2025`);
     assert.equal(g.lo[years.indexOf(2011)], a.lo[a.years.indexOf(2011)], `${r.id} back-cast band`);
     assert.equal(g.lo[years.indexOf(2012)], null, `${r.id} no band once VIIRS observes`);
-    assert.ok(g.trend && Number.isFinite(g.trend.slope_pct) && Number.isFinite(g.trend.p));
+    // a sparse country's trend is all null in annual.json (too little fire to fit one): the globe says "no trend yet"
+    const t = (a as { trend?: { harmonized?: { slope_pct?: unknown; p?: unknown } } }).trend?.harmonized;
+    if (typeof t?.slope_pct === "number" && typeof t.p === "number") {
+      withTrend++;
+      assert.ok(g.trend && Number.isFinite(g.trend.slope_pct) && Number.isFinite(g.trend.p), `${r.id} trend`);
+    } else assert.equal(g.trend, null, `${r.id} no trend`);
   }
+  // the null branches above are exceptions: nearly every record has a 2025 total and a trend
+  assert.ok(with2025 >= recs.length - 5 && withTrend >= recs.length - 10, `${with2025} with 2025, ${withTrend} with a trend, of ${recs.length}`);
 });
 
 test("parseGlobe checks the shape and pads series to the years", () => {
