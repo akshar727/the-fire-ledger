@@ -2,6 +2,25 @@
 
 **Fire Ledger**: NASA FIRMS MODIS and VIIRS active-fire detections harmonized into one ledger (mainland Portugal, Ghana and NW India, 2001 to 2 November 2026; one model fit per region). NASA Space Apps Challenge 2026.
 
+## Features
+
+- **Landing story (`/`)**: a scroll-driven story over a Blender-rendered scene of the 2017 central Portugal fires. It explains how the satellites see fire and why their counts need harmonizing, then ends on the burn calendar.
+- **3D globe (`/globe`)**: spin a globe of every country with a fire record and colour it by one year or by the trend since 2001. Play through the years, or click a country to see its numbers.
+- **Ledger (`/ledger`)**: the harmonized fire record for a region, with a region switcher, date range and plain-language trend summary. A method card says how the record was built and how far to trust it.
+- **This fire season so far**: the latest season's running total of fire drawn over every past season, so you can see whether this year is running ahead or behind.
+- **When each season burns**: the days on which each past season reached 10%, 50% and 90% of its fire, showing whether seasons start or peak earlier than they used to.
+- **Burn calendar (`/calendar`)**: one square per month since 2001, all on one scale, so bad and quiet seasons stand out at a glance. Each region gets a line on fire weather (dry air, wind, rain) from NASA POWER.
+- **Listen to the calendar**: plays the calendar as sound, one note per month, with higher notes meaning more fire. A short tour plays the raw and harmonized counts around the 2012 change of satellite, so you can hear the jump that harmonizing removes.
+- **From space**: below the calendar, pick a month and its fire detections appear over NASA satellite imagery of that month's peak fire day.
+- **Downloads**: every chart can be saved as a picture, and the data can be downloaded as CSV for any date range and map box. The same CSVs are served at `/api/hotspots` and `/api/series`.
+- **Proof on unseen years**: the model is trained on 2012 to 2019 and scored on 2020 to 2025 against what VIIRS really counted. The scores are shown on the ledger and the method page.
+- **World scoreboard (`/method#scoreboard`)**: in every country, our model is tested against one simple constant ratio. Where the ratio did better, the site publishes the ratio.
+- **Independent check (`/method#referee`)**: fire detections are compared with MODIS burned area before and after 2012 as a check that does not depend on our model.
+- **Satellite drift (`/method#drift`)**: shows how the Terra and Aqua overpass times have drifted, and why that changes the share of each day's fire that MODIS sees.
+- **Accessible charts**: charts can be read with the keyboard (arrow keys step through values), and each one has a text description for screen readers.
+
+The Python pipeline behind these pages (download, harmonization model, fire weather, peak days, referee check, landing scene) is described step by step in "Run it" below.
+
 ## Run it
 
 Python precompute (from the repo root). Needs Python 3.12 or newer (tested with 3.14): check with `python3 --version` (Windows: `python --version`) first, and install a newer one from python.org or Homebrew if it's older, or `pip install` fails with "No matching distribution found for scipy==1.18.1"; library versions are pinned in `requirements.txt` (numpy 2.4.4, pandas 3.0.2, statsmodels 0.14.6, patsy 1.0.2, scipy 1.18.1), so reruns reproduce the committed outputs. Use `python` on Windows, `python3` on macOS.
